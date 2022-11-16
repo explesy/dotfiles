@@ -1,0 +1,83 @@
+{
+    "workbench.colorTheme": "Gruvbox Dark Hard",
+    "workbench.iconTheme": "Monokai Pro Icons",
+    "workbench.sideBar.location": "right",
+    "explorer.confirmDelete": false,
+    "security.workspace.trust.untrustedFiles": "open",
+    "editor.fontFamily": "'Jetbrains Mono', Consolas, 'Courier New', monospace",
+    "editor.fontSize": 16,
+    "editor.letterSpacing": 0.3,
+    "editor.fontLigatures": true,
+    "editor.bracketPairColorization.enabled": true,
+    "editor.guides.bracketPairs": "active",
+    "editor.renderWhitespace": "all",
+    "editor.unicodeHighlight.ambiguousCharacters": false,
+    "python.analysis.autoImportCompletions": false,
+    "workbench.startupEditor": "none",
+    "keyboard.dispatch": "keyCode",
+    "vim.hlsearch": true,
+    "editor.minimap.enabled": false,
+    "notebook.lineNumbers": "on",
+    "[git-commit]": {"editor.rulers": [50]},
+    "[python]": {
+        "editor.rulers": [
+            79,
+            120
+        ]
+    },
+    "vim.useSystemClipboard": true,
+    "Lua.telemetry.enable": false,
+    "sync.gist": "66ce60c480c9abd28a8b84a8404f9ee6",
+    "sync.autoDownload": false,
+    "sync.autoUpload": true,
+    "breadcrumbs.enabled": false,
+    "notebook.cellToolbarLocation": {
+        "default": "right",
+        "jupyter-notebook": "left"
+    },
+    "notebook.cellFocusIndicator": "border",
+    "jupyter.askForKernelRestart": false,
+    "markdown-preview-enhanced.previewTheme": "github-dark.css",
+    "explorer.confirmDragAndDrop": false,
+    "python.analysis.completeFunctionParens": true,
+    "python.analysis.inlayHints.functionReturnTypes": true,
+    "vsintellicode.java.completionsEnabled": false,
+
+    // Intelisense settings
+    // Controls if quick suggestions should show up while typing
+    "editor.quickSuggestions": {
+        "other": true,
+        "comments": true,
+        "strings": true,
+    },
+
+    // Controls if suggestions should be accepted on 'Enter' - in addition to 'Tab'. Helps to avoid ambiguity between inserting new lines or accepting suggestions. The value 'smart' means only accept a suggestion with Enter when it makes a textual change
+    "editor.acceptSuggestionOnEnter": "on",
+
+    // Controls the delay in ms after which quick suggestions will show up.
+    "editor.quickSuggestionsDelay": 10,
+
+    // Controls if suggestions should automatically show up when typing trigger characters
+    "editor.suggestOnTriggerCharacters": true,
+
+    // Controls if pressing tab inserts the best suggestion and if tab cycles through other suggestions
+    "editor.tabCompletion": "on",
+
+    // Controls whether sorting favours words that appear close to the cursor
+    "editor.suggest.localityBonus": true,
+
+    // Controls how suggestions are pre-selected when showing the suggest list
+    "editor.suggestSelection": "first",
+
+    // Enable word based suggestions
+    "editor.wordBasedSuggestions": true,
+
+    // Enable parameter hints
+    "editor.parameterHints.enabled": true,
+    "vim.enableNeovim": true,
+    "fzf-quick-open.findDirectoriesCmd": "fd . -type d",
+    "window.commandCenter": true,
+    "outline.collapseItems": "alwaysCollapse",
+    "editor.stickyScroll.enabled": true,
+    
+}
