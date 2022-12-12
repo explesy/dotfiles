@@ -2,7 +2,7 @@
 - vscode
 - mpv
 - nvim
-- nvm testing
+- nvim testing
 - tmux
 - ranger
 - zsh

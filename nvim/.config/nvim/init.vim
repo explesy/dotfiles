@@ -4,9 +4,9 @@ set number                 " line numbers
 set relativenumber         " Show relative line numbers
 set noswapfile             " prevent creation of swap
 set nocompatible           " compatible mode off 
-set tabstop=4              " number of columns occpied by a tab
-set softtabstop=4
-set shiftwidth=4           " width for autoindent
+set tabstop=2              " number of columns occpied by a tab
+set softtabstop=2
+set shiftwidth=2           " width for autoindent
 set expandtab              " converts tabs to whitespaces
 set autoindent             " indent a new line the same amount as the line just typed 
 set fileformat=unix 
@@ -35,9 +35,18 @@ noremap K N|        "previous match   replaces (N) prev
 noremap <C-m> m|    "mark             replaces (m)ark
 noremap ; :|        "command mode
 noremap : ;|        ";
+noremap U <C-r>     "Redo 
  
 noremap <C-n> <C-f>| "Page down
 noremap <C-e> <C-b>H| "Page up, cursor up
+
+"Windows
+nnoremap <leader>vs :vs<CR>
+nnoremap <leader>gs :sp<CR>
+
+"New lines
+nnoremap <leader>o o<ESC>
+nnoremap <leader>O O<ESC>
 
 "Moving lines
 nnoremap <A-n> :m .+1<CR>==
@@ -47,7 +56,7 @@ inoremap <A-e> <Esc>:m .-2<CR>==gi
 vnoremap <A-n> :m '>+1<CR>gv=gv
 vnoremap <A-e> :m '<-2<CR>gv=gv
 
-"Run python code
+"Run python code -- check if it's working
 autocmd FileType python map <buffer> <leader>r :w<CR>:exec '!python' shellescape(@%, 1)<CR>
 autocmd FileType python imap <buffer> <leader>r <esc>:w<CR>:exec '!python' shellescape(@%, 1)<CR>
 
@@ -77,6 +86,9 @@ Plug 'nvim-telescope/telescope.nvim', { 'tag': '0.1.0' }
 call plug#end()
 
 colorscheme gruvbox
+
+
+
 
 "COC settings
 "
@@ -221,7 +233,7 @@ nnoremap <silent><nowait> <space>e  :<C-u>CocList extensions<cr>
 " Show commands.
 nnoremap <silent><nowait> <space>c  :<C-u>CocList commands<cr>
 " Find symbol of current document.
-nnoremap <silent><nowait> <space>o  :<C-u>CocList outline<cr>
+"nnoremap <silent><nowait> <space>o  :<C-u>CocList outline<cr>
 " Search workspace symbols.
 nnoremap <silent><nowait> <space>s  :<C-u>CocList -I symbols<cr>
 " Do default action for next item.
@@ -230,6 +242,7 @@ nnoremap <silent><nowait> <space>j  :<C-u>CocNext<CR>
 nnoremap <silent><nowait> <space>k  :<C-u>CocPrev<CR>
 " Resume latest coc list.
 nnoremap <silent><nowait> <space>p  :<C-u>CocListResume<CR>
+
 
 
 

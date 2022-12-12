@@ -79,5 +79,6 @@
     "window.commandCenter": true,
     "outline.collapseItems": "alwaysCollapse",
     "editor.stickyScroll.enabled": true,
+    "sync.quietSync": true,
     
 }
