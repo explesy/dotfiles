@@ -19,5 +19,9 @@ cdls() {
         cd "$@" && ls;
 }
 
-export VISUAL=nvim
+export VISUAL=lvim
 export EDITOR="$VISUAL"
+
+# for poetry autocompletion
+fpath+=~/.zfunc
+autoload -Uz compinit && compinit
