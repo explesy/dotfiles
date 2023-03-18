@@ -11,3 +11,7 @@
 All dotfiles configured to use with Colemak keyboard layout 
 
 ```jk -> ne``` 
+
+### tmux
+After fresh install we may need source config file
+```tmux source ~/.tmur```
