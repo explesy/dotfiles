@@ -23,7 +23,8 @@
         "editor.rulers": [
             79,
             120
-        ]
+        ],
+        "editor.formatOnType": true
     },
     "vim.useSystemClipboard": true,
     "Lua.telemetry.enable": false,
