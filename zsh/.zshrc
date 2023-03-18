@@ -12,8 +12,7 @@ fi
 # My config
 alias tmuxn='tmux new -s'
 alias tmuxa='tmux a -t'
-alias uvim='nvim -u /home/doc/.config/uvim/init.lua'
-alias tlfz='tldr --list | fzf --preview "tldr {1} --color=always" --preview-window=right,70% | xargs tldr'
+
 
 cdls() {
         cd "$@" && ls;
