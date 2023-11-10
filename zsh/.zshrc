@@ -20,6 +20,7 @@ cdls() {
 
 export VISUAL=lvim
 export EDITOR="$VISUAL"
+export PATH="$PATH:$HOME/.cargo/bin"
 
 # for poetry autocompletion
 fpath+=~/.zfunc
