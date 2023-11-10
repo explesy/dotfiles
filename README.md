@@ -7,6 +7,7 @@
 - ranger
 - zsh
 - lunar vim - stow don't workn for this one
+- docker - just some notes on fresh install
 
 All dotfiles configured to use with Colemak keyboard layout 
 
