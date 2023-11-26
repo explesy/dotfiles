@@ -6,8 +6,8 @@ local act = wezterm.action
 
 -- For maximizing window on start
 wezterm.on('gui-startup', function()
- local tab, pane, window = mux.spawn_window({})
- window:gui_window():maximize()
+  local tab, pane, window = mux.spawn_window({})
+  window:gui_window():maximize()
 end)
 
 -- This table will hold the configuration.
@@ -29,6 +29,8 @@ config.window_padding = {
   bottom = 0,
 }
 config.use_dead_keys = false
+-- config.font = wezterm.font '0xProtoNerdFont'
+config.font = wezterm.font 'JetBrainsMono Nerd Font'
 
 --config.window_decorations = "RESIZE"
 
