@@ -20,7 +20,9 @@ if wezterm.config_builder then
 end
 
 -- This is where you actually apply your config choices
-config.color_scheme = 'AdventureTime'
+-- config.color_scheme = 'AdventureTime'
+-- config.color_scheme = 'Afterglow'
+config.color_scheme = 'Afterglow (Gogh)'
 config.default_prog = { 'zsh', '-l' }
 config.window_padding = {
   left = 0,
