@@ -4,4 +4,6 @@ if status is-interactive
     set -g fish_greeting # disable greeting message
     abbr -a ls exa
     abbr -a ll exa -la --sort=type
+    abbr -a lg lazygit
+    abbr -a ld lazydocker
 end
