@@ -6,4 +6,10 @@ if status is-interactive
     abbr -a ll exa -la --sort=type
     abbr -a lg lazygit
     abbr -a ld lazydocker
+    abbr -a psh poetry shell
+    abbr -a psa poetry show --all
+    abbr -a pst poetry show --tree
+
 end
+
+starship init fish | source
