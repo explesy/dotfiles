@@ -23,7 +23,7 @@ end
 -- config.color_scheme = 'AdventureTime'
 -- config.color_scheme = 'Afterglow'
 config.color_scheme = 'Afterglow (Gogh)'
-config.default_prog = { 'zsh', '-l' }
+config.default_prog = { 'fish', '-l' }
 config.window_padding = {
   left = 0,
   right = 0,
