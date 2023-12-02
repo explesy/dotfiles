@@ -6,8 +6,9 @@
 - tmux
 - ranger
 - zsh
-- strarship
-- lunar vim - stow don't workn for this one
+- starship
+- fish
+- lunar vim - stow don't work for this one
 - docker - just some notes on fresh install
 
 ### install
