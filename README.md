@@ -12,6 +12,7 @@
   - eza -> replacement for ls
   - zoxide -> replacement for cd 
 - yazi
+- zellij
 - lunar vim - stow don't work for this one
 - docker - just some notes on fresh install
 
