@@ -8,6 +8,7 @@
 - zsh
 - starship
 - fish
+  - eza
 - lunar vim - stow don't work for this one
 - docker - just some notes on fresh install
 
