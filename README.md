@@ -3,12 +3,15 @@
 - mpv
 - nvim
 - nvim testing
+- lazy vim
 - tmux
 - ranger
 - zsh
 - starship
 - fish
-  - eza
+  - eza -> replacement for ls
+  - zoxide -> replacement for cd 
+- yazi
 - lunar vim - stow don't work for this one
 - docker - just some notes on fresh install
 
