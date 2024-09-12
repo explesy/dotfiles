@@ -11,6 +11,9 @@ if status is-interactive
     abbr -a psh poetry shell
     abbr -a psa poetry show --all
     abbr -a pst poetry show --tree
+    abbr -a dcu docker compose up
+    abbr -a dcd docker compose down
+    abbr -a clr clear
 
 end
 
