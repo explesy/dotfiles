@@ -5,14 +5,13 @@ return {
       vim.g.gruvbox_material_background = 'hard'
     end
   },
-  -- {
-  --   "eddyekofo94/gruvbox-flat.nvim",
-  --   config = function()
-  --     vim.g.gruvbox_flat_style = 'dark'
-  --   end
-  -- },
+  {
+    "folke/tokyonight.nvim",
+    lazy = false,
+    priority = 1000,
+    opts = {},
+  },
   { "ellisonleao/gruvbox.nvim" },
-  -- { "sainnhe/everforest" },
   { "sainnhe/edge" },
   { "sainnhe/sonokai" },
   {
@@ -27,6 +26,7 @@ return {
   }, {
   "LazyVim/LazyVim",
   opts = {
-    colorscheme = "gruvbox-material"
+    -- colorscheme = "gruvbox-material"
+    colorscheme = "tokyonight-night"
   }
 } }
