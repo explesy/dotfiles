@@ -3,6 +3,7 @@ if status is-interactive
 
     set -g fish_greeting # disable greeting message
     set -gx EDITOR nvim
+    set -gx PATH /opt/homebrew/bin $PATH
 
     abbr -a ls eza
     abbr -a ll eza -la --sort=type
