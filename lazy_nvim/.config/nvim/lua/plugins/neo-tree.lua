@@ -1,15 +1,14 @@
 return {
   "nvim-neo-tree/neo-tree.nvim",
-  opts = function(_, opts)
-    opts.window = {
+  opts = {
+    window = {
       mappings = {
-        ["n"] = "next_node",   -- move down
-        ["e"] = "prev_node",   -- move up
-        ["h"] = "parent_node", -- optional: move to parent
-        ["l"] = "open_node",   -- optional: open node
-        -- Add other Colemak-specific mappings here if needed
-      }
-    }
-    return opts
-  end
+        ["n"] = "next_sibling", -- перемещение вниз по узлам
+        ["e"] = "previous_sibling", -- перемещение вверх по узлам
+        ["h"] = "navigate_up", -- подняться на уровень выше
+        ["i"] = "open", -- открыть узел
+        ["y"] = "close_node",
+      },
+    },
+  },
 }
