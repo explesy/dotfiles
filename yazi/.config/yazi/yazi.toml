@@ -1,2 +1,3 @@
 [manager]
 show_hidden = true
+ratio = [ 0, 5, 3 ]
