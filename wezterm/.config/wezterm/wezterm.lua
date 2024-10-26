@@ -15,7 +15,7 @@ end)
 config.color_scheme = "Afterglow (Gogh)"
 config.font = wezterm.font("JetBrainsMono Nerd Font")
 config.font_size = 18.0
-config.dpi = 150.0
+-- config.enable_tab_bar = false
 
 config.window_padding = {
 	left = 0,
