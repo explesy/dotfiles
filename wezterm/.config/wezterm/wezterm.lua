@@ -8,13 +8,15 @@ local config = wezterm.config_builder and wezterm.config_builder() or {}
 wezterm.on("gui-startup", function(cmd)
 	local tab, pane, window = wezterm.mux.spawn_window(cmd or {})
 	window:gui_window():maximize()
-	window:perform_action(wezterm.action.ToggleFullScreen, pane)
+	-- window:perform_action(wezterm.action.ToggleFullScreen, pane)
 end)
 
 -- Appearance
 config.color_scheme = "Afterglow (Gogh)"
 config.font = wezterm.font("JetBrainsMono Nerd Font")
 config.font_size = 18.0
+config.max_fps = 120
+-- config.window_decorations = "NONE"
 -- config.enable_tab_bar = false
 
 config.window_padding = {
@@ -54,19 +56,19 @@ config.keys = {
 }
 
 -- Custom color for status line
-config.colors = {
-	tab_bar = {
-		background = "#282c34",
-		active_tab = {
-			bg_color = "#61afef",
-			fg_color = "#282c34",
-		},
-		inactive_tab = {
-			bg_color = "#353b45",
-			fg_color = "#abb2bf",
-		},
-	},
-}
+-- config.colors = {
+-- 	tab_bar = {
+-- 		background = "#282c34",
+-- 		active_tab = {
+-- 			bg_color = "#61afef",
+-- 			fg_color = "#282c34",
+-- 		},
+-- 		inactive_tab = {
+-- 			bg_color = "#353b45",
+-- 			fg_color = "#abb2bf",
+-- 		},
+-- 	},
+-- }
 
 -- Custom command palette
 config.command_palette_fg_color = "#abb2bf"
