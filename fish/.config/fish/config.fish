@@ -9,12 +9,15 @@ if status is-interactive
     abbr -a ll eza -la --sort=type
     abbr -a lg lazygit
     abbr -a ld lazydocker
-    abbr -a psh poetry shell
-    abbr -a psa poetry show --all
-    abbr -a pst poetry show --tree
+    #abbr -a psh poetry shell
+    #abbr -a psa poetry show --all
+    #abbr -a pst poetry show --tree
     abbr -a dcu docker compose up
     abbr -a dcd docker compose down
     abbr -a clr clear
+    abbr -a v nvim .
+    abbr -a nv nvim
+    abbr -a av NVIM_APPNAME=astronvim nvim
 
 end
 
@@ -30,3 +33,6 @@ end
 
 starship init fish | source
 zoxide init fish | source
+
+# Added by LM Studio CLI (lms)
+set -gx PATH $PATH /Users/doc/.cache/lm-studio/bin
