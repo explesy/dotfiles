@@ -1,0 +1,4 @@
+font-size = 20
+maximize = true
+window-decoration = none
+shell-integration = fish
