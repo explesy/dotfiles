@@ -24,6 +24,10 @@ vim.keymap.set({ "n" }, "T", "I", { remap = false, silent = true, desc = "Enter 
 -- Redo
 vim.keymap.set("n", "U", "<C-r>", { noremap = true, silent = true, desc = "Redo" })
 
+-- Move by paragraphs
+vim.keymap.set("n", "E", "{", { noremap = true, silent = true, desc = "Move up a paragraph" })
+vim.keymap.set("n", "N", "}", { noremap = true, silent = true, desc = "Move down a paragraph" })
+
 -- Window navigation
 vim.keymap.set("n", "<C-h>", "<C-w>h", { desc = "Go to left window", remap = true })
 vim.keymap.set("n", "<C-n>", "<C-w>j", { desc = "Go to lower window", remap = true })
