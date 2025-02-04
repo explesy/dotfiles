@@ -4,20 +4,19 @@ if status is-interactive
     set -g fish_greeting # disable greeting message
     set -gx EDITOR nvim
     set -gx PATH /opt/homebrew/bin $PATH
+    set -x HOMEBREW_NO_AUTO_UPDATE 1
 
     abbr -a ls eza
     abbr -a ll eza -la --sort=type
     abbr -a lg lazygit
     abbr -a ld lazydocker
-    #abbr -a psh poetry shell
-    #abbr -a psa poetry show --all
-    #abbr -a pst poetry show --tree
     abbr -a dcu docker compose up
     abbr -a dcd docker compose down
     abbr -a clr clear
     abbr -a v nvim .
     abbr -a nv nvim
     abbr -a av NVIM_APPNAME=astronvim nvim
+    abbr -a buu brew update && brew upgrade
 
 end
 
@@ -36,3 +35,6 @@ zoxide init fish | source
 
 # Added by LM Studio CLI (lms)
 set -gx PATH $PATH /Users/doc/.cache/lm-studio/bin
+
+# Added by Windsurf
+fish_add_path /Users/doc/.codeium/windsurf/bin
