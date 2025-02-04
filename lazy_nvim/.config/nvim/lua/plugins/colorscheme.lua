@@ -19,9 +19,17 @@ return {
     },
   },
   {
+    "eldritch-theme/eldritch.nvim",
+    lazy = false,
+    priority = 1000,
+    opts = {},
+  },
+  {
     "LazyVim/LazyVim",
     opts = {
-      colorscheme = "gruvbox-material",
+      -- colorscheme = "gruvbox-material",
+      colorscheme = "catppuccin-macchiato",
+      -- colorscheme = "tokyonight-night",
     },
   },
 }

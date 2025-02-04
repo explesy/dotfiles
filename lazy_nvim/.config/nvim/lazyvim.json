@@ -1,11 +1,14 @@
 {
   "extras": [
-    "lazyvim.plugins.extras.coding.codeium",
+    "lazyvim.plugins.extras.ai.supermaven",
+    "lazyvim.plugins.extras.coding.mini-surround",
     "lazyvim.plugins.extras.formatting.black",
+    "lazyvim.plugins.extras.lang.go",
+    "lazyvim.plugins.extras.lang.markdown",
     "lazyvim.plugins.extras.lang.python"
   ],
   "news": {
-    "NEWS.md": "4964"
+    "NEWS.md": "10960"
   },
-  "version": 4
+  "version": 7
 }
