@@ -17,7 +17,6 @@ if status is-interactive
     abbr -a nv nvim
     abbr -a av NVIM_APPNAME=astronvim nvim
     abbr -a buu brew update && brew upgrade
-
 end
 
 # function to run yazi as yy
@@ -33,8 +32,9 @@ end
 starship init fish | source
 zoxide init fish | source
 
+function c
+    command $argv | pbcopy
+end
+
 # Added by LM Studio CLI (lms)
 set -gx PATH $PATH /Users/doc/.cache/lm-studio/bin
-
-# Added by Windsurf
-fish_add_path /Users/doc/.codeium/windsurf/bin
