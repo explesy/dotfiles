@@ -6,4 +6,7 @@ local opt = vim.opt
 
 opt.scrolloff = 8 -- minimal number of screen lines to keep above and below the cursor.
 opt.sidescrolloff = 8 -- minimal number of screen lines to keep left and right of the cursor.
+opt.spell = false
 opt.spelllang = { "en", "ru" }
+opt.swapfile = false
+opt.directory = "/tmp"

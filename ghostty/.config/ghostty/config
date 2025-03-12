@@ -1,4 +1,12 @@
-font-size = 20
+font-size = 16
 maximize = true
 window-decoration = none
 shell-integration = fish
+
+# Unbind CMD+... keys so they will be forwarded to Zellij
+keybind = cmd+t=unbind
+keybind = cmd+n=unbind
+keybind = cmd+c=unbind
+# keybind = cmd+w=unbind
+keybind = cmd+opt+left=unbind
+keybind = cmd+opt+right=unbind
