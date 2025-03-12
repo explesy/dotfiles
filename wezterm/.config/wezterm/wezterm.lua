@@ -14,20 +14,20 @@ end)
 -- Appearance
 config.color_scheme = "Afterglow (Gogh)"
 config.font = wezterm.font("JetBrainsMono Nerd Font")
-config.font_size = 18.0
+config.font_size = 17.0
 config.max_fps = 120
--- config.window_decorations = "NONE"
--- config.enable_tab_bar = false
 
+-- Window settings
 config.window_padding = {
 	left = 0,
 	right = 0,
 	top = 0,
 	bottom = 0,
 }
+config.window_decorations = "RESIZE"
+config.use_fancy_tab_bar = false
 
 config.hide_tab_bar_if_only_one_tab = true
--- config.tab_bar_at_bottom = true
 config.show_tab_index_in_tab_bar = true
 
 config.inactive_pane_hsb = {
@@ -55,22 +55,7 @@ config.keys = {
 	},
 }
 
--- Custom color for status line
--- config.colors = {
--- 	tab_bar = {
--- 		background = "#282c34",
--- 		active_tab = {
--- 			bg_color = "#61afef",
--- 			fg_color = "#282c34",
--- 		},
--- 		inactive_tab = {
--- 			bg_color = "#353b45",
--- 			fg_color = "#abb2bf",
--- 		},
--- 	},
--- }
-
--- Custom command palette
+-- Custom command palette colors
 config.command_palette_fg_color = "#abb2bf"
 config.command_palette_bg_color = "#282c34"
 
