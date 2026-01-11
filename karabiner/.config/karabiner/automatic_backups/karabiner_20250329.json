@@ -91,18 +91,6 @@
                     }
                 ]
             },
-            "devices": [
-                {
-                    "identifiers": {
-                        "is_keyboard": true,
-                        "is_pointing_device": true,
-                        "product_id": 64008,
-                        "vendor_id": 13652
-                    },
-                    "ignore": false,
-                    "treat_as_built_in_keyboard": true
-                }
-            ],
             "name": "Default profile",
             "selected": true,
             "simple_modifications": [
