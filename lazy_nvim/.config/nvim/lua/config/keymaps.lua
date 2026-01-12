@@ -2,65 +2,68 @@
 -- Default keymaps that are always set: https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/keymaps.lua
 -- Add any additional keymaps here
 
+local map = vim.keymap.set
+
+local function map_key(mode, lhs, rhs, desc, opts)
+  local options = { desc = desc, silent = true }
+  if opts then
+    options = vim.tbl_extend("force", options, opts)
+  end
+  map(mode, lhs, rhs, options)
+end
+
 -- Colemak navigation
-vim.keymap.set(
-  { "n", "x" },
-  "n",
-  "v:count == 0 ? 'gj' : 'j'",
-  { expr = true, silent = true, desc = "Move down (Colemak)" }
-)
-vim.keymap.set(
-  { "n", "x" },
-  "e",
-  "v:count == 0 ? 'gk' : 'k'",
-  { expr = true, silent = true, desc = "Move up (Colemak)" }
-)
-vim.keymap.set({ "n", "x" }, "i", "l", { remap = false, silent = true, desc = "Move right (Colemak)" })
+map_key({ "n", "x" }, "n", "v:count == 0 ? 'gj' : 'j'", "Move down (Colemak)", { expr = true })
+map_key({ "n", "x" }, "e", "v:count == 0 ? 'gk' : 'k'", "Move up (Colemak)", { expr = true })
+map_key({ "n", "x" }, "i", "l", "Move right (Colemak)", { remap = false })
 
 -- Edit mode
-vim.keymap.set({ "n" }, "t", "i", { remap = false, silent = true, desc = "Enter insert mode" })
-vim.keymap.set({ "n" }, "T", "I", { remap = false, silent = true, desc = "Enter insert mode at beginning of line" })
+map_key("n", "t", "i", "Enter insert mode", { remap = false })
+map_key("n", "T", "I", "Enter insert mode at beginning of line", { remap = false })
+
+-- Exit insert mode with double 'nn'
+map_key("i", "nn", "<Esc>", "Exit insert mode with double nn")
 
 -- Redo
-vim.keymap.set("n", "U", "<C-r>", { noremap = true, silent = true, desc = "Redo" })
+map_key("n", "U", "<C-r>", "Redo")
 
 -- Move by paragraphs
-vim.keymap.set("n", "E", "{", { noremap = true, silent = true, desc = "Move up a paragraph" })
-vim.keymap.set("n", "N", "}", { noremap = true, silent = true, desc = "Move down a paragraph" })
+map_key("n", "E", "{", "Move up a paragraph")
+map_key("n", "N", "}", "Move down a paragraph")
 
 -- Window navigation
-vim.keymap.set("n", "<C-h>", "<C-w>h", { desc = "Go to left window", remap = true })
-vim.keymap.set("n", "<C-n>", "<C-w>j", { desc = "Go to lower window", remap = true })
-vim.keymap.set("n", "<C-e>", "<C-w>k", { desc = "Go to upper window", remap = true })
-vim.keymap.set("n", "<C-i>", "<C-w>l", { desc = "Go to right window", remap = true })
+map_key("n", "<C-h>", "<C-w>h", "Go to left window", { remap = true })
+map_key("n", "<C-n>", "<C-w>j", "Go to lower window", { remap = true })
+map_key("n", "<C-e>", "<C-w>k", "Go to upper window", { remap = true })
+map_key("n", "<C-i>", "<C-w>l", "Go to right window", { remap = true })
 
 -- Move Lines
-vim.keymap.set("n", "<A-n>", "<cmd>m .+1<cr>==", { desc = "Move line down" })
-vim.keymap.set("n", "<A-e>", "<cmd>m .-2<cr>==", { desc = "Move line up" })
-vim.keymap.set("i", "<A-n>", "<esc><cmd>m .+1<cr>==gi", { desc = "Move line down" })
-vim.keymap.set("i", "<A-e>", "<esc><cmd>m .-2<cr>==gi", { desc = "Move line up" })
-vim.keymap.set("v", "<A-n>", ":m '>+1<cr>gv=gv", { desc = "Move selection down" })
-vim.keymap.set("v", "<A-e>", ":m '<-2<cr>gv=gv", { desc = "Move selection up" })
+map_key("n", "<A-n>", "<cmd>m .+1<cr>==", "Move line down")
+map_key("n", "<A-e>", "<cmd>m .-2<cr>==", "Move line up")
+map_key("i", "<A-n>", "<esc><cmd>m .+1<cr>==gi", "Move line down")
+map_key("i", "<A-e>", "<esc><cmd>m .-2<cr>==gi", "Move line up")
+map_key("v", "<A-n>", ":m '>+1<cr>gv=gv", "Move selection down")
+map_key("v", "<A-e>", ":m '<-2<cr>gv=gv", "Move selection up")
 
 -- Buffer navigation
-vim.keymap.set("n", "<S-h>", "<cmd>bprevious<cr>", { desc = "Previous buffer" })
-vim.keymap.set("n", "<S-i>", "<cmd>bnext<cr>", { desc = "Next buffer" })
+map_key("n", "<S-h>", "<cmd>bprevious<cr>", "Previous buffer")
+map_key("n", "<S-i>", "<cmd>bnext<cr>", "Next buffer")
 
 -- Search navigation
-vim.keymap.set("n", "k", "'Nn'[v:searchforward].'zv'", { expr = true, desc = "Next search result" })
-vim.keymap.set("x", "k", "'Nn'[v:searchforward]", { expr = true, desc = "Next search result" })
-vim.keymap.set("o", "k", "'Nn'[v:searchforward]", { expr = true, desc = "Next search result" })
-vim.keymap.set("n", "K", "'nN'[v:searchforward].'zv'", { expr = true, desc = "Previous search result" })
-vim.keymap.set("x", "K", "'nN'[v:searchforward]", { expr = true, desc = "Previous search result" })
-vim.keymap.set("o", "K", "'nN'[v:searchforward]", { expr = true, desc = "Previous search result" })
+map_key("n", "k", "'Nn'[v:searchforward].'zv'", "Next search result", { expr = true })
+map_key("x", "k", "'Nn'[v:searchforward]", "Next search result", { expr = true })
+map_key("o", "k", "'Nn'[v:searchforward]", "Next search result", { expr = true })
+map_key("n", "K", "'nN'[v:searchforward].'zv'", "Previous search result", { expr = true })
+map_key("x", "K", "'nN'[v:searchforward]", "Previous search result", { expr = true })
+map_key("o", "K", "'nN'[v:searchforward]", "Previous search result", { expr = true })
 
 -- Terminal Mappings
-vim.keymap.set("t", "<esc><esc>", "<c-\\><c-n>", { desc = "Enter Normal Mode" })
-vim.keymap.set("t", "<C-h>", "<cmd>wincmd h<cr>", { desc = "Go to left window" })
-vim.keymap.set("t", "<C-n>", "<cmd>wincmd j<cr>", { desc = "Go to lower window" })
-vim.keymap.set("t", "<C-e>", "<cmd>wincmd k<cr>", { desc = "Go to upper window" })
-vim.keymap.set("t", "<C-i>", "<cmd>wincmd l<cr>", { desc = "Go to right window" })
-vim.keymap.set("t", "<C-/>", "<cmd>close<cr>", { desc = "Hide Terminal" })
+map_key("t", "<esc><esc>", "<c-\\><c-n>", "Enter Normal Mode")
+map_key("t", "<C-h>", "<cmd>wincmd h<cr>", "Go to left window")
+map_key("t", "<C-n>", "<cmd>wincmd j<cr>", "Go to lower window")
+map_key("t", "<C-e>", "<cmd>wincmd k<cr>", "Go to upper window")
+map_key("t", "<C-i>", "<cmd>wincmd l<cr>", "Go to right window")
+map_key("t", "<C-/>", "<cmd>close<cr>", "Hide Terminal")
 
 -- Quick save
-vim.keymap.set("n", "<leader>a", ":w<CR>", { noremap = true, silent = true, desc = "Quick save" })
+map_key("n", "<leader>a", ":w<CR>", "Quick save")
