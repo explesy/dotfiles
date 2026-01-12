@@ -1,30 +1,45 @@
-### dotfiles
-- vscode
+# dotfiles
+
+Personal dotfiles and app configs. Most folders are stow-ready; some are notes or app-specific layouts.
+
+## Contents
+
+- aerospace
+- alacritty
+- code
+- docker (notes for fresh install)
+- fish (includes `eza` and `zoxide` integrations)
+- ghostty
+- karabiner
+- lazy_nvim
 - mpv
-- nvim
-- nvim testing
-- lazy vim
-- tmux
 - ranger
-- zsh
 - starship
-- fish
-  - eza -> replacement for ls
-  - zoxide -> replacement for cd 
+- tmux
+- uvim
+- wezterm
 - yazi
 - zellij
-- lunar vim - stow don't work for this one
-- docker - just some notes on fresh install
+- zsh
 
-### install
+## install
+
+From this repo root:
+
+```sh
+stow <folder>
 ```
-stow 
+
+## keybindings
+
+All dotfiles are configured for a Colemak keyboard layout.
+
+`jk -> ne`
+
+## tmux
+
+After a fresh install, reload the config if needed:
+
+```sh
+tmux source ~/.tmux.conf
 ```
-### keybindings
-All dotfiles configured to use with Colemak keyboard layout 
-
-```jk -> ne``` 
-
-### tmux
-After fresh install we may need source config file
-```tmux source ~/.tmur```

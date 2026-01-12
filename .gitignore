@@ -1,2 +1,7 @@
 .DS_Store
 
+# Generated/backup files
+zellij/.config/zellij/config.kdl.bak
+yazi/.config/yazi/*.toml-*
+karabiner/.config/karabiner/automatic_backups/*.json
+fish/.config/fish/fish_variables
