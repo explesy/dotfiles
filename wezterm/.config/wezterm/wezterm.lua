@@ -40,6 +40,14 @@ config.default_prog = { "/opt/homebrew/bin/fish", "-l" }
 config.use_dead_keys = false
 config.window_close_confirmation = "NeverPrompt"
 config.animation_fps = 60
+config.audible_bell = "Disabled"
+config.visual_bell = {
+	fade_in_function = "EaseIn",
+	fade_out_function = "EaseOut",
+	fade_in_duration_ms = 75,
+	fade_out_duration_ms = 75,
+}
+config.default_cursor_style = "SteadyBlock"
 
 -- Key bindings
 config.keys = {
