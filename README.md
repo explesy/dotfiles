@@ -12,6 +12,7 @@ Personal dotfiles and app configs. Most folders are stow-ready; some are notes o
 - ghostty
 - karabiner
 - lazy_nvim
+- iina
 - mpv
 - ranger
 - starship
@@ -42,4 +43,13 @@ After a fresh install, reload the config if needed:
 
 ```sh
 tmux source ~/.tmux.conf
+```
+
+## iina
+
+Keybindings live in `~/Library/Application Support/com.colliderli.iina/input_conf/doc.conf`.
+
+```sh
+stow iina
+defaults write com.colliderli.iina currentInputConfigName -string doc
 ```
