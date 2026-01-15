@@ -67,3 +67,15 @@ map_key("t", "<C-/>", "<cmd>close<cr>", "Hide Terminal")
 
 -- Quick save
 map_key("n", "<leader>a", ":w<CR>", "Quick save")
+
+-- Toggle completion (blink.cmp) for current buffer
+map_key("n", "<leader>uC", function()
+  if vim.b.completion == false then
+    vim.b.completion = nil -- back to default behavior
+    vim.notify("Completion enabled (buffer)", vim.log.levels.INFO)
+  else
+    vim.b.completion = false
+    pcall(function() require("blink.cmp").hide() end)
+    vim.notify("Completion disabled (buffer)", vim.log.levels.WARN)
+  end
+end, "Toggle completion (buffer)")
