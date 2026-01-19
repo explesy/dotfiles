@@ -3,6 +3,13 @@ maximize = true
 window-decoration = none
 shell-integration = fish
 
+# Make Option behave like Alt for terminal apps (Zellij, readline, etc).
+# Using `left` keeps the right Option key free for macOS unicode input.
+macos-option-as-alt = left
+
+# Optional local overrides (not tracked). Create alongside this file if needed.
+config-file = "?config.local"
+
 # Unbind CMD+... keys so they will be forwarded to Zellij
 keybind = cmd+t=unbind
 keybind = cmd+n=unbind
