@@ -45,6 +45,16 @@ After a fresh install, reload the config if needed:
 tmux source ~/.tmux.conf
 ```
 
+Восстановление сессий (tmux-resurrect):
+
+```sh
+# save
+prefix + Ctrl-s
+
+# restore
+prefix + Ctrl-r
+```
+
 ## iina
 
 Keybindings live in `~/Library/Application Support/com.colliderli.iina/input_conf/doc.conf`.
