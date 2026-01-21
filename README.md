@@ -31,6 +31,26 @@ From this repo root:
 stow <folder>
 ```
 
+## fish
+
+Abbreviations:
+
+- `ls` -> `eza`
+- `ll` -> `eza -la --sort=type`
+- `lg` -> `lazygit`
+- `ld` -> `lazydocker`
+- `dcu` -> `docker compose up`
+- `dcd` -> `docker compose down`
+- `clr` -> `clear`
+- `v` -> `nvim .`
+- `av` -> `NVIM_APPNAME=astronvim nvim`
+- `buu` -> `brew update; and brew upgrade`
+
+Functions:
+
+- `yy` -> launch `yazi` and `cd` into its last directory on exit
+- `c` -> copy command output to clipboard
+
 ## keybindings
 
 All dotfiles are configured for a Colemak keyboard layout.
@@ -44,6 +64,13 @@ After a fresh install, reload the config if needed:
 ```sh
 tmux source ~/.tmux.conf
 ```
+
+Pane navigation (Colemak-friendly):
+
+- `prefix` + `h` left
+- `prefix` + `n` down
+- `prefix` + `e` up
+- `prefix` + `i` right
 
 Восстановление сессий (tmux-resurrect):
 

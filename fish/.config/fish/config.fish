@@ -14,9 +14,8 @@ if status is-interactive
     abbr -a dcd docker compose down
     abbr -a clr clear
     abbr -a v nvim .
-    abbr -a nv nvim
     abbr -a av NVIM_APPNAME=astronvim nvim
-    abbr -a buu brew update && brew upgrade
+    abbr -a buu 'brew update; and brew upgrade'
 end
 
 # function to run yazi as yy
