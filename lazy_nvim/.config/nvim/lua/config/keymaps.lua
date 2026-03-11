@@ -17,12 +17,12 @@ map_key({ "n", "x" }, "n", "v:count == 0 ? 'gj' : 'j'", "Move down (Colemak)", {
 map_key({ "n", "x" }, "e", "v:count == 0 ? 'gk' : 'k'", "Move up (Colemak)", { expr = true })
 map_key({ "n", "x" }, "i", "l", "Move right (Colemak)", { remap = false })
 
--- Edit mode
-map_key("n", "t", "i", "Enter insert mode", { remap = false })
-map_key("n", "T", "I", "Enter insert mode at beginning of line", { remap = false })
-
 -- Exit insert mode with double 'nn'
 map_key("i", "nn", "<Esc>", "Exit insert mode with double nn")
+
+-- Insert mode entry on Colemak-friendly keys.
+map_key("n", "t", "i", "Enter insert mode", { remap = false })
+map_key("n", "T", "I", "Enter insert mode at beginning of line", { remap = false })
 
 -- Redo
 map_key("n", "U", "<C-r>", "Redo")
@@ -69,13 +69,11 @@ map_key("t", "<C-/>", "<cmd>close<cr>", "Hide Terminal")
 map_key("n", "<leader>a", ":w<CR>", "Quick save")
 
 -- Toggle completion (blink.cmp) for current buffer
-map_key("n", "<leader>uC", function()
+map_key("n", "<leader>uM", function()
   if vim.b.completion == false then
     vim.b.completion = nil -- back to default behavior
-    vim.notify("Completion enabled (buffer)", vim.log.levels.INFO)
   else
     vim.b.completion = false
     pcall(function() require("blink.cmp").hide() end)
-    vim.notify("Completion disabled (buffer)", vim.log.levels.WARN)
   end
 end, "Toggle completion (buffer)")
