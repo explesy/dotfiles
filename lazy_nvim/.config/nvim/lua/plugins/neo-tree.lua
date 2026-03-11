@@ -1,6 +1,8 @@
 return {
   "nvim-neo-tree/neo-tree.nvim",
   opts = {
+    close_if_last_window = true,
+    popup_border_style = "rounded",
     window = {
       mappings = {
         ["n"] = function()
@@ -13,6 +15,14 @@ return {
         ["i"] = "open", -- открыть узел
         ["y"] = "close_node",
       },
+    },
+    filesystem = {
+      follow_current_file = {
+        enabled = true,
+      },
+      hijack_netrw_behavior = "open_default",
+      -- Safer default for large repos/network mounts: avoid background watcher load.
+      use_libuv_file_watcher = false,
     },
   },
 }
