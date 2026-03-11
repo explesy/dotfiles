@@ -1,40 +1,21 @@
 return {
   {
     "sainnhe/gruvbox-material",
+    lazy = false,
+    priority = 1000,
     config = function()
       vim.g.gruvbox_material_background = "hard"
     end,
   },
-  { "ellisonleao/gruvbox.nvim" },
-  { "sainnhe/edge" },
-  { "sainnhe/sonokai" },
-  {
-    "rebelot/kanagawa.nvim",
-    opts = {
-      theme = "dragon",
-      background = { -- map the value of 'background' option to a theme
-        dark = "dragon", -- try "dragon" because "wave" is default !
-        light = "lotus",
-      },
-    },
-  },
   {
     "catppuccin/nvim",
     name = "catppuccin",
-    lazy = false,
-    priority = 1000,
-  },
-  {
-    "eldritch-theme/eldritch.nvim",
-    lazy = false,
-    priority = 1000,
-    opts = {},
+    enabled = false,
   },
   {
     "LazyVim/LazyVim",
     opts = {
-      -- colorscheme = "gruvbox-material",
-      colorscheme = "catppuccin-macchiato",
+      colorscheme = "gruvbox-material",
       -- colorscheme = "tokyonight-night",
     },
   },
