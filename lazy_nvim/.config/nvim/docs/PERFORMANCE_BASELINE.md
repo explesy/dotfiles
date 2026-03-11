@@ -58,3 +58,18 @@ Re-run this baseline after:
 - adding/removing plugins,
 - changing colorscheme stack,
 - changing `lua/config/lazy.lua` performance settings.
+- significant keymap/plugin-config changes that can affect startup or interaction latency.
+
+Always run 3 startuptime passes and compare warm-run numbers against the current baseline.
+
+## Latest Validation
+
+Validation run (2026-03-11):
+- Run 1: `36.686 ms`
+- Run 2: `46.604 ms`
+- Run 3: `41.315 ms`
+- Average: `41.535 ms` (n=3)
+- Warm avg (last 2): `43.959 ms`
+
+Result:
+- Warm behavior remains in expected range for this setup (same order of magnitude as baseline after cleanup).

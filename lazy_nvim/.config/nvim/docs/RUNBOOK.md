@@ -23,6 +23,12 @@ Note:
    - `Esc Esc` exits terminal insert
    - `Ctrl+h/n/e/i` switches windows
    - `Ctrl+/` closes terminal window
+6. Verify file-navigation scenario (full chain):
+   - open explorer: `Space e` (root) or `Space E` (cwd)
+   - find file: `Space ff`
+   - return via recent: `Space fr`
+   - return via buffers: `Space fb` (or `Space ,`)
+   - tree reveal sanity: `:Neotree reveal`
 
 ## 2) Anti-Freeze Check
 
@@ -60,6 +66,9 @@ After rollback:
 3. Record the rollback reason in `docs/CHANGELOG.md`.
 
 ## 4) Performance Baseline Refresh
+
+Policy:
+- After any significant keymap or plugin/config change, always run 3 `--startuptime` measurements.
 
 1. Run startup measurements (3 runs):
    - `nvim --startuptime /tmp/nvim-startup-1.log -u init.lua -i NONE +qa`

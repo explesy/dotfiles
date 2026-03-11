@@ -2,6 +2,14 @@
 
 ## 2026-03-11
 
+### Plugin workflow audit (no dependency changes)
+- Kept plugin dependencies unchanged (`lazyvim.json` and `lua/plugins/*` dependency set unchanged).
+- Added `docs/PLUGIN_AUDIT.md` with keep/revisit statuses and explicit disable criteria.
+- Added README section "Top 6 Navigation Flow" based on active keys (`neo-tree` + picker).
+- Extended runbook with file-navigation chain validation and startup measurement policy.
+- Extended performance baseline rules: always 3 runs after significant keymap/plugin-config changes.
+- Changelog policy: include only changes that impact startup time or interactive latency.
+
 ### Documentation restructuring
 - Removed one-off incident note file `docs/MARKDOWN_CRASH_FIX.md`.
 - Added `docs/TROUBLESHOOTING.md` for stable issue/mitigation guidance.
