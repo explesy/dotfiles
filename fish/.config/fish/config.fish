@@ -15,7 +15,7 @@ if status is-interactive
     abbr -a clr clear
     abbr -a v nvim .
     abbr -a av NVIM_APPNAME=astronvim nvim
-    abbr -a buu 'brew update; and brew upgrade'
+    abbr -a bu 'brew cu -a; and brew upgrade'
 end
 
 # function to run yazi as yy
@@ -37,3 +37,13 @@ end
 
 # Added by LM Studio CLI (lms)
 set -gx PATH $PATH /Users/doc/.cache/lm-studio/bin
+
+# Added by Antigravity
+fish_add_path /Users/doc/.antigravity/antigravity/bin
+
+# OpenClaw Completion
+source "/Users/doc/.openclaw/completions/openclaw.fish"
+
+# bun
+set --export BUN_INSTALL "$HOME/.bun"
+set --export PATH $BUN_INSTALL/bin $PATH
