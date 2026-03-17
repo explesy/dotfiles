@@ -58,6 +58,7 @@ map_key("x", "K", "'nN'[v:searchforward]", "Previous search result", { expr = tr
 map_key("o", "K", "'nN'[v:searchforward]", "Previous search result", { expr = true })
 
 -- Terminal Mappings
+map_key("n", "<leader>/", function() Snacks.terminal() end, "Toggle Terminal")
 map_key("t", "<esc><esc>", "<c-\\><c-n>", "Enter Normal Mode")
 map_key("t", "<C-h>", "<cmd>wincmd h<cr>", "Go to left window")
 map_key("t", "<C-n>", "<cmd>wincmd j<cr>", "Go to lower window")
