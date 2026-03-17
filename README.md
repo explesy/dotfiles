@@ -31,6 +31,16 @@ From this repo root:
 stow <folder>
 ```
 
+## homebrew
+
+`brew-cask-upgrade` (`brew cu`) - апгрейдит все устаревшие GUI-приложения/бинарники, установленные через Homebrew Cask.
+
+```sh
+brew tap buo/cask-upgrade
+brew cu [CASK]
+brew untap buo/cask-upgrade
+```
+
 ## fish
 
 Abbreviations:
@@ -43,7 +53,6 @@ Abbreviations:
 - `dcd` -> `docker compose down`
 - `clr` -> `clear`
 - `v` -> `nvim .`
-- `av` -> `NVIM_APPNAME=astronvim nvim`
 - `buu` -> `brew update; and brew upgrade`
 
 Functions:
