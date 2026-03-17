@@ -4,7 +4,42 @@
             "complex_modifications": {
                 "rules": [
                     {
-                        "description": "Use right_shift to Change to/from English input. （Need to enable MacOS built in Option: Use the Caps Lock Key to switch to and from ABC.）",
+                        "description": "Swap fn <-> left_control on built-in Apple keyboard only",
+                        "manipulators": [
+                            {
+                                "conditions": [
+                                    {
+                                        "identifiers": [
+                                            {
+                                                "vendor_id": 13652
+                                            }
+                                        ],
+                                        "type": "device_unless"
+                                    }
+                                ],
+                                "from": { "key_code": "left_control" },
+                                "to": [{ "apple_vendor_top_case_key_code": "keyboard_fn" }],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "identifiers": [
+                                            {
+                                                "vendor_id": 13652
+                                            }
+                                        ],
+                                        "type": "device_unless"
+                                    }
+                                ],
+                                "from": { "apple_vendor_top_case_key_code": "keyboard_fn" },
+                                "to": [{ "key_code": "left_control" }],
+                                "type": "basic"
+                            }
+                        ]
+                    },
+                    {
+                        "description": "Right Shift alone switches input language (via Caps Lock)",
                         "manipulators": [
                             {
                                 "from": { "key_code": "right_shift" },
@@ -15,45 +50,7 @@
                         ]
                     },
                     {
-                        "description": "Launch apps by left option + number",
-                        "enabled": false,
-                        "manipulators": [
-                            {
-                                "from": {
-                                    "key_code": "1",
-                                    "modifiers": { "mandatory": ["left_alt"] }
-                                },
-                                "to": [{ "shell_command": "open -a 'WezTerm.app'" }],
-                                "type": "basic"
-                            },
-                            {
-                                "from": {
-                                    "key_code": "2",
-                                    "modifiers": { "mandatory": ["left_alt"] }
-                                },
-                                "to": [{ "shell_command": "open -a 'Firefox.app'" }],
-                                "type": "basic"
-                            },
-                            {
-                                "from": {
-                                    "key_code": "3",
-                                    "modifiers": { "mandatory": ["left_alt"] }
-                                },
-                                "to": [{ "shell_command": "open -a 'Telegram.app'" }],
-                                "type": "basic"
-                            },
-                            {
-                                "from": {
-                                    "key_code": "4",
-                                    "modifiers": { "mandatory": ["left_alt"] }
-                                },
-                                "to": [{ "shell_command": "open -a 'Spotify.app'" }],
-                                "type": "basic"
-                            }
-                        ]
-                    },
-                    {
-                        "description": "Change shift + delete to forward delete (rev 2)",
+                        "description": "Shift + Delete = Forward Delete",
                         "manipulators": [
                             {
                                 "from": {
@@ -64,27 +61,6 @@
                                     }
                                 },
                                 "to": [{ "key_code": "delete_forward" }],
-                                "type": "basic"
-                            }
-                        ]
-                    },
-                    {
-                        "description": "R_CMD to switch input languages, Fixes the issue where R_CMD does not switch input languages when caps lock is on",
-                        "enabled": false,
-                        "manipulators": [
-                            {
-                                "from": {
-                                    "key_code": "right_gui",
-                                    "modifiers": { "optional": ["any"] }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "spacebar",
-                                        "lazy": true,
-                                        "modifiers": ["left_control", "left_alt"],
-                                        "repeat": false
-                                    }
-                                ],
                                 "type": "basic"
                             }
                         ]
@@ -100,16 +76,12 @@
                         "vendor_id": 13652
                     },
                     "ignore": false,
-                    "treat_as_built_in_keyboard": true
+                    "treat_as_built_in_keyboard": false
                 }
             ],
             "name": "Default profile",
             "selected": true,
             "simple_modifications": [
-                {
-                    "from": { "apple_vendor_top_case_key_code": "keyboard_fn" },
-                    "to": [{ "key_code": "left_control" }]
-                },
                 {
                     "from": { "key_code": "caps_lock" },
                     "to": [{ "key_code": "escape" }]
@@ -117,10 +89,6 @@
                 {
                     "from": { "key_code": "escape" },
                     "to": [{ "key_code": "caps_lock" }]
-                },
-                {
-                    "from": { "key_code": "left_control" },
-                    "to": [{ "apple_vendor_top_case_key_code": "keyboard_fn" }]
                 }
             ],
             "virtual_hid_keyboard": { "keyboard_type_v2": "iso" }
