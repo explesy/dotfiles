@@ -17,7 +17,7 @@ on-focused-monitor-changed = ['move-mouse monitor-lazy-center']
 automatically-unhide-macos-hidden-apps = true
 
 # Keep the main workspaces visible even when they are empty.
-persistent-workspaces = ['1', '2', '3', '4', '5', 'M']
+persistent-workspaces = ['1', '2', '3', '4', '5', 'M', 'A']
 
 [key-mapping]
 preset = 'colemak'
@@ -63,6 +63,7 @@ alt-3 = 'workspace 3'
 alt-4 = 'workspace 4'
 alt-5 = 'workspace 5'
 alt-m = 'workspace M'
+alt-a = 'workspace A'
 
 # Send window to workspace
 alt-shift-1 = 'move-node-to-workspace 1'
@@ -71,6 +72,7 @@ alt-shift-3 = 'move-node-to-workspace 3'
 alt-shift-4 = 'move-node-to-workspace 4'
 alt-shift-5 = 'move-node-to-workspace 5'
 alt-shift-m = 'move-node-to-workspace M'
+alt-shift-a = 'move-node-to-workspace A'
 
 # Workspace navigation
 alt-tab = 'workspace-back-and-forth'
@@ -112,9 +114,21 @@ if.app-id = 'com.openai.codex'
 run = 'move-node-to-workspace 4'
 
 [[on-window-detected]]
+if.app-id = 'com.anthropic.claudefordesktop'
+run = 'move-node-to-workspace 4'
+
+[[on-window-detected]]
 if.app-id = 'com.openai.atlas'
 run = 'move-node-to-workspace 5'
 
 [[on-window-detected]]
 if.app-id = 'com.spotify.client'
 run = 'move-node-to-workspace M'
+
+[[on-window-detected]]
+if.app-id = 'com.microsoft.teams2'
+run = 'move-node-to-workspace A'
+
+[[on-window-detected]]
+if.app-id = 'com.microsoft.teams'
+run = 'move-node-to-workspace A'

@@ -1,0 +1,48 @@
+;; Kanata config
+;; Stow target: ~/.config/kanata/kanata.kbd
+;;
+;; Устройства:
+;;   Apple Internal Keyboard / Trackpad  (hash: 0xD4359520DA829EC8)
+;;   AULA-F75 3.0 KB                     (добавить hash когда подключена)
+;;
+;; Правила:
+;;   caps ↔ escape                        (обе клавиатуры)
+;;   fn → lctl                            (только встроенная — AULA не шлёт fn)
+;;   right_shift tap → caps_lock          (переключение языка)
+;;   shift + backspace → forward delete
+
+(defcfg
+  process-unmapped-keys yes
+  macos-dev-names-include (
+    "Apple Internal Keyboard / Trackpad"
+  )
+)
+
+(defsrc
+  esc
+  caps
+  rsft
+  bspc
+  fn
+)
+
+(defvar
+  tap-timeout  200
+  hold-timeout 200
+)
+
+(defalias
+  ;; Right Shift: hold = shift, tap alone = caps_lock (переключение языка)
+  rs (tap-hold $tap-timeout $hold-timeout caps rsft)
+
+  ;; Backspace: обычный = bspc, с shift = forward delete
+  bk (fork del bspc (lsft rsft))
+)
+
+(deflayer default
+  caps   ;; esc  → caps_lock
+  esc    ;; caps → escape
+  @rs    ;; rsft → tap-hold (tap=caps, hold=shift)
+  @bk    ;; bspc → fork (shift+bspc=del, plain=bspc)
+  lctl   ;; fn   → lctl
+)
