@@ -4,6 +4,7 @@ if status is-interactive
     set -g fish_greeting # disable greeting message
     set -gx EDITOR nvim
     set -gx PATH /opt/homebrew/bin $PATH
+    fish_add_path $HOME/.local/bin
     set -x HOMEBREW_NO_AUTO_UPDATE 1
 
     abbr -a ls eza
@@ -47,3 +48,15 @@ source "/Users/doc/.openclaw/completions/openclaw.fish"
 # bun
 set --export BUN_INSTALL "$HOME/.bun"
 set --export PATH $BUN_INSTALL/bin $PATH
+
+# Project Dashboard (dd)
+function dd
+    set pids (lsof -ti :8787)
+    if test -n "$pids"
+        echo "Port 8787 is busy (PID $pids). Run: kill $pids"
+        return 1
+    end
+    cd /Users/doc/notes/dd && uv run python serve.py --port 8787
+end
+abbr -a ddr 'cd /Users/doc/notes/dd && uv run python refresh.py'
+abbr -a ddw 'cd /Users/doc/notes/dd && uv run python refresh.py --watch'
