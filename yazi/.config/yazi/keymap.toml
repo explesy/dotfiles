@@ -1,6 +1,6 @@
-# A TOML linter such as https://taplo.tamasfe.dev/ can use this schema to validate your config.
-# If you encounter any issues, please make an issue at https://github.com/yazi-rs/schemas.
-"$schema" = "https://yazi-rs.github.io/schemas/keymap.json"
+# A TOML linter such as https://github.com/tombi-toml/tombi can use this schema to validate your config.
+# If you encounter any problems, please make an issue at https://github.com/yazi-rs/schemas.
+#:schema https://yazi-rs.github.io/schemas/keymap.json
 
 [mgr]
 
@@ -34,7 +34,7 @@ keymap = [
 
 	# Navigation
 	{ on = "h", run = "leave", desc = "Go back to the parent directory" },
-	{ on = "i", run = "enter", desc = "Enter the child directory" },
+	{ on = "i", run = "plugin smart-enter", desc = "Enter the child directory, or open the file" },
 
 	{ on = "<Left>",  run = "leave",    desc = "Go back to the parent directory" },
 	{ on = "<Right>", run = "enter",    desc = "Enter the child directory" },
@@ -96,6 +96,7 @@ keymap = [
 
 	# Filter
 	{ on = "f", run = "filter --smart", desc = "Filter files" },
+	{ on = "F", run = "plugin jump-to-char", desc = "Jump to a file by first character" },
 
 	# Find
 	{ on = "/", run = "find --smart",            desc = "Find next file" },

@@ -1,5 +1,14 @@
-[plugin]
-deps = []
+[[plugin.deps]]
+use = "yazi-rs/plugins:smart-enter"
+rev = "ac82af3"
+hash = "187cc58ba7ac3befd49c342129e6f1b6"
 
-[flavor]
-deps = [{ use = "bennyyip/gruvbox-dark", rev = "c204853" }]
+[[plugin.deps]]
+use = "yazi-rs/plugins:jump-to-char"
+rev = "ac82af3"
+hash = "7a4b4237223aaa94e589d1c01a23542a"
+
+[[flavor.deps]]
+use = "bennyyip/gruvbox-dark"
+rev = "c204853"
+hash = ""
