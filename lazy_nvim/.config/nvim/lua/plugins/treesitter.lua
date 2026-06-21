@@ -23,9 +23,9 @@ return {
   {
     "nvim-treesitter/nvim-treesitter",
     opts = function(_, opts)
-      disable_lang(opts, "highlight", { "lua", "markdown", "markdown_inline" })
-      disable_lang(opts, "indent", { "lua", "markdown" })
-      disable_lang(opts, "folds", { "lua", "markdown", "markdown_inline" })
+      disable_lang(opts, "highlight", { "lua" })
+      disable_lang(opts, "indent", { "lua" })
+      disable_lang(opts, "folds", { "lua" })
     end,
   },
 }
