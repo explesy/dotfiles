@@ -132,3 +132,7 @@ run = 'move-node-to-workspace A'
 [[on-window-detected]]
 if.app-id = 'com.microsoft.teams'
 run = 'move-node-to-workspace A'
+
+[[on-window-detected]]
+if.app-id = 'com.google.antigravity'
+run = 'move-node-to-workspace A'
