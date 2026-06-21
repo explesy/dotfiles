@@ -60,3 +60,6 @@ function dd
 end
 abbr -a ddr 'cd /Users/doc/notes/dd && uv run python refresh.py'
 abbr -a ddw 'cd /Users/doc/notes/dd && uv run python refresh.py --watch'
+
+# Added by Antigravity
+fish_add_path /Users/doc/.antigravity/antigravity/bin
