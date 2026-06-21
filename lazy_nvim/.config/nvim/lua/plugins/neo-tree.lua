@@ -5,6 +5,9 @@ return {
     popup_border_style = "rounded",
     window = {
       mappings = {
+        ["<Tab>"] = function()
+          vim.cmd("wincmd l")
+        end, -- перейти в правое окно из дерева, когда Ctrl+i приходит как Tab
         ["n"] = function()
           vim.cmd("normal! j")
         end, -- перемещение вниз по узлам
