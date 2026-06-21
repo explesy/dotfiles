@@ -47,6 +47,9 @@ Note: `Ctrl+i` can be interpreted as `Tab` in some terminals. In this config it 
 
 - `Space a` -> quick save (`:w`)
 - `Space uM` -> toggle completion in current buffer
+- `Space /` -> terminal
+- `Space sg` -> grep in root dir
+- `Space sG` -> grep in current cwd
 
 ## Top 6 Navigation Flow
 

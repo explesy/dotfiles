@@ -58,6 +58,7 @@ map_key("x", "K", "'nN'[v:searchforward]", "Previous search result", { expr = tr
 map_key("o", "K", "'nN'[v:searchforward]", "Previous search result", { expr = true })
 
 -- Terminal Mappings
+-- Keep `Space /` for terminal; grep lives on `Space sg` / `Space sG`.
 map_key("n", "<leader>/", function() Snacks.terminal() end, "Toggle Terminal")
 map_key("t", "<esc><esc>", "<c-\\><c-n>", "Enter Normal Mode")
 map_key("t", "<C-h>", "<cmd>wincmd h<cr>", "Go to left window")
