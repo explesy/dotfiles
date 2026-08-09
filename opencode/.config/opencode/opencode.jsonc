@@ -10,7 +10,7 @@
 
   // === Default agent / depth ===
   "default_agent": "build",
-  "subagent_depth": 2,
+  "subagent_depth": 1,
 
   // === Quality of life ===
   // Автоформатирование изменённых файлов
