@@ -20,7 +20,7 @@ Personal dotfiles and app configs. Most folders are stow-ready; some are notes o
 - ranger
 - starship
 - tmux
-- uvim
+- userscripts
 - wezterm
 - yazi
 - zellij
@@ -69,12 +69,18 @@ Current local setup:
 
 - `i` -> smart enter: enter a directory or open the hovered file
 - `F` -> jump to next file by first character
+- `c`+`a` -> archive selected files (via `compress` plugin):
+  - `c a a` archive, `c a p` archive with password, `c a h` password + header
+    encryption, `c a l` custom compression level, `c a u` password + header + level
 - PDF preview works via `poppler` (`pdftoppm`)
+- flavor is force-locked to `gruvbox-dark` in both light and dark mode
+  (`theme.toml`)
 
 Package-managed plugins:
 
 - `yazi-rs/plugins:smart-enter`
 - `yazi-rs/plugins:jump-to-char`
+- `KKV9/compress`
 
 If plugins need to be restored on a fresh machine:
 
@@ -103,6 +109,10 @@ Pane navigation (Colemak-friendly):
 - `prefix` + `e` up
 - `prefix` + `i` right
 
+`allow-passthrough` is enabled so Yazi can show image previews inside tmux;
+`TERM` (`TERM_PROGRAM`, `TERM_PROGRAM_VERSION`) refreshes from the outer
+terminal on every new connection (via `update-environment`).
+
 Восстановление сессий (tmux-resurrect):
 
 ```sh
@@ -128,6 +138,12 @@ This folder stores local notes about the Codex desktop setup and MCP inventory.
 
 - `codex/README.md` -> high-level overview of the local MCP stack
 - `codex/mcp.md` -> detailed inventory and runbook
+
+## userscripts
+
+Userscripts for browser extensions (Violentmonkey/Tampermonkey):
+
+- `metube-youtube.user.js` -> MeTube YouTube downloader improvements
 
 ## opencode
 
