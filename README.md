@@ -16,6 +16,7 @@ Personal dotfiles and app configs. Most folders are stow-ready; some are notes o
 - lazy_nvim
 - iina
 - mpv
+- opencode
 - ranger
 - starship
 - tmux
@@ -127,3 +128,8 @@ This folder stores local notes about the Codex desktop setup and MCP inventory.
 
 - `codex/README.md` -> high-level overview of the local MCP stack
 - `codex/mcp.md` -> detailed inventory and runbook
+
+## opencode
+
+Глобальная конфигурация OpenCode (модели, агенты, permissions, TUI).
+Подробности — в `opencode/README.md`.

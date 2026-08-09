@@ -1,0 +1,201 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+
+  // === Models ===
+  // Основная рабочая модель
+  "model": "opencode-go/minimax-m3",
+
+  // Для заголовков, summary и прочей мелочёвки
+  "small_model": "opencode-go/deepseek-v4-flash",
+
+  // === Default agent / depth ===
+  "default_agent": "build",
+  "subagent_depth": 2,
+
+  // === Quality of life ===
+  // Автоформатирование изменённых файлов
+  "formatter": true,
+
+  // Включаем LSP, чтобы агент получал реальные diagnostics,
+  // а не только "я думаю, код правильный"
+  "lsp": true,
+
+  // Не шарим сессии наружу по умолчанию
+  "share": "disabled",
+
+  // Не обновляемся автоматически — пусть спрашивает
+  "autoupdate": "notify",
+
+  // Логи: INFO по умолчанию, DEBUG — через OPENCODE_LOG_LEVEL=debug
+  "logLevel": "INFO",
+
+  // === Server (opencode serve / opencode web) ===
+  "server": {
+    "port": 4096,
+    "hostname": "127.0.0.1"
+  },
+
+  // === Provider tuning ===
+  "provider": {
+    "opencode-go": {
+      "options": {
+        "timeout": 600000,
+        "chunkTimeout": 30000
+      }
+    },
+    "openai": {
+      "options": {
+        "timeout": 600000,
+        "chunkTimeout": 30000
+      },
+      "models": {
+        "gpt-5.6-terra": {
+          "variants": {
+            "high": {
+              "reasoningEffort": "high",
+              "textVerbosity": "low"
+            },
+            "low": {
+              "reasoningEffort": "low",
+              "textVerbosity": "low"
+            }
+          }
+        }
+      }
+    }
+  },
+
+  // === Compaction ===
+  // Сжимаем длинный контекст, чтобы не упираться в окно
+  "compaction": {
+    "auto": true,
+    "prune": true,
+    "reserved": 10000
+  },
+
+  // === Tool output limits ===
+  // Большие выводы (тесты, дампы, логи) ужимаем,
+  // чтобы не съедать контекст одним tool result
+  "tool_output": {
+    "max_lines": 2000,
+    "max_bytes": 51200
+  },
+
+  // === Watcher ignore ===
+  // Не индексируем тяжёлые/шумные директории
+  "watcher": {
+    "ignore": [
+      "node_modules/**",
+      "dist/**",
+      "build/**",
+      ".next/**",
+      ".turbo/**",
+      "target/**",
+      ".venv/**",
+      "__pycache__/**",
+      ".git/**"
+    ]
+  },
+
+  // === Global permissions ===
+  "permission": {
+    "bash": {
+      // По умолчанию все команды разрешены
+      "*": "allow",
+
+      // === Деструктивные операции ===
+      "sudo *": "ask",
+      "rm -rf *": "ask",
+      "rm -r *": "ask",
+      "rm -fr *": "ask",
+      "rm *": "ask",
+      "dd *": "ask",
+      "mkfs *": "ask",
+      ":(){:|:&};:": "ask",
+
+      // === Права и владельцы ===
+      "chmod *": "ask",
+      "chown *": "ask",
+      "chgrp *": "ask",
+
+      // === Git, опасное ===
+      "git push *": "ask",
+      "git push": "ask",
+      "git reset --hard *": "ask",
+      "git clean *": "ask",
+      "git branch -D *": "ask",
+      "git checkout -- *": "ask",
+      "git stash drop *": "ask",
+      "git remote remove *": "ask",
+
+      // === Сеть и установка кода ===
+      "curl *": "ask",
+      "wget *": "ask",
+      "npm install *": "ask",
+      "npm i *": "ask",
+      "pnpm add *": "ask",
+      "yarn add *": "ask",
+      "pip install *": "ask",
+      "pip3 install *": "ask",
+      "brew install *": "ask",
+
+      // === Убийство процессов ===
+      "pkill *": "ask",
+      "killall *": "ask",
+      "kill -9 *": "ask",
+
+      // === Секреты через bash обходят read-deny для .env ===
+      "cat *.env": "ask",
+      "cat *.env.*": "ask",
+      "head *.env": "ask",
+      "tail *.env": "ask",
+      "less *.env": "ask",
+      "more *.env": "ask",
+      "grep *.env": "ask",
+      "rg *.env": "ask"
+    },
+
+    // Секреты по умолчанию не читаем напрямую
+    "read": {
+      "*": "allow",
+      "*.env": "deny",
+      "*.env.*": "deny"
+    },
+
+    // Спрашиваем перед скачиванием чего-либо из сети
+    "webfetch": "ask",
+
+    // Любой выход за пределы рабочей директории — спрашиваем
+    "external_directory": "ask",
+
+    // Сабагентов по умолчанию нельзя; cheap-explore — можно всем
+    // (build переопределяет это своим task-объектом и остаётся без изменений)
+    "task": {
+      "*": "deny",
+      "cheap-explore": "allow"
+    }
+  },
+
+  // === Build agent ===
+  // Агенты `cheap-explore`, `coder`, `reviewer`, `hard-review`
+  // и команды `/review`, `/hard`, `/commit`, `/simplify`
+  // лежат в .md файлах в agents/ и commands/.
+  "agent": {
+    "build": {
+      "model": "opencode-go/minimax-m3",
+
+      "permission": {
+        "task": {
+          "*": "deny",
+
+          "cheap-explore": "allow",
+          "coder": "allow",
+          "reviewer": "allow",
+
+          // Дорогих моделей нельзя тратить незаметно
+          "hard-review": "ask"
+        }
+      }
+    }
+  }
+}

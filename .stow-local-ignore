@@ -1,0 +1,7 @@
+# Ignore generated/plugin state when stowing
+# Keeps the opencode package config-only; node_modules and lockfiles
+# stay on disk but are not part of the symlink.
+opencode/\.config/opencode/node_modules
+opencode/\.config/opencode/package\.json
+opencode/\.config/opencode/bun\.lock
+opencode/\.config/opencode/package-lock\.json
