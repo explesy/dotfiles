@@ -4,47 +4,56 @@
             "complex_modifications": {
                 "rules": [
                     {
-                        "description": "Swap fn <-> left_control on built-in Apple keyboard only",
-                        "manipulators": [
-                            {
-                                "conditions": [
-                                    {
-                                        "identifiers": [
-                                            {
-                                                "vendor_id": 13652
-                                            }
-                                        ],
-                                        "type": "device_unless"
-                                    }
-                                ],
-                                "from": { "key_code": "left_control" },
-                                "to": [{ "apple_vendor_top_case_key_code": "keyboard_fn" }],
-                                "type": "basic"
-                            },
-                            {
-                                "conditions": [
-                                    {
-                                        "identifiers": [
-                                            {
-                                                "vendor_id": 13652
-                                            }
-                                        ],
-                                        "type": "device_unless"
-                                    }
-                                ],
-                                "from": { "apple_vendor_top_case_key_code": "keyboard_fn" },
-                                "to": [{ "key_code": "left_control" }],
-                                "type": "basic"
-                            }
-                        ]
-                    },
-                    {
-                        "description": "Right Shift alone switches input language (via Caps Lock)",
+                        "description": "Right Shift alone switches directly between RussianWin and Colemak",
                         "manipulators": [
                             {
                                 "from": { "key_code": "right_shift" },
                                 "to": [{ "key_code": "right_shift" }],
-                                "to_if_alone": [{ "key_code": "caps_lock" }],
+                                "to_if_alone": [
+                                    {
+                                        "select_input_source": {
+                                            "input_source_id": "^org\\.unknown\\.keylayout\\.Colemak$"
+                                        }
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "input_source_if",
+                                        "input_sources": [
+                                            {
+                                                "input_source_id": "^com\\.apple\\.keylayout\\.RussianWin$"
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "parameters": {
+                                    "basic.to_if_alone_timeout_milliseconds": 1000
+                                },
+                                "type": "basic"
+                            },
+                            {
+                                "from": { "key_code": "right_shift" },
+                                "to": [{ "key_code": "right_shift" }],
+                                "to_if_alone": [
+                                    {
+                                        "select_input_source": {
+                                            "input_source_id": "^com\\.apple\\.keylayout\\.RussianWin$"
+                                        }
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "input_source_if",
+                                        "input_sources": [
+                                            {
+                                                "input_source_id": "^org\\.unknown\\.keylayout\\.Colemak$"
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "parameters": {
+                                    "basic.to_if_alone_timeout_milliseconds": 1000
+                                },
                                 "type": "basic"
                             }
                         ]
