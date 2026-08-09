@@ -8,6 +8,11 @@ use = "yazi-rs/plugins:jump-to-char"
 rev = "ac82af3"
 hash = "7a4b4237223aaa94e589d1c01a23542a"
 
+[[plugin.deps]]
+use = "KKV9/compress"
+rev = "e60e122"
+hash = "fbaf0adc8efc59555b748d36aab62d40"
+
 [[flavor.deps]]
 use = "bennyyip/gruvbox-dark"
 rev = "c204853"
