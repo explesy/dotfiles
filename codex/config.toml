@@ -37,6 +37,7 @@ args = []
 [mcp_servers.MCP_DOCKER]
 command = "docker"
 args = ["mcp", "gateway", "run"]
+enabled = false
 
 [mcp_servers.ssh-laptop]
 command = "node"
@@ -109,7 +110,7 @@ hide_full_access_warning = true
 
 [projects]
 [projects.'/Users/doc']
-trust_level = 'trusted'
+trust_level = 'untrusted'
 
 [projects.'/Users/doc/.codex']
 trust_level = 'untrusted'
@@ -136,7 +137,7 @@ trust_level = 'trusted'
 trust_level = 'trusted'
 
 [projects.'/Users/doc/Downloads']
-trust_level = 'trusted'
+trust_level = 'untrusted'
 
 [projects.'/Users/doc/dotfiles']
 trust_level = 'trusted'
@@ -184,7 +185,7 @@ trust_level = "trusted"
 trust_level = "trusted"
 
 [projects."/"]
-trust_level = "trusted"
+trust_level = "untrusted"
 
 [projects."/Users/doc/notes/insevi"]
 trust_level = "trusted"
