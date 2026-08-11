@@ -1,0 +1,4 @@
+interface:
+  display_name: "train-service Vertical Slice"
+  short_description: "Build end-to-end service features"
+  default_prompt: "Use $train-service-vertical-slice to implement a train-service feature across contracts, backend, bot or web, docs, and checks without breaking the alpha contour."

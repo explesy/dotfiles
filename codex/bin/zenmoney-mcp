@@ -1,0 +1,5 @@
+#!/bin/zsh
+set -euo pipefail
+
+export ZENMONEY_TOKEN="$(security find-generic-password -a "$(id -un)" -s "codex.zenmoney.token" -w)"
+exec npx -y zenmoney-mcp "$@"

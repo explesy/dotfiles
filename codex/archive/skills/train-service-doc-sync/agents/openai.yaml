@@ -1,0 +1,4 @@
+interface:
+  display_name: "train-service Doc Sync"
+  short_description: "Sync train-service docs"
+  default_prompt: "Use $train-service-doc-sync to review or update the train-service docs for drift against the current alpha contour and advisor roadmap."

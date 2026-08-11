@@ -1,0 +1,4 @@
+interface:
+  display_name: "train-service Advisor Rollout"
+  short_description: "Build the advisor safely"
+  default_prompt: "Use $train-service-advisor-rollout to design or implement a train-service advisor change with deterministic validation, compact context, and correct provider policy."

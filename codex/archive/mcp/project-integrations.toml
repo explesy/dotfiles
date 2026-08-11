@@ -1,0 +1,12 @@
+# Reference only: this file is not loaded by Codex.
+# Archived 2026-08-12 because these integrations were already disabled.
+
+[mcp_servers.train-service-db]
+command = "npx"
+args = ["-y", "@ahmetkca/mcp-server-postgres", "<DATABASE_URL supplied outside this file>"]
+enabled = false
+
+[mcp_servers.monty-data]
+command = "uv"
+args = ["run", "--project", "/Users/doc/notes/monty", "python", "/Users/doc/notes/monty/scripts/mcp/monty_data_server.py"]
+enabled = false

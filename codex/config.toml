@@ -1,0 +1,328 @@
+model = "gpt-5.6-terra"
+model_reasoning_effort = "medium"
+model_verbosity = "medium"
+personality = 'pragmatic'
+web_search = 'live'
+plan_mode_reasoning_effort = "high"
+review_model = "gpt-5.6-terra"
+tool_output_token_limit = 8000
+sandbox_mode = "workspace-write"
+approval_policy = "on-request"
+
+notify = ["/Users/doc/.codex/computer-use/Codex Computer Use.app/Contents/SharedSupport/SkyComputerUseClient.app/Contents/MacOS/SkyComputerUseClient", "turn-ended"]
+service_tier = "default"
+
+[features]
+apps = true
+multi_agent = true
+shell_snapshot = true
+steer = true
+unified_exec = true
+memories = true
+js_repl = false
+
+[tools]
+view_image = true
+
+[agents]
+enabled = true
+max_concurrent_threads_per_session = 2
+
+[mcp_servers]
+
+[mcp_servers.github]
+command = "/Users/doc/.codex/bin/github-mcp-server-gh-auth.zsh"
+args = []
+
+[mcp_servers.MCP_DOCKER]
+command = "docker"
+args = ["mcp", "gateway", "run"]
+
+[mcp_servers.ssh-laptop]
+command = "node"
+args = ["/Users/doc/Dev/ssh-mcp/build/index.js", "--host=192.168.1.40", "--port=22", "--user=doc", "--key=/Users/doc/.ssh/id_ed25519_creo_mcp"]
+
+[mcp_servers.notes-git]
+command = "docker"
+args = ["run", "-i", "--rm", "-v", "/Users/doc/notes:/Users/doc/notes", "mcp/git"]
+
+[mcp_servers.context7]
+command = "docker"
+args = ["run", "-i", "--rm", "mcp/context7"]
+
+[mcp_servers.myshows-db]
+command = "docker"
+args = ["run", "-i", "--rm", "-v", "/Users/doc/notes/series/data:/data", "-e", "DATABASE_URL=sqlite+aiosqlite:///data/myshows_watch_history.db", "souhardyak/mcp-db-server"]
+
+[mcp_servers.atlas-docs]
+command = "docker"
+args = ["run", "-i", "--rm", "-e", "ATLAS_API_URL", "mcp/atlas-docs"]
+
+[mcp_servers.atlas-docs.env]
+ATLAS_API_URL = "https://atlas.cartograph.app/api"
+
+[mcp_servers.notes-fs]
+command = "docker"
+args = ["run", "-i", "--rm", "-e", "ENABLE_ROOTS=false", "-e", "ALLOW_WRITE=true", "-v", "/Users/doc/notes:/Users/doc/notes", "mcp/rust-mcp-filesystem", "/Users/doc/notes"]
+
+[mcp_servers.playwright]
+command = "docker"
+args = ["run", "-i", "--rm", "mcp/playwright"]
+
+[mcp_servers.zenmoney]
+command = "/Users/doc/dotfiles/codex/bin/zenmoney-mcp"
+args = []
+enabled = false
+
+[mcp_servers.node_repl]
+args = []
+command = "/Applications/ChatGPT.app/Contents/Resources/cua_node/bin/node_repl"
+startup_timeout_sec = 120
+
+[mcp_servers.node_repl.env]
+NODE_REPL_NATIVE_PIPE_CONNECT_TIMEOUT_MS = "1000"
+NODE_REPL_NODE_MODULE_DIRS = "/Applications/ChatGPT.app/Contents/Resources/cua_node/lib/node_modules"
+NODE_REPL_NODE_PATH = "/Applications/ChatGPT.app/Contents/Resources/cua_node/bin/node"
+NODE_REPL_TRUSTED_CODE_PATHS = "/Users/doc/.codex:/Applications/ChatGPT.app/Contents/Resources/cua_node/lib/node_modules"
+CODEX_HOME = "/Users/doc/.codex"
+NODE_REPL_TRUSTED_BROWSER_CLIENT_SHA256S = "8e86beb821b9afc846211798e0113bd4b9e79312dfcd135eb447bdb154f64071"
+BROWSER_USE_AVAILABLE_BACKENDS = "chrome,iab"
+NODE_REPL_INSTRUCTIONS_USE_CASE_BROWSER = "Control the in-app browser in conjunction with the Browser Plugin."
+NODE_REPL_INSTRUCTIONS_USE_CASE_CHROME = "Control the Chrome browser in conjunction with the Chrome Plugin. Prefer this method of controlling Chrome over alternatives (such as Computer Use) unless the user explicitly mentions an alternative."
+NODE_REPL_INSTRUCTIONS_USE_CASE_COMPUTER_USE = "Control desktop apps on macOS through Computer Use."
+BROWSER_USE_CODEX_APP_BUILD_FLAVOR = "prod"
+BROWSER_USE_CODEX_APP_VERSION = "26.803.61601"
+SKY_CUA_SERVICE_PATH = "/Users/doc/.codex/computer-use/Codex Computer Use.app"
+CODEX_CLI_PATH = "/Applications/ChatGPT.app/Contents/Resources/codex"
+
+[mcp_servers.computer-use]
+command = "./Codex Computer Use.app/Contents/SharedSupport/SkyComputerUseClient.app/Contents/MacOS/SkyComputerUseClient"
+args = ["mcp"]
+cwd = "."
+enabled = false
+
+[notice]
+hide_full_access_warning = true
+
+[notice.model_migrations]
+'gpt-5.2' = 'gpt-5.3-codex'
+
+[projects]
+[projects.'/Users/doc']
+trust_level = 'trusted'
+
+[projects.'/Users/doc/.codex']
+trust_level = 'untrusted'
+
+[projects.'/Users/doc/.openclaw/telegram']
+trust_level = 'untrusted'
+
+[projects.'/Users/doc/Dev/django-webapps']
+trust_level = 'trusted'
+
+[projects.'/Users/doc/Dev/kanfuhrer']
+trust_level = 'trusted'
+
+[projects.'/Users/doc/Dev/self_site']
+trust_level = 'trusted'
+
+[projects.'/Users/doc/Dev/telegram-todo-bot']
+trust_level = 'trusted'
+
+[projects.'/Users/doc/Dev/ts_codex']
+trust_level = 'trusted'
+
+[projects.'/Users/doc/Documents/dev_docs/car']
+trust_level = 'trusted'
+
+[projects.'/Users/doc/Downloads']
+trust_level = 'trusted'
+
+[projects.'/Users/doc/dotfiles']
+trust_level = 'trusted'
+
+[projects.'/Users/doc/notes/train-service']
+trust_level = 'trusted'
+
+[projects.'/Users/doc/notes']
+trust_level = 'untrusted'
+
+[projects."/Users/doc/notes/monty"]
+trust_level = "trusted"
+
+[projects."/Users/doc/notes/bloshka"]
+trust_level = "trusted"
+
+[projects."/Users/doc/notes/airsrv"]
+trust_level = "trusted"
+
+[projects."/Users/doc/notes/ruler"]
+trust_level = "trusted"
+
+[projects."/Users/doc/notes/train"]
+trust_level = "trusted"
+
+[projects."/Users/doc/notes/mediadistri"]
+trust_level = "trusted"
+
+[projects."/Users/doc/notes/memo_down"]
+trust_level = "trusted"
+
+[projects."/Users/doc/notes/hdrezka"]
+trust_level = "trusted"
+
+[projects."/Users/doc/notes/16line"]
+trust_level = "trusted"
+
+[projects."/Users/doc/Documents/jobcenter"]
+trust_level = "trusted"
+
+[projects."/Users/doc/notes/jobcenter"]
+trust_level = "trusted"
+
+[projects."/Users/doc/notes/roman_list"]
+trust_level = "trusted"
+
+[projects."/"]
+trust_level = "trusted"
+
+[projects."/Users/doc/notes/insevi"]
+trust_level = "trusted"
+
+[projects."/Users/doc/Documents/Codex/2026-05-19/users-doc-documents-002-pdf"]
+trust_level = "trusted"
+
+[projects."/Users/doc/notes/hi_core/test/megaplay"]
+trust_level = "trusted"
+
+[projects."/Users/doc/notes/hi_core/test/back"]
+trust_level = "trusted"
+
+[projects."/Users/doc/Documents/Codex/2026-05-27/https-rutracker-org"]
+trust_level = "trusted"
+
+[projects."/Users/doc/notes/roman-ac-01"]
+trust_level = "trusted"
+
+[projects."/Users/doc/notes/hypermedia"]
+trust_level = "trusted"
+
+[projects."/Users/doc/notes/roman-mtv-01"]
+trust_level = "trusted"
+
+[plugins."github@openai-curated"]
+enabled = true
+
+[plugins."superpowers@openai-curated"]
+enabled = false
+
+[plugins."documents@openai-primary-runtime"]
+enabled = true
+
+[plugins."spreadsheets@openai-primary-runtime"]
+enabled = true
+
+[plugins."presentations@openai-primary-runtime"]
+enabled = true
+
+[plugins."codex-security@openai-curated"]
+enabled = true
+
+[plugins."pdf@openai-primary-runtime"]
+enabled = true
+
+[plugins."template-creator@openai-primary-runtime"]
+enabled = true
+
+[plugins."visualize@openai-bundled"]
+enabled = true
+
+[plugins."browser@openai-bundled"]
+enabled = true
+
+[plugins."sites@openai-bundled"]
+enabled = true
+
+[plugins."chrome@openai-bundled"]
+enabled = true
+
+[plugins."computer-use@openai-bundled"]
+enabled = true
+
+[marketplaces.openai-bundled]
+last_updated = "2026-08-11T21:54:49Z"
+source_type = "local"
+source = "/Users/doc/.codex/.tmp/bundled-marketplaces/openai-bundled"
+
+[marketplaces.openai-primary-runtime]
+last_updated = "2026-08-06T11:43:02Z"
+source_type = "local"
+source = "/Users/doc/.cache/codex-runtimes/codex-primary-runtime/plugins/openai-primary-runtime"
+
+[tui.model_availability_nux]
+"gpt-5.5" = 3
+
+[desktop]
+appearanceTheme = "dark"
+appearanceLightCodeThemeId = "everforest"
+appearanceDarkCodeThemeId = "codex"
+sansFontSize = 16
+codeFontSize = 13
+usePointerCursors = true
+dictationDictionary = []
+followUpQueueMode = "steer"
+preventSleepWhileRunning = true
+keepRemoteControlAwakeWhilePluggedIn = true
+notifications-turn-mode = "always"
+notifications-permissions-enabled = true
+selected-avatar-id = "seedy"
+conversationDetailMode = "STEPS_COMMANDS"
+dock-icon-preference = "codex-system"
+
+[desktop.appearanceLightChromeTheme]
+accent = "#93b259"
+contrast = 45
+ink = "#5c6a72"
+opaqueWindows = false
+surface = "#fdf6e3"
+
+[desktop.appearanceLightChromeTheme.fonts]
+
+[desktop.appearanceLightChromeTheme.semanticColors]
+diffAdded = "#8da101"
+diffRemoved = "#f85552"
+skill = "#df69ba"
+
+[desktop.appearanceDarkChromeTheme]
+accent = "#0169cc"
+contrast = 61
+ink = "#fcfcfc"
+opaqueWindows = true
+surface = "#111111"
+
+[desktop.appearanceDarkChromeTheme.fonts]
+
+[desktop.appearanceDarkChromeTheme.semanticColors]
+diffAdded = "#00a240"
+diffRemoved = "#e02e2a"
+skill = "#b06dff"
+
+[desktop.open-in-target-preferences]
+global = "fileManager"
+
+[desktop.open-in-target-preferences.perPath]
+"/Users/doc/Dev/self_site" = "fileManager"
+"/Users/doc/notes/airsrv" = "zed"
+"/Users/doc/notes/mediadistri" = "fileManager"
+"/Users/doc/notes/rshp" = "zed"
+"/Users/doc/notes/train" = "zed"
+"/Users/doc/notes/train-service" = "fileManager"
+
+[memories]
+generate_memories = true
+use_memories = true
+
+[shell_environment_policy.set]
+BROWSER_USE_AVAILABLE_BACKENDS = "chrome,iab"
+NODE_REPL_TRUSTED_BROWSER_CLIENT_SHA256S = "8e86beb821b9afc846211798e0113bd4b9e79312dfcd135eb447bdb154f64071"
+NODE_REPL_TRUSTED_CODE_PATHS = "/Users/doc/.codex:/Applications/ChatGPT.app/Contents/Resources/cua_node/lib/node_modules"

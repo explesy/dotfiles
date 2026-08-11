@@ -1,6 +1,6 @@
 # MCP Inventory And Runbook
 
-Дата: 2026-03-19
+Дата: 2026-08-12
 
 ## Назначение
 
@@ -159,6 +159,27 @@ Scope:
 - `playwright` уже живет и внутри `MCP_DOCKER`, но отдельный custom server лучше виден в UI `Codex app`;
 - это удобнее для постоянного use-case, чем держать его только за gateway.
 
+### `github`
+
+Тип:
+
+- GitHub MCP с существующей локальной авторизацией.
+
+Назначение:
+
+- работа с репозиториями, pull request и issue без нового PAT в `config.toml`.
+
+### `zenmoney`
+
+Текущее состояние:
+
+- временно выключен.
+
+Причина:
+
+- токен больше не хранится в plaintext-конфиге; после перевыпуска он должен
+  находиться в login Keychain под сервисом `codex.zenmoney.token`.
+
 ## Что не подключено
 
 ### GitHub MCP
@@ -190,7 +211,13 @@ Scope:
 
 Источник истины:
 
-- `~/.codex/config.toml`
+- `codex/config.toml` в этом репозитории; `~/.codex/config.toml` — симлинк на
+  него.
+
+Неактивные project-specific интеграции:
+
+- `codex/archive/mcp/project-integrations.toml`;
+- `codex/archive/skills/`.
 
 Проверка:
 

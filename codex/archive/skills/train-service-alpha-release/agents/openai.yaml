@@ -1,0 +1,4 @@
+interface:
+  display_name: "train-service Alpha Release"
+  short_description: "Prepare closed alpha rollout"
+  default_prompt: "Use $train-service-alpha-release to review or prepare train-service closed alpha readiness, including gates, runbook alignment, smoke steps, and go/no-go checks."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "train-service Drizzle Runtime"
+  short_description: "Handle DB and persistence changes"
+  default_prompt: "Use $train-service-drizzle-runtime to update a train-service schema, migration, or persistence path while preserving contract parity and tenant safety."

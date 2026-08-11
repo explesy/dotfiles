@@ -1,0 +1,4 @@
+interface:
+  display_name: "train-service Bot Flows"
+  short_description: "Protect Telegram flow behavior"
+  default_prompt: "Use $train-service-bot-flows to change or review a train-service Telegram flow without breaking stateful commands, session behavior, or bot-to-web handoff."

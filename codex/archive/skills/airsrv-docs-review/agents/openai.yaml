@@ -1,0 +1,4 @@
+interface:
+  display_name: "airsrv Docs Review"
+  short_description: "Review airsrv documentation"
+  default_prompt: "Review the documentation in /Users/doc/notes/airsrv for actuality, duplicates, missing or archive candidates, service coverage, and drift versus checked-in configs and live creo state. Return findings first and do not change files."
