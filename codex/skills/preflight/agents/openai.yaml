@@ -1,0 +1,4 @@
+interface:
+  display_name: "Release preflight"
+  short_description: "Проверка готовности без deploy"
+  default_prompt: "Используй $preflight, чтобы оценить готовность к релизу без deploy."

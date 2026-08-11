@@ -258,8 +258,12 @@
 
 С 2026-08-12 источником для `~/.codex/config.toml` служит симлинк на
 `codex/config.toml` в этом репозитории. Таким же способом здесь хранятся
-глобальный `AGENTS.md`, custom agents и шесть личных workflow-skills: `c`,
-`do`, `pr`, `hard`, `simplify`, `commit`.
+глобальный `AGENTS.md`, custom agents и восемь личных workflow-skills: `c`,
+`do`, `ui`, `preflight`, `pr`, `hard`, `simplify`, `commit`.
+
+`ui` — визуальная приёмка UI по правилам конкретного репозитория. `preflight`
+— read-only решение о готовности к релизу: он не делает push, deploy или
+изменения production.
 
 Это даёт резервную копию и историю изменений конфигурации без копирования
 секретов в Git. System- и marketplace-managed skills остаются в

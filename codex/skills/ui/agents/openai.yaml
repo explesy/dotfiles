@@ -1,0 +1,4 @@
+interface:
+  display_name: "UI приемка"
+  short_description: "Проверка UI перед передачей"
+  default_prompt: "Используй $ui, чтобы проверить UI-изменение перед передачей."
