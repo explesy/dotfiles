@@ -266,9 +266,10 @@
 изменения production.
 
 Custom Codex pets также хранятся в репозитории: `codex/pets/` подключён к
-`~/.codex/pets` симлинком. Каждый пакет содержит `pet.json` с
-`spriteVersionNumber: 2` и `spritesheet.webp`; сейчас там находятся
-`roxy-pixel` и `asuka1`.
+`~/.codex/pets` симлинком. Каждый пакет содержит `pet.json` и
+`spritesheet.webp`; версия atlas в манифесте должна соответствовать высоте
+спрайта: v1 — `1536×1872`, v2 — `1536×2288`. Сейчас там находятся
+`roxy-pixel` и `asuka1` (v1).
 После клонирования или восстановления dotfiles запусти `codex/install.sh` —
 он подключит весь переносимый слой Codex: конфигурацию, `AGENTS.md`, agents,
 skills и pets. Скрипт не заменяет существующие обычные файлы без явного

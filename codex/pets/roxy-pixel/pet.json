@@ -2,6 +2,6 @@
   "id": "roxy-pixel",
   "displayName": "Roxy Pixel",
   "description": "Pixel Roxy mage pet with ornate long staff.",
-  "spriteVersionNumber": 2,
+  "spriteVersionNumber": 1,
   "spritesheetPath": "spritesheet.webp"
 }

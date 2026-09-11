@@ -20,14 +20,25 @@ ensure_link() {
 
 validate_pet() {
   local pet_path="$1"
+  local sprite_version
+  local expected_height
+  local actual_width
+  local actual_height
 
   jq -e '
     (.id | type == "string" and length > 0) and
     (.displayName | type == "string" and length > 0) and
-    .spriteVersionNumber == 2 and
+    (.spriteVersionNumber == 1 or .spriteVersionNumber == 2) and
     .spritesheetPath == "spritesheet.webp"
   ' "$pet_path/pet.json" >/dev/null
   [[ -s "$pet_path/spritesheet.webp" ]]
+
+  sprite_version="$(jq -r '.spriteVersionNumber' "$pet_path/pet.json")"
+  expected_height=1872
+  [[ "$sprite_version" == "2" ]] && expected_height=2288
+  actual_width="$(sips -g pixelWidth "$pet_path/spritesheet.webp" | awk '/pixelWidth/ { print $2 }')"
+  actual_height="$(sips -g pixelHeight "$pet_path/spritesheet.webp" | awk '/pixelHeight/ { print $2 }')"
+  [[ "$actual_width" == "1536" && "$actual_height" == "$expected_height" ]]
 }
 
 mkdir -p "$CODEX_HOME_DIR"
