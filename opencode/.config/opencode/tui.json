@@ -1,6 +1,5 @@
 {
   "$schema": "https://opencode.ai/tui.json",
-
   "theme": "system",
   "scroll_speed": 3,
   "scroll_acceleration": {
@@ -17,5 +16,11 @@
     "notifications": true,
     "sound": false,
     "volume": 0.4
+  },
+  "plugin": [
+    "./tui-plugins/workflow-ui.tsx"
+  ],
+  "plugin_enabled": {
+    "ac.workflow-ui": true
   }
 }

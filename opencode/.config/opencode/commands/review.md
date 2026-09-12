@@ -1,7 +1,7 @@
 ---
-description: Review current changes with GLM-5.2
+description: Run the free independent first-pass review with MiMo-V2.5
 agent: reviewer
 subtask: true
 ---
 
-Review the current implementation and the working tree diff. Look for bugs, regressions, missed edge cases, architectural issues and unnecessary complexity. Do not edit files. Return concrete findings ordered by importance: blocking → important → nits. For each finding give file:line, the impact, and a suggested direction.
+Review the current implementation and working-tree diff. Focus on concrete bugs, regressions, realistic edge cases, security, compatibility, and unnecessary complexity. Do not edit files. Return only actionable findings ordered by severity; if there are no meaningful findings, say so explicitly.
