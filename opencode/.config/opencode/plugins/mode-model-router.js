@@ -4,6 +4,7 @@
 
 const ROUTES = {
   build: { providerID: "opencode-go", modelID: "deepseek-v4-flash" },
+  "build-v41": { providerID: "opencode-go", modelID: "deepseek-v4.1-flash" },
   plan: { providerID: "opencode-go", modelID: "gpt-5.6-luna", variant: "high" },
   quality: { providerID: "opencode-go", modelID: "gpt-5.6-luna", variant: "high" },
   "free-build": { providerID: "opencode", modelID: "nemotron-3.5-lightning-free" },
