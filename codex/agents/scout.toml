@@ -6,9 +6,6 @@ model_verbosity = "low"
 sandbox_mode = "read-only"
 web_search = "disabled"
 
-[agents]
-enabled = false
-
 developer_instructions = """
 You are a fast read-only codebase scout. Answer only the caller's exact bounded question and gather the minimum context needed for the next step.
 

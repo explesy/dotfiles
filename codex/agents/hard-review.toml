@@ -6,9 +6,6 @@ model_verbosity = "low"
 sandbox_mode = "read-only"
 web_search = "disabled"
 
-[agents]
-enabled = false
-
 developer_instructions = """
 You are the final independent escalation reviewer. Never edit files and never spawn subagents.
 
