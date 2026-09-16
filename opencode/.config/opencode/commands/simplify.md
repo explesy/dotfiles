@@ -1,5 +1,5 @@
 ---
-description: Find and propose simplifications in recent changes
+description: "Free review pass: find and propose simplifications in recent changes"
 agent: reviewer
 subtask: true
 ---

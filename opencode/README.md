@@ -1,222 +1,249 @@
-# opencode
+# OpenCode config — optimized Go routing (Sep 2026)
 
-Глобальная конфигурация [OpenCode](https://opencode.ai).
+Canonical global OpenCode config for this dotfiles repository. From the repo root, `stow opencode` links `opencode/.config/opencode/` into `~/.config/opencode/`. Runtime package state (`node_modules`, `package.json`, `bun.lock`, `package-lock.json`) stays local and untracked via `.gitignore`.
 
-После `stow opencode` из корня репозитория `~/.config/opencode/`
-приходит из этого каталога как набор symlink'ов:
+The package keeps the existing safety/context controls and simplifies primary routing around current OpenCode Go economics: cheap high-throughput default work, strong planning/reasoning only where it pays off, and dedicated multimodal/design routes.
 
-```
-~/.config/opencode/
-├── opencode.jsonc   -> dotfiles/opencode/.config/opencode/opencode.jsonc
-├── tui.json         -> dotfiles/opencode/.config/opencode/tui.json
-├── agents/          -> подкаталог с .md файлами глобальных агентов
-└── commands/        -> подкаталог с .md файлами slash-команд
-```
-
-Runtime-состояние плагинов (`node_modules`, `package.json`, `bun.lock`,
-`package-lock.json`) лежит рядом в `~/.config/opencode/`, но в dotfiles
-не коммитится — см. `.stow-local-ignore` в корне.
-
-## install
-
-Из корня dotfiles:
+## Install
 
 ```sh
 stow opencode
 ```
 
-Если до этого `~/.config/opencode` существовал как обычная директория
-(например, после `opencode plugin install`):
+## Structure
 
-```sh
-mv ~/.config/opencode /tmp/opencode.bak
-stow opencode
-cp -R /tmp/opencode.bak/node_modules ~/.config/opencode/
-cp /tmp/opencode.bak/{package.json,bun.lock,package-lock.json} ~/.config/opencode/
+```text
+opencode.jsonc
+tui.json
+
+agents/
+  build-v41.md
+  cheap-explore.md
+  coder.md
+  reviewer.md
+  hard-review.md
+  plan-reviewer.md
+  translator.md
+
+commands/
+  c.md
+  do.md
+  pr.md
+  review.md
+  hard.md
+  simplify.md
+  commit.md
+  v.md
+  lp.md
+  ldo.md
+  luna.md
+  design.md
+
+plugins/
+  mode-model-router.js
+
+tui-plugins/
+  workflow-ui.tsx
 ```
 
-## Структура
+## Primary routing
 
-### `opencode.jsonc`
+The primary-agent list is intentionally small:
 
-Главный конфиг. Содержит только то, что глобально:
+- `build` — **default**, `opencode-go/deepseek-v4-flash`. Everyday implementation, debugging and refactoring. This remains the main throughput/value route.
+- `build-v41` — `opencode-go/deepseek-v4.1-flash`. Optional A/B route for ordinary implementation on DeepSeek V4.1 Flash, with the same orchestration policy as `build`. Use it to compare real task quality without replacing the stable default yet; it also supports image input.
+- `plan` — `opencode-go/gpt-5.6-luna`, **high** reasoning, read-only. Use for implementation-ready planning, architecture, migrations, state/concurrency, compatibility and screenshot/PDF-aware planning.
+- `quality` — `opencode-go/gpt-5.6-luna`, **high** reasoning. Explicit escalation for hard implementation/debugging, cross-cutting changes, difficult failures, or multimodal work where the default route is not enough.
+- `free-build` — `opencode/nemotron-3.5-lightning-free`. Zero-Go fallback for low-risk routine work or after Go quota exhaustion.
+  DeepSeek V4 Flash Free was removed from this route after current OpenCode builds began rejecting it as an invalid configured model.
+- `design` — `opencode-go/glm-5.3-flash`, **high** reasoning. Screenshot/reference-driven frontend design, responsive layout, visual hierarchy and UI polish.
+- `vision` — `opencode-go/qwen3.8-flash`. Economical general multimodal diagnosis and small screenshot/image-driven coding tasks.
 
-- **Модели** — `model`, `small_model`, провайдерные timeouts и
-  variants (для `gpt-5.6-terra` определены `high` и `low`).
-- **Quality of life** — `formatter`, `lsp`, `share`, `autoupdate`,
-  `logLevel`, `compaction`, `tool_output`, `watcher.ignore`.
-- **Permissions** — глобальные bash/read rules. Все `ask` для
-  деструктивных операций (см. ниже).
-- **`agent.build`** — primary агент, через него запускаются
-  сабагенты. Остальные глобальные агенты лежат в `agents/*.md`.
+Removed from the primary picker because they duplicated clearer routes or had poor current value:
 
-### `agents/*.md`
+- `go-build` — redundant now that DeepSeek V4 Flash is the default `build`.
+- `go-quality` / DeepSeek V4 Pro route — no longer worth a permanent mode versus Luna quality escalation; select manually only for an occasional independent model-family check.
+- `luna-build` — replaced by the clearer `quality` route.
+- `luna-plan` — merged into the built-in `plan` route.
+- Kimi K3 as default `design` — removed from routine design routing because its Go allowance is too small for iterative frontend work. It can still be selected manually if a specific task justifies it.
 
-Глобальные сабагенты в markdown-форме (frontmatter + body). Имя
-файла = имя агента.
+## Recommended daily workflow
 
-- `cheap-explore.md` — быстрый read-only scout на `deepseek-v4-flash`.
-- `coder.md` — имплементатор на `kimi-k2.7-code`.
-- `reviewer.md` — read-only ревьюер на `glm-5.2`, читает файлы и
-  git, не редактирует. Может звать `cheap-explore` для контекста.
-- `hard-review.md` — дорогая эскалация на `openai/gpt-5.6-terra`.
-  Variant выбирается через `variant_cycle` keybind или `--variant`
-  CLI-флаг (`high` / `low`). Может звать `cheap-explore`.
+Routine task:
 
-### `commands/*.md`
-
-Slash-команды. Тело файла = `template`, который уходит агенту.
-
-- `/review` — ревью текущего diff через `reviewer`.
-- `/hard` — независимый взгляд через `hard-review`.
-- `/commit` — conventional-коммит, с защитой от случайной
-  публикации секретов и build-артефактов.
-- `/simplify` — поиск мест, которые можно упростить.
-
-### `subagent_depth: 2`
-
-Primary (`build`) может вызывать сабагентов. Сабагенты тоже
-могут вызывать других сабагентов — но только тех, кому явно
-разрешён `task`. Глобальный `permission.task` по умолчанию
-разрешает только `cheap-explore` всем агентам. Конкретные агенты
-(`reviewer`, `hard-review`, проектные) повторяют это явно во
-избежание потери при merge.
-
-## Глобальные permissions
-
-`bash: { "*": "allow" }`, но ряд операций переопределён в `ask`:
-
-- `rm` (все формы: `rm`, `rm -r`, `rm -rf`, `rm -fr`)
-- `sudo`, `dd`, `mkfs`
-- `chmod`, `chown`, `chgrp`
-- `git push`, `git reset --hard`, `git clean`, `git branch -D`,
-  `git checkout --`, `git stash drop`, `git remote remove`
-- `curl`, `wget`, `npm install`, `pnpm add`, `yarn add`,
-  `pip install`, `brew install`
-- `pkill`, `killall`, `kill -9`
-- `cat`/`head`/`tail`/`less`/`more`/`grep`/`rg` на `*.env` и
-  `*.env.*` (обход read-deny через bash)
-
-`read: { "*.env": "deny", "*.env.*": "deny" }` — но это только для
-прямого `read`. Через `bash` срабатывает отдельный guard выше.
-
-`webfetch: "ask"` — каждый запрос наружу подтверждаем.
-`external_directory: "ask"` — выход за пределы рабочей директории
-тоже спрашиваем.
-
-`task: { "*": "deny", "cheap-explore": "allow" }` — сабагентов по
-умолчанию нельзя; `cheap-explore` — исключение для всех.
-
-## Variant switching для `gpt-5.6-terra`
-
-`openai/gpt-5.6-terra` имеет два named variants в провайдерской
-конфигурации:
-
-- `high` (дефолт) — `reasoningEffort: "high"`, `textVerbosity: "low"`.
-  Глубокое рассуждение, для серьёзных эскалаций.
-- `low` — `reasoningEffort: "low"`, `textVerbosity: "low"`.
-  Дешёвые рутинные ревью.
-
-Переключение на лету:
-
-- В TUI — `variant_cycle` keybind (см. `tui.json`/`keybinds`).
-- В CLI — флаг `--variant high` или `--variant low`.
-
-## Per-project override
-
-Каждый проект может положить `opencode.json` (или `opencode.jsonc`)
-в корень — он мерджится поверх глобального. На per-project уровне
-доступны:
-
-- `instructions: [...]` — массив путей к инструкциям
-  (обычно `AGENTS.md` и релевантные `docs/...`).
-- `references: { alias: { path, description } }` — алиасы для
-  `@-mention` в чате, чтобы агенты знали про смежные доки.
-- `mcp: { name: { type, command, enabled } }` — локальные MCP-серверы
-  под конкретный проект (в глобальном конфиге их нет).
-- `snapshot: false` — выключить snapshot-индексирование (для
-  репо с тысячами файлов).
-- `permission` — дозаказ поверх глобального, не замена (object'ы
-  внутри заменяются, а не мерджатся).
-
-Полный пример в `/Users/doc/notes/roman-ac-01/opencode.jsonc`:
-
-```jsonc
-{
-  "$schema": "https://opencode.ai/config.json",
-
-  "instructions": [
-    "AGENTS.md",
-    "docs/README.md",
-    "docs/plan.md",
-    "docs/backlog.md"
-  ],
-
-  "references": {
-    "roman-list": { "path": "../roman_list", "description": "..." },
-    "architecture": { "path": "docs/architecture", "description": "..." }
-  },
-
-  "snapshot": false,
-
-  "mcp": {
-    "playwright": { "type": "local", "command": ["docker", "run", "-i", "--rm", "mcp/playwright"], "enabled": true },
-    "ssh-laptop": { "type": "local", "command": ["node", "/Users/doc/Dev/ssh-mcp/build/index.js", "..."], "enabled": true },
-    "sqlite":     { "type": "local", "command": ["uvx", "mcp-server-sqlite", "--db-path", "data/cache.sqlite", "--read-only"], "enabled": true }
-  },
-
-  "permission": {
-    "webfetch": "ask"
-  }
-}
+```text
+build -> automatic focused reviewer after non-trivial edits -> /commit
 ```
 
-### Per-project agents и skills
+To A/B test the new DeepSeek route on the same class of work, switch the primary agent to `build-v41`. The default `build` route is intentionally unchanged for now.
 
-В `.opencode/agents/<name>.md` — сабагенты, специфичные для
-проекта. В `.opencode/skills/<name>/SKILL.md` — навыки,
-которые агенты подгружают on-demand.
+Substantial feature/change:
 
-Оба авто-обнаруживаются opencode'ом при старте из корня
-проекта. Примеры в `roman-ac-01/.opencode/`:
-
-- `agents/db-migration.md` — миграции SQLite, schema, idempotency.
-- `agents/provider-pipeline.md` — provider lifecycle, snapshot sync.
-- `agents/seo-experiment.md` — гипотезы, evidence, без выдумок.
-- `skills/preflight-release/SKILL.md` — `npm run preflight:release`.
-- `skills/sync-roman-list/SKILL.md` — sync:roman-list →
-  sync:providers → audit:pipeline.
-- `skills/markdown-evidence/SKILL.md` — формат файлов
-  `docs/marketing/evidence/`.
-
-### Замечание про `webfetch`
-
-`permission.webfetch` в opencode 1.18 принимает только
-`"ask" | "allow" | "deny"` — **per-URL allowlist через config
-не поддержан**. На каждый запрос UI предлагает три варианта:
-`once` / `always` (на сессию) / `reject`. Для проектной
-"доверенной зоны" выбирай `always` на ожидаемых доменах и
-отказывай на неожиданных.
-
-## verify
-
-```sh
-opencode debug config        # смотрим резолвнутый конфиг
-opencode debug agent <name>  # детали по агенту
-opencode debug skill         # список подгруженных skills
-opencode debug lsp           # статус language servers
-opencode models              # доступные модели
+```text
+/lp <task> -> /pr -> revise plan if needed -> /do -> implementation -> reviewer -> optional /hard -> /commit
 ```
 
-В TUI:
+If implementation is unusually difficult or the default worker gets stuck:
 
-- `Tab` — переключение между primary агентами (build / plan).
-- `/review`, `/hard`, `/commit`, `/simplify` — кастомные команды.
-- `@reviewer`, `@hard-review`, `@coder`, `@cheap-explore` — вызов
-  глобальных сабагентов.
-- `@db-migration`, `@provider-pipeline`, `@seo-experiment` — вызов
-  проектных сабагентов (если `cd` в проект).
-- `variant_cycle` — переключение variant у `gpt-5.6-terra`.
+```text
+/luna <task>
+```
 
-После правки любого конфига или `.md` файла нужно перезапустить
-opencode — конфиг не hot-reload'ится.
+or, after a reviewed plan:
+
+```text
+/ldo
+```
+
+Both use `quality` = GPT-5.6 Luna High.
+
+For UI/reference work:
+
+```text
+/design <task>
+```
+
+For a cheap visual diagnosis/small screenshot-driven fix:
+
+```text
+/v <task>
+```
+
+## Why this routing
+
+OpenCode Go limits are dollar-based, so long agentic sessions should spend expensive reasoning only when it materially reduces retries. DeepSeek V4 Flash remains the default because it combines strong current OpenCode adoption with very high request throughput. DeepSeek V4.1 Flash is available as a separate A/B build route so its newer agentic/vision behavior can be tested on real work without silently changing the established default. Luna High is reserved for planning and explicit quality escalation. GLM-5.3 Flash replaces Kimi K3 for normal design work because it is multimodal and much more practical for iterative sessions. Qwen3.8 Flash provides a cheaper general vision route without relying on the experimental DeepSeek V4 Flash Vision model.
+
+The config intentionally does **not** add every cheap/new model as a permanent mode. MiMo-V2.5, Hy3/Hy4, LongCat, Muse/Omen and newer previews can be A/B tested later, but adding them all to the primary picker would make everyday routing harder. A model earns a permanent route only when it clearly wins a real recurring role.
+
+## Step-limit policy
+
+Primary agents intentionally have **no `steps` cap**. OpenCode forces a text-only handoff when a configured step limit is reached, which previously caused partially completed implementations.
+
+Bounded subagents keep their existing limits:
+
+- `cheap-explore`: 9
+- `coder`: 22
+- `reviewer`: 12
+- `hard-review`: 10
+- `plan-reviewer`: 10
+- `translator`: 6
+
+Primary prompts treat bounded-subagent exhaustion as a handoff rather than task completion. If requested work remains and there is no genuine blocker or approval boundary, the primary agent continues.
+
+## Subagents and quota control
+
+The existing cheap/free child-context strategy is preserved:
+
+- `cheap-explore` — Nemotron 3.5 Lightning Free, read-only, narrow codebase discovery.
+- `coder` — Laguna S 2.1 Free, focused mechanical implementation only after scope/files are known.
+- `reviewer` — MiMo-V2.5 Free, one independent first-pass post-implementation review.
+- `translator` — GPT-5.6 Luna for production localization; preserves placeholders, keys, markup and technical identifiers.
+- `plan-reviewer` — GPT-5.6 Terra High, manual-only independent pre-implementation review.
+- `hard-review` — GPT-5.6 Terra High, manual-only escalation review.
+
+`subagent_depth` remains `1` to avoid nested agent trees and uncontrolled context multiplication.
+
+## Plan review
+
+`/pr` remains a manual GPT-5.6 Terra review. It does not launch Terra with an empty context. The current primary first serializes the current task, proposed plan, decisions/constraints and concise relevant code context into a self-contained brief, then delegates exactly once to `plan-reviewer`.
+
+`plan-reviewer` treats the supplied `PROPOSED PLAN` as the only plan being reviewed. Repository TODOs, ADRs, historical plans and comments are evidence only. If the current plan context is missing, it returns `PLAN_VERDICT: insufficient-context` instead of guessing.
+
+The normal path is now deliberately simple:
+
+```text
+/lp -> /pr -> /do
+```
+
+`/lp` explicitly enters the real `plan` agent (Luna High). `/do` explicitly switches to the default `build` agent (DeepSeek V4 Flash), so implementation cannot accidentally remain inside the read-only plan agent.
+
+If the reviewed plan is unusually risky/complex, use `/ldo` instead of `/do`; it switches to `quality` (Luna High).
+
+## Hard review
+
+`/hard` keeps the existing context-safe Terra pattern. The current primary serializes the current problem, attempted solution/hypothesis, constraints, relevant code context and unresolved question before invoking `hard-review`.
+
+Terra reviewers remain manual-only. Primary prompts forbid automatic invocation unless the matching `RUN_PLAN_REVIEW` / `RUN_HARD_REVIEW` marker is explicitly supplied by the command.
+
+## Design / visual frontend
+
+`design` now uses GLM-5.3 Flash High rather than Kimi K3.
+
+Use it when the task is materially about:
+
+- screenshot/reference matching;
+- hierarchy, spacing and typography;
+- responsive layout;
+- frontend component composition;
+- interaction states and accessibility;
+- visual polish while preserving the product's existing design language.
+
+The visual evidence stays in the primary multimodal context. `cheap-explore` may be used only for repository discovery that does not require seeing the image. A normal post-change `reviewer` pass is still available.
+
+Kimi K3 is intentionally not a permanent mode now. If a specific difficult visual task clearly deserves it, select it manually for that task rather than paying its low Go allowance on every design iteration.
+
+## Vision
+
+`vision` now uses `opencode-go/qwen3.8-flash`.
+
+Use `/v` for screenshot/image-based diagnosis, UI state investigation, diagrams and small image-driven fixes. If the problem turns into a hard architecture/debugging task, switch to `quality`; if visual evidence stops mattering, return to `build`.
+
+The experimental DeepSeek V4 Flash Vision model is deliberately not the default vision route yet. It is attractive on cost, but keeping an experimental model out of the core workflow avoids unnecessary routing/tool-compatibility risk until it proves itself in our real tasks.
+
+## Commands
+
+- `/c` — continue from the exact current state without redoing finished analysis.
+- `/lp` — plan read-only with `plan` = Luna High, including screenshots/PDFs.
+- `/pr` — independently review the current plan with Terra High.
+- `/do` — approve the reviewed plan and implement it with default `build` = DeepSeek V4 Flash.
+- `/ldo` — approve the reviewed plan and implement with `quality` = Luna High.
+- `/luna` — run an ad-hoc hard task through `quality` = Luna High.
+- `/review` — free MiMo independent post-implementation review.
+- `/hard` — context-safe manual Terra escalation review.
+- `/v` — Qwen3.8 Flash multimodal diagnosis/small visual fix.
+- `/design` — GLM-5.3 Flash High visual frontend/design route.
+- `/simplify` — inspect recent changes for unnecessary complexity.
+- `/commit` — stage relevant files and create a local conventional commit; never push.
+
+## TUI workflow UI
+
+`workflow-ui.tsx` is a TUI-only presentation layer. It does not duplicate command routing or change agent/model configuration. `tui.json` loads it explicitly from `./tui-plugins/workflow-ui.tsx`.
+
+It adds:
+
+- a compact status beside the session prompt, e.g. `BUILD · DeepSeek V4 Flash · /wf`; `build-v41` is shown as `BUILD 4.1 · DeepSeek V4.1 Flash`;
+- the status is derived from the current session agent/model state, so it helps expose stale or unexpected routing;
+- `/workflow` (alias `/wf`) in the TUI command palette;
+- a searchable command cheat sheet for `/lp`, `/pr`, `/do`, `/ldo`, `/luna`, `/review`, `/hard`, `/design`, `/v`, `/c`, `/simplify`, and `/commit`;
+- a small `/workflow commands` hint on the home prompt.
+
+The UI plugin is intentionally separate from `plugins/mode-model-router.js`: TUI modules are target-exclusive and are loaded from `tui.json`, while the existing router is a server/runtime plugin. This UI is for the current TUI plugin system and does not add controls to OpenCode Desktop/Web.
+
+## Desktop agent/model picker workaround
+
+Some OpenCode Desktop builds can display or retain a stale manually selected model when switching agents. `plugins/mode-model-router.js` therefore enforces the intended model on every user turn.
+
+Current enforced mapping:
+
+- `build` -> DeepSeek V4 Flash (OpenCode Go)
+- `build-v41` -> DeepSeek V4.1 Flash (OpenCode Go)
+- `plan` -> GPT-5.6 Luna High (OpenCode Go)
+- `quality` -> GPT-5.6 Luna High (OpenCode Go)
+- `free-build` -> Nemotron 3.5 Lightning Free
+- `design` -> GLM-5.3 Flash High (OpenCode Go)
+- `vision` -> Qwen3.8 Flash (OpenCode Go)
+
+The plugin intentionally does not remap subagents; each subagent keeps its own pinned model.
+
+The specialized workflow commands also pin agent/model (and reasoning variant where applicable), so `/lp`, `/do`, `/ldo`, `/luna`, `/design`, and `/v` are the safest entry points when the Desktop picker appears stale. `build-v41` is selected directly as a primary agent and is protected by the same runtime router.
+
+## Safety / context controls preserved
+
+- secrets and private keys remain protected;
+- destructive shell commands, dependency installs, publishing and network research still require approval;
+- sharing remains disabled;
+- compaction/pruning and watcher ignores remain enabled;
+- normal coding remains autonomous;
+- primary agents remain uncapped by small hard step limits;
+- reviewer agents remain read-only;
+- no nested subagent trees.

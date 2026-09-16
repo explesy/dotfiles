@@ -1,33 +1,22 @@
 {
   "$schema": "https://opencode.ai/config.json",
 
-  // === Models ===
-  // Основная рабочая модель
-  "model": "opencode-go/minimax-m3",
+  // ============================================================
+  // Default route: HIGH-THROUGHPUT MAIN + QUALITY ESCALATION
+  // ============================================================
+  // DeepSeek V4 Flash is the default everyday worker. Luna High is reserved for
+  // planning and explicit quality escalation; free child contexts handle bounded work.
+  "model": "opencode-go/deepseek-v4-flash",
+  "small_model": "opencode/nemotron-3.5-lightning-free",
 
-  // Для заголовков, summary и прочей мелочёвки
-  "small_model": "opencode-go/deepseek-v4-flash",
-
-  // === Default agent / depth ===
   "default_agent": "build",
   "subagent_depth": 1,
 
   // === Quality of life ===
-  // Автоформатирование изменённых файлов
   "formatter": true,
-
-  // Включаем LSP, чтобы агент получал реальные diagnostics,
-  // а не только "я думаю, код правильный"
   "lsp": true,
-
-  // Не шарим сессии наружу по умолчанию
   "share": "disabled",
-
-  // Не обновляемся автоматически — пусть спрашивает
   "autoupdate": "notify",
-
-  // Логи: INFO по умолчанию, DEBUG — через OPENCODE_LOG_LEVEL=debug
-  "logLevel": "INFO",
 
   // === Server (opencode serve / opencode web) ===
   "server": {
@@ -37,6 +26,12 @@
 
   // === Provider tuning ===
   "provider": {
+    "opencode": {
+      "options": {
+        "timeout": 600000,
+        "chunkTimeout": 30000
+      }
+    },
     "opencode-go": {
       "options": {
         "timeout": 600000,
@@ -60,67 +55,71 @@
               "textVerbosity": "low"
             }
           }
+        },
+        "gpt-5.6-luna": {
+          "variants": {
+            "low": {
+              "reasoningEffort": "low",
+              "textVerbosity": "low"
+            },
+            "medium": {
+              "reasoningEffort": "medium",
+              "textVerbosity": "low"
+            }
+          }
         }
       }
     }
   },
 
-  // === Compaction ===
-  // Сжимаем длинный контекст, чтобы не упираться в окно
+  // === Context control ===
+  // Long tool dumps are one of the easiest ways to make every later request
+  // unnecessarily large. Prune old results and truncate noisy logs early.
   "compaction": {
     "auto": true,
     "prune": true,
     "reserved": 10000
   },
-
-  // === Tool output limits ===
-  // Большие выводы (тесты, дампы, логи) ужимаем,
-  // чтобы не съедать контекст одним tool result
-  "tool_output": {
-    "max_lines": 2000,
-    "max_bytes": 51200
-  },
-
   // === Watcher ignore ===
-  // Не индексируем тяжёлые/шумные директории
   "watcher": {
     "ignore": [
       "node_modules/**",
       "dist/**",
       "build/**",
+      "coverage/**",
       ".next/**",
       ".turbo/**",
       "target/**",
       ".venv/**",
+      "venv/**",
       "__pycache__/**",
+      ".pytest_cache/**",
+      ".mypy_cache/**",
+      ".ruff_cache/**",
+      ".cache/**",
       ".git/**"
     ]
   },
 
   // === Global permissions ===
+  // Normal coding remains autonomous. Publishing, destructive actions,
+  // dependency installation, secrets, and network research require approval.
   "permission": {
     "bash": {
-      // По умолчанию все команды разрешены
       "*": "allow",
 
-      // === Деструктивные операции ===
       "sudo *": "ask",
-      "rm -rf *": "ask",
-      "rm -r *": "ask",
-      "rm -fr *": "ask",
       "rm *": "ask",
       "dd *": "ask",
       "mkfs *": "ask",
-      ":(){:|:&};:": "ask",
-
-      // === Права и владельцы ===
       "chmod *": "ask",
       "chown *": "ask",
       "chgrp *": "ask",
 
-      // === Git, опасное ===
-      "git push *": "ask",
+      "git commit": "ask",
+      "git commit *": "ask",
       "git push": "ask",
+      "git push *": "ask",
       "git reset --hard *": "ask",
       "git clean *": "ask",
       "git branch -D *": "ask",
@@ -128,7 +127,6 @@
       "git stash drop *": "ask",
       "git remote remove *": "ask",
 
-      // === Сеть и установка кода ===
       "curl *": "ask",
       "wget *": "ask",
       "npm install *": "ask",
@@ -137,63 +135,184 @@
       "yarn add *": "ask",
       "pip install *": "ask",
       "pip3 install *": "ask",
+      "uv add *": "ask",
+      "uv pip install *": "ask",
+      "poetry add *": "ask",
       "brew install *": "ask",
 
-      // === Убийство процессов ===
       "pkill *": "ask",
       "killall *": "ask",
       "kill -9 *": "ask",
 
-      // === Секреты через bash обходят read-deny для .env ===
+      "env": "ask",
+      "env *": "ask",
+      "printenv": "ask",
+      "printenv *": "ask",
       "cat *.env": "ask",
       "cat *.env.*": "ask",
       "head *.env": "ask",
+      "head *.env.*": "ask",
       "tail *.env": "ask",
+      "tail *.env.*": "ask",
       "less *.env": "ask",
+      "less *.env.*": "ask",
       "more *.env": "ask",
+      "more *.env.*": "ask",
       "grep *.env": "ask",
-      "rg *.env": "ask"
+      "grep *.env.*": "ask",
+      "rg *.env": "ask",
+      "rg *.env.*": "ask"
     },
 
-    // Секреты по умолчанию не читаем напрямую
     "read": {
       "*": "allow",
       "*.env": "deny",
-      "*.env.*": "deny"
+      "*.env.*": "deny",
+      "*.pem": "ask",
+      "*.key": "ask",
+      "*id_rsa*": "ask",
+      "*id_ed25519*": "ask",
+      "*.env.example": "allow"
     },
 
-    // Спрашиваем перед скачиванием чего-либо из сети
     "webfetch": "ask",
-
-    // Любой выход за пределы рабочей директории — спрашиваем
+    "websearch": "ask",
     "external_directory": "ask",
 
-    // Сабагентов по умолчанию нельзя; cheap-explore — можно всем
-    // (build переопределяет это своим task-объектом и остаётся без изменений)
+    // Only the cheap read-only scout is globally available. Primary agents
+    // opt into additional subagents explicitly below. Terra reviewers are
+    // manual-only and require explicit RUN_* markers supplied by /pr or /hard.
     "task": {
       "*": "deny",
       "cheap-explore": "allow"
     }
   },
 
-  // === Build agent ===
-  // Агенты `cheap-explore`, `coder`, `reviewer`, `hard-review`
-  // и команды `/review`, `/hard`, `/commit`, `/simplify`
-  // лежат в .md файлах в agents/ и commands/.
+  // ============================================================
+  // Primary agents / routing modes
+  // ============================================================
+  // Primary agents intentionally have no `steps` cap. OpenCode forces a
+  // text-only handoff when a steps limit is reached, which previously caused
+  // partially completed implementations. Cost/runaway control is handled by
+  // focused routing and bounded subagents instead.
   "agent": {
+    // 1) DEFAULT BUILD: high-throughput everyday coding on DeepSeek V4 Flash.
+    // Keep the parent focused and use bounded/free child contexts where they save quota.
     "build": {
-      "model": "opencode-go/minimax-m3",
-
+      "description": "Default everyday coding route on DeepSeek V4 Flash: high throughput, low Go burn, full implementation ownership.",
+      "mode": "primary",
+      "model": "opencode-go/deepseek-v4-flash",
+      "temperature": 0.1,
+      "prompt": "You are the default primary coding orchestrator and final decision-maker. Own the requested implementation end-to-end. Keep the parent context focused on requirements, architecture, decisions, and the final diff. For broad or unfamiliar-codebase work, delegate one focused read-only discovery pass to cheap-explore instead of mapping the repository yourself. Delegate coder only for mechanical or tightly scoped implementation whose requirements and target files are already clear; keep architecture-sensitive, cross-cutting, migration-heavy, difficult debugging, and image-dependent changes in the primary agent or escalate to quality when needed. For any user-facing translation or localization intended to ship to production, always delegate the actual linguistic translation to translator. Pass the exact source text, target locale, nearby product/UI/story context, established glossary or terminology, and formatting/placeholder constraints. Do not independently retranslate translator output; integrate it and verify file structure, placeholders, formatting, and relevant tests. Treat bounded-subagent step exhaustion as a handoff, never as completion of the user request: if concrete requested work remains and no approval or real blocker is required, continue in the parent or use one fresh focused subagent. After non-trivial changes, use reviewer once for an independent first pass, then verify only its concrete findings yourself. Do not create review/fix/review loops without new evidence. Prefer targeted reads, diffs, and focused tests. If the task becomes unusually architecture-sensitive, reasoning-heavy, or repeatedly fails after one revised attempt, recommend switching to quality rather than spending many broad retries. plan-reviewer and hard-review are manual-only: invoke them only when the current instruction explicitly requests the corresponding review and supplies its RUN_PLAN_REVIEW or RUN_HARD_REVIEW marker. Never invoke either automatically.",
       "permission": {
         "task": {
           "*": "deny",
-
           "cheap-explore": "allow",
           "coder": "allow",
           "reviewer": "allow",
+          "translator": "allow",
+          "plan-reviewer": "allow",
+          "hard-review": "allow"
+        }
+      }
+    },
 
-          // Дорогих моделей нельзя тратить незаметно
-          "hard-review": "ask"
+    // 2) PLAN: read-only quality-first planning on Luna High.
+    // Planning gets the stronger reasoning budget because bad assumptions are expensive later.
+    "plan": {
+      "description": "Read-only implementation planning on GPT-5.6 Luna High with native image/PDF input; pair with /pr before coding when the change is substantial.",
+      "mode": "primary",
+      "model": "opencode-go/gpt-5.6-luna",
+      "variant": "high",
+      "temperature": 0.1,
+      "prompt": "You are the quality-first planning and architecture agent. Analyze the current request and repository deeply enough to produce an implementation-ready plan, but do not edit files or begin implementation. Treat attached screenshots, mockups, diagrams, photos, and PDFs as first-class evidence and inspect them directly. Keep any reasoning that depends on visual evidence in this parent session; never delegate image interpretation to text-only subagents. For broad or unfamiliar-codebase work, delegate at most one focused read-only discovery pass at a time to cheap-explore when the delegated question does not require visual evidence. Independently inspect the relevant call paths, schemas, tests, migrations, state/concurrency behavior, compatibility constraints, and rollout risks before finalizing the plan. Prefer concrete files, symbols, sequencing, invariants, verification steps, and explicit assumptions over generic advice. Do not invoke plan-reviewer or hard-review automatically: they are manual-only and require the explicit RUN_PLAN_REVIEW or RUN_HARD_REVIEW marker supplied by /pr or /hard. When the plan is ready, stop before coding so the user can run /pr or approve it with /do.",
+      "permission": {
+        "edit": "deny",
+        "bash": "deny",
+        "task": {
+          "*": "deny",
+          "cheap-explore": "allow",
+          "plan-reviewer": "allow",
+          "hard-review": "allow"
+        }
+      }
+    },
+
+    // 3) QUALITY: explicit escalation route for difficult implementation/debugging.
+    // High reasoning is intentionally not the default; use this when extra quality pays for itself.
+    "quality": {
+      "description": "Quality escalation route on GPT-5.6 Luna High for hard implementation, debugging, architecture-sensitive work, and multimodal tasks.",
+      "mode": "primary",
+      "model": "opencode-go/gpt-5.6-luna",
+      "variant": "high",
+      "temperature": 0.1,
+      "prompt": "You are the quality-escalation primary coding agent and final decision-maker. Use the extra reasoning budget for difficult debugging, architecture-sensitive changes, cross-cutting behavior, migrations/state/concurrency, or when the default build route was insufficient. Handle multimodal tasks end-to-end: treat attached screenshots, mockups, diagrams, photos, and PDFs as first-class evidence and keep image-dependent reasoning in this parent session. For broad or unfamiliar-codebase work, delegate one focused read-only discovery pass to cheap-explore only when the delegated question does not require visual evidence. Delegate coder only for mechanical or tightly scoped implementation whose requirements and target files are already clear and do not depend on visual evidence. For production translation/localization, delegate the linguistic translation to translator and verify placeholders, structure, formatting, and relevant tests yourself. Treat bounded-subagent step exhaustion as a handoff, never as completion. After non-trivial changes, use reviewer once for an independent first pass and verify only concrete findings. Avoid repeated broad exploration or review loops. Prefer the smallest correct change and focused verification. plan-reviewer and hard-review are manual-only: invoke them only when the current instruction explicitly requests the corresponding review and supplies its RUN_PLAN_REVIEW or RUN_HARD_REVIEW marker. Never invoke either automatically.",
+      "permission": {
+        "task": {
+          "*": "deny",
+          "cheap-explore": "allow",
+          "coder": "allow",
+          "reviewer": "allow",
+          "translator": "allow",
+          "plan-reviewer": "allow",
+          "hard-review": "allow"
+        }
+      }
+    },
+
+    // 4) FREE BUILD: zero-Go fallback for low-risk/routine work or when Go is exhausted.
+    "free-build": {
+      "description": "Zero-Go-quota fallback for routine work with Nemotron 3.5 Lightning Free and free subagents.",
+      "mode": "primary",
+      "model": "opencode/nemotron-3.5-lightning-free",
+      "temperature": 0.1,
+      "prompt": "You are the free low-cost primary coding agent. Use cheap-explore for one focused discovery pass when needed, coder for tightly scoped mechanical implementation, and reviewer once after non-trivial changes. Treat bounded-subagent step exhaustion as a handoff, never as completion of the user request: if concrete requested work remains and no approval or real blocker is required, continue in the parent or use one fresh focused subagent. Keep context lean and stop rather than looping if the task becomes architecture-sensitive, cross-cutting, multimodal, or ambiguous; recommend switching to build or quality in that case. This mode intentionally spends no OpenCode Go quota: do not perform production translation/localization yourself and do not invoke a paid translator; when production-quality translation is required, tell the user to switch to build or quality. plan-reviewer and hard-review are manual-only: invoke them only when the current instruction explicitly requests the corresponding review and supplies its RUN_PLAN_REVIEW or RUN_HARD_REVIEW marker. Never invoke either automatically.",
+      "permission": {
+        "task": {
+          "*": "deny",
+          "cheap-explore": "allow",
+          "coder": "allow",
+          "reviewer": "allow",
+          "plan-reviewer": "allow",
+          "hard-review": "allow"
+        }
+      }
+    },
+
+    // 5) DESIGN: multimodal frontend/design route on GLM-5.3 Flash High.
+    // Kimi K3 is no longer the default design route because its Go allowance is tiny.
+    "design": {
+      "description": "Visual frontend/design specialist on GLM-5.3 Flash High for screenshot-to-code, reference matching, responsive layout, styling, and UI polish.",
+      "mode": "primary",
+      "model": "opencode-go/glm-5.3-flash",
+      "variant": "high",
+      "temperature": 0.1,
+      "prompt": "You are the visual frontend engineer and design implementation specialist. Treat every attached screenshot, mockup, reference image, diagram, and video frame as first-class evidence and inspect it directly before changing code. Focus on visual hierarchy, spacing, typography, sizing, alignment, grids, responsive behavior, component composition, interaction states, accessibility, and consistency with the existing design system. When a reference is supplied, infer its visual principles and reproduce the requested direction faithfully without blindly copying unrelated details. Correlate the visible UI with the exact React/Vue/Svelte/HTML/CSS/Tailwind/component code responsible for it, then make the smallest coherent patch that fixes the visual problem. Keep all image-dependent reasoning and implementation in this parent session; do not delegate visual interpretation or screenshot-dependent code changes to text-only subagents. Use cheap-explore only for bounded repository discovery that does not depend on visual evidence. For user-facing production translation/localization, delegate the linguistic translation to translator and preserve UI length/placeholder constraints. After non-trivial edits, run the narrowest relevant frontend checks/tests/build available, and use reviewer once for an independent code-quality/regression pass. If the repository already has screenshot, browser, visual-regression, Storybook, Playwright, or preview tooling, use it when it helps verify the result; do not invent tooling or install new dependencies without approval. Prefer improving the existing design language over gratuitous redesign. If the request is primarily backend/architecture rather than visual frontend work, recommend switching to build or quality. plan-reviewer and hard-review are manual-only: invoke them only when the current instruction explicitly requests the corresponding review and supplies its RUN_PLAN_REVIEW or RUN_HARD_REVIEW marker. Never invoke either automatically.",
+      "permission": {
+        "task": {
+          "*": "deny",
+          "cheap-explore": "allow",
+          "reviewer": "allow",
+          "translator": "allow",
+          "plan-reviewer": "allow",
+          "hard-review": "allow"
+        }
+      }
+    },
+
+    // 6) VISION: cheap general multimodal diagnosis/coding on Qwen3.8 Flash.
+    // Keep the experimental DeepSeek vision model out of the default workflow for now.
+    "vision": {
+      "description": "Economical multimodal coding mode on Qwen3.8 Flash for screenshots, mockups, UI states, diagrams, and visual debugging evidence.",
+      "mode": "primary",
+      "model": "opencode-go/qwen3.8-flash",
+      "temperature": 0.1,
+      "prompt": "You are the economical multimodal coding agent. Treat attached screenshots, mockups, diagrams, and photos as first-class evidence and inspect them directly before forming a hypothesis. Correlate visible UI text, selected controls, states, errors, layout, and other visual clues with the relevant repository code. Keep any reasoning that depends on visual evidence in this parent session; do not delegate image interpretation to text-only subagents. Search before reading large files, inspect only the code needed to test the visual hypothesis, and make the smallest correct change when implementation is requested. Run focused checks after edits. If the task becomes architecture-sensitive or difficult beyond the visual diagnosis, switch to quality; if it stops depending on images and becomes ordinary coding, return to build. plan-reviewer and hard-review are manual-only: invoke them only when the current instruction explicitly requests the corresponding review and supplies its RUN_PLAN_REVIEW or RUN_HARD_REVIEW marker. Never invoke either automatically.",
+      "permission": {
+        "task": {
+          "*": "deny",
+          "plan-reviewer": "allow",
+          "hard-review": "allow"
         }
       }
     }
