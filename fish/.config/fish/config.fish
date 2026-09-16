@@ -1,3 +1,7 @@
+# The following lines were added by Docker Desktop to add commands to your PATH.
+export PATH="$PATH:/Users/doc/.docker/bin"
+# End of Docker Desktop section.
+
 if status is-interactive
     # Commands to run in interactive sessions can go here
 
@@ -15,8 +19,7 @@ if status is-interactive
     abbr -a dcd docker compose down
     abbr -a clr clear
     abbr -a v nvim .
-    abbr -a av NVIM_APPNAME=astronvim nvim
-    abbr -a bu 'brew cu -a; and brew upgrade'
+    abbr -a bu 'brew update'
 end
 
 # function to run yazi as yy
