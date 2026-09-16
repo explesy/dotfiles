@@ -66,3 +66,9 @@ abbr -a ddw 'cd /Users/doc/notes/dd && uv run python refresh.py --watch'
 
 # Added by Antigravity
 fish_add_path /Users/doc/.antigravity/antigravity/bin
+
+# OpenCode optimizations (fast boot & offline/no-hang)
+set -gx OPENCODE_DISABLE_MODELS_FETCH 1
+set -gx OPENCODE_DISABLE_AUTOUPDATE 1
+set -gx OPENCODE_DISABLE_CLAUDE_CODE 1
+set -gx OPENCODE_FAST_BOOT 1

@@ -90,7 +90,7 @@ const titleCase = (value: string) => value.charAt(0).toUpperCase() + value.slice
 const routeLabel = (api: TuiPluginApi, sessionID: string) => {
   const session = api.state.session.get(sessionID) as any
   const messages = api.state.session.messages(sessionID) as readonly any[]
-  const latestUser = [...messages].reverse().find((message) => message?.role === "user")
+  const latestUser = [...(messages ?? [])].reverse().find((message) => message?.role === "user")
 
   const agent = session?.agent ?? latestUser?.agent ?? "build"
   const sessionModel = session?.model

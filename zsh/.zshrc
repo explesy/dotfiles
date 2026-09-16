@@ -28,3 +28,9 @@ autoload -Uz compinit && compinit
 
 # enable starship
 eval "$(starship init zsh)"
+
+# OpenCode optimizations (fast boot & offline/no-hang)
+export OPENCODE_DISABLE_MODELS_FETCH=1
+export OPENCODE_DISABLE_AUTOUPDATE=1
+export OPENCODE_DISABLE_CLAUDE_CODE=1
+export OPENCODE_FAST_BOOT=1

@@ -16,7 +16,7 @@
   "formatter": true,
   "lsp": true,
   "share": "disabled",
-  "autoupdate": "notify",
+  "autoupdate": false,
 
   // === Server (opencode serve / opencode web) ===
   "server": {
