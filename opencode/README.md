@@ -240,7 +240,8 @@ The specialized workflow commands also pin agent/model (and reasoning variant wh
 ## Safety / context controls preserved
 
 - secrets and private keys remain protected;
-- destructive shell commands, dependency installs, publishing and network research still require approval;
+- destructive shell commands (rm, sudo, git reset --hard) and process kills still require approval;
+- routine git operations, dependency installation, web research and external directory access are autonomous;
 - sharing remains disabled;
 - compaction/pruning and watcher ignores remain enabled;
 - normal coding remains autonomous;
