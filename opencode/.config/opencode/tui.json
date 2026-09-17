@@ -18,7 +18,8 @@
     "volume": 0.4
   },
   "plugin": [
-    "./tui-plugins/workflow-ui.tsx"
+    "./tui-plugins/workflow-ui.tsx",
+    "./herdr-tui-session.js"
   ],
   "plugin_enabled": {
     "ac.workflow-ui": true
