@@ -5,3 +5,6 @@ zellij/.config/zellij/config.kdl.bak
 yazi/.config/yazi/*.toml-*
 karabiner/.config/karabiner/automatic_backups/*.json
 fish/.config/fish/fish_variables
+herdr/.config/herdr/*.bak
+herdr/.config/herdr/*.log
+herdr/.config/herdr/*.sock

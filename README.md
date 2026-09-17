@@ -24,7 +24,7 @@
 - [🛠️ Шпаргалка по компонентам](#️-шпаргалка-по-компонентам)
   - [🪟 AeroSpace (Tiling Window Manager)](#-aerospace-tiling-window-manager)
   - [🐟 Fish Shell](#-fish-shell)
-  - [📟 Tmux & Zellij (Мультиплексоры)](#-tmux--zellij-мультиплексоры)
+  - [📟 Herdr, Tmux & Zellij (Мультиплексоры)](#-herdr-tmux--zellij-мультиплексоры)
   - [📁 Yazi (Терминальный файловый менеджер)](#-yazi-терминальный-файловый-менеджер)
   - [🤖 AI Стек (Codex & OpenCode)](#-ai-стек-codex--opencode)
   - [🎬 Медиаплееры (IINA & mpv)](#-медиаплееры-iina--mpv)
@@ -55,7 +55,8 @@
 | **Оболочки & Промпт** | [fish](./fish) | Основная оболочка с аббревиатурами и интеграциями | `~/.config/fish/` |
 | | [starship](./starship) | Быстрый кросс-шелл промпт | `~/.config/starship.toml` |
 | | [zsh](./zsh) | Резервная Zsh-конфигурация | `~/.zshrc` |
-| **Мультиплексоры** | [tmux](./tmux) | Терминальный мультиплексор (Colemak, Yazi passthrough) | `~/.tmux.conf` |
+| **Мультиплексоры** | [herdr](./herdr) | Воркспейс-менеджер и мультиплексор для AI-агентов (детекция состояний, мышь) | `~/.config/herdr/` |
+| | [tmux](./tmux) | Терминальный мультиплексор (Colemak, Yazi passthrough) | `~/.tmux.conf` |
 | | [zellij](./zellij) | Мультиплексор на Rust с переопределенными хоткеями | `~/.config/zellij/` |
 | **Редакторы & IDE** | [lazy_nvim](./lazy_nvim) | Neovim на базе LazyVim с Colemak-навигацией | `~/.config/nvim/` |
 | | [code](./code) | Настройки VS Code (Gruvbox Hard, Vim, Python, formatters) | `~/.config/Code/User/` |
@@ -173,7 +174,15 @@ stow -D alacritty
 
 ---
 
-### 📟 Tmux & Zellij (Мультиплексоры)
+### 📟 Herdr, Tmux & Zellij (Мультиплексоры)
+
+#### [herdr](./herdr)
+- **Концепция:** терминальный воркспейс-менеджер с отслеживанием состояний AI-агентов (`working` / `blocked` / `done` / `idle`), полным управлением мышью и богатым Socket API.
+- **Префикс:** `Ctrl + b`
+- **Сплиты:** `prefix + v` (вертикальный) и `prefix + -` (горизонтальный)
+- **Управление:** `prefix + z` (zoom), `prefix + b` (скрыть/показать sidebar), `prefix + q` (detach в фон)
+- **Сервер:** `herdr status`, `herdr server reload-config`, `herdr server stop`
+- **Подробное руководство:** см. [`herdr/README.md`](./herdr/README.md)
 
 #### [tmux](./tmux)
 - **Префикс:** `Ctrl + a`

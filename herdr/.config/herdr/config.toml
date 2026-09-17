@@ -1,0 +1,43 @@
+# Herdr configuration
+# Managed via GNU Stow: ~/.config/herdr/config.toml -> dotfiles/herdr/.config/herdr/config.toml
+
+# Отключение окна первого запуска / онбординга
+onboarding = false
+
+[terminal]
+# Шелл по умолчанию для новых интерактивных панелей
+default_shell = "/opt/homebrew/bin/fish"
+shell_mode = "auto"
+# Политика CWD для новых панелей и табов ("follow" наследует текущую директорию)
+new_cwd = "follow"
+
+[ui]
+# Индикаторы состояния агентов: "symbols" (наглядные глифы) или "dots" (цветные точки)
+status_indicators = "symbols"
+
+# Захват мыши для полноценного кликабельного интерфейса
+mouse_capture = true
+
+# Автоматическое копирование в буфер обмена при выделении мышью
+copy_on_select = true
+
+# Отрисовка рамок и разделителей панелей
+pane_borders = "auto"
+pane_gaps = true
+
+# Доставка уведомлений от агентов: "off", "herdr" (внутри приложения), "terminal", "system" (нативные macOS)
+[ui.toast]
+delivery = "herdr"
+
+[keys]
+# Базовый префикс для команд Herdr (как в tmux)
+prefix = "ctrl+b"
+
+# --- Colemak Навигация по панелям (опционально) ---
+# По умолчанию Herdr использует Vim-навигацию (h/j/k/l), а клавиша prefix+n привязана к next_tab.
+# Для переключения на эргономичную раскладку Colemak (h/n/e/i) раскомментируйте строки ниже:
+focus_pane_left = "prefix+h"
+focus_pane_down = "prefix+n"
+focus_pane_up = "prefix+e"
+focus_pane_right = "prefix+i"
+next_tab = "prefix+l"

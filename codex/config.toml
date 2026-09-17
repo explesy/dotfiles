@@ -13,6 +13,7 @@ notify = ["/Users/doc/.codex/computer-use/Codex Computer Use.app/Contents/Shared
 service_tier = "default"
 
 [features]
+hooks = true
 apps = true
 multi_agent = true
 shell_snapshot = true
@@ -293,7 +294,8 @@ notifications-permissions-enabled = true
 conversationDetailMode = "STEPS_COMMANDS"
 dock-icon-preference = "codex-system"
 avatar-overlay-mascot-width-px = 112
-selected-avatar-id = "bsod"
+avatar-overlay-pet-visible = false
+# selected-avatar-id = "bsod"
 
 [desktop.appearanceLightChromeTheme]
 accent = "#93b259"
