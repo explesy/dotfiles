@@ -49,7 +49,7 @@
     "editor.quickSuggestions": {
         "other": true,
         "comments": true,
-        "strings": true,
+        "strings": true
     },
 
     // Controls if suggestions should be accepted on 'Enter' - in addition to 'Tab'. Helps to avoid ambiguity between inserting new lines or accepting suggestions. The value 'smart' means only accept a suggestion with Enter when it makes a textual change
@@ -71,7 +71,7 @@
     "editor.suggestSelection": "first",
 
     // Enable word based suggestions
-    "editor.wordBasedSuggestions": true,
+    "editor.wordBasedSuggestions": "matchingDocuments",
 
     // Enable parameter hints
     "editor.parameterHints.enabled": true,
@@ -80,6 +80,5 @@
     "window.commandCenter": true,
     "outline.collapseItems": "alwaysCollapse",
     "editor.stickyScroll.enabled": true,
-    "sync.quietSync": true,
-    
+    "sync.quietSync": true
 }
