@@ -1,0 +1,25 @@
+{
+  "plugins": {
+    "chrome-devtools-plugin": {
+      "enabled": true
+    },
+    "gemini-api": {
+      "enabled": true
+    },
+    "google-antigravity-sdk": {
+      "enabled": true
+    },
+    "modern-web-guidance-plugin": {
+      "enabled": true
+    }
+  },
+  "userSettings": {
+    "autoExecutionPolicy": "CASCADE_COMMANDS_AUTO_EXECUTION_EAGER",
+    "enableTerminalSandbox": false,
+    "nonWorkspaceFileAccessPolicy": "AGENT_SETTING_POLICY_ALLOW",
+    "permissionGrantsV2Migrated": true,
+    "permissionPreset": "AGENT_PERMISSION_PRESET_TURBO",
+    "sandboxEnabledAtV2Migration": true,
+    "themeMode": "THEME_MODE_DARK"
+  }
+}

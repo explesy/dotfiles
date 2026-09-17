@@ -26,7 +26,7 @@
   - [🐟 Fish Shell](#-fish-shell)
   - [📟 Herdr, Tmux & Zellij (Мультиплексоры)](#-herdr-tmux--zellij-мультиплексоры)
   - [📁 Yazi (Терминальный файловый менеджер)](#-yazi-терминальный-файловый-менеджер)
-  - [🤖 AI Стек (Codex & OpenCode)](#-ai-стек-codex--opencode)
+  - [🤖 AI Стек (Codex, OpenCode & Antigravity)](#-ai-стек-codex-opencode--antigravity)
   - [🎬 Медиаплееры (IINA & mpv)](#-медиаплееры-iina--mpv)
 - [📦 Homebrew & Обслуживание](#-homebrew--обслуживание)
 
@@ -64,6 +64,7 @@
 | | [ranger](./ranger) | Классический терминальный менеджер на Python | `~/.config/ranger/` |
 | **AI & Агенты** | [codex](./codex) | Codex стек: MCP серверы, агенты, скиллы, runbooks | `~/.codex/` |
 | | [opencode](./opencode) | Глобальные настройки OpenCode (модели, TUI, права) | `~/.config/opencode/` |
+| | [antigravity](./antigravity) | Antigravity & agy CLI (автоподтверждение, MCP, глобальные правила) | `~/.gemini/` |
 | **Медиа & Разное** | [iina](./iina) | Конфигурация ввода IINA для macOS | `~/Library/Application Support/...` |
 | | [mpv](./mpv) | Минималистичный видеоплеер | `~/.config/mpv/` |
 | | [docker](./docker) | Памятка по первоначальной настройке Docker | *Справочник* |
@@ -216,7 +217,7 @@ stow -D alacritty
 
 ---
 
-### 🤖 AI Стек (Codex & OpenCode)
+### 🤖 AI Стек (Codex, OpenCode & Antigravity)
 
 - **[codex/](./codex):** локальная экосистема инструментов для Codex CLI.
   - Управление MCP-серверами (см. [`codex/mcp.md`](./codex/mcp.md)).
@@ -224,6 +225,11 @@ stow -D alacritty
   - Набор готовых скиллов (`commit`, `pr`, `simplify`, `ui`, `preflight` и др.).
   - Кастомные TUI-питомцы в `codex/pets/`.
 - **[opencode/](./opencode):** глобальная конфигурация [OpenCode](https://opencode.ai) с предустановленными моделями, правилами доступа (permissions) и темой.
+- **[antigravity/](./antigravity):** конфигурация Google Antigravity и терминального агента `agy`:
+  - Включен режим **автоподтверждения по умолчанию** (`toolPermission: always-proceed`, `agentMode: accept-edits`).
+  - Разрешён доступ к файлам вне текущего воркспейса (`allowNonWorkspaceAccess: true`).
+  - Глобальные инструкции агента (`AGENTS.md`) с приоритетом навигации Colemak (`h/n/e/i`).
+  - Подключение и линковка через `./antigravity/install.sh` или `stow antigravity`.
 
 ---
 

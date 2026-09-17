@@ -1,0 +1,33 @@
+{
+  "agentMode": "accept-edits",
+  "allowNonWorkspaceAccess": true,
+  "altScreenMode": "default",
+  "artifactReviewPolicy": "always-proceed",
+  "clearScrollbackOnResize": true,
+  "colorScheme": "terminal",
+  "copyOnSelect": true,
+  "editor": "nvim",
+  "enableTerminalSandbox": false,
+  "model": "Gemini 3.8 Flash (Medium)",
+  "notifications": true,
+  "permissions": {
+    "allow": [
+      "command(*)",
+      "read_file(*)",
+      "write_file(*)",
+      "read_url(*)"
+    ]
+  },
+  "pickerGrouping": "none",
+  "runningLightSpeed": "medium",
+  "showFeedbackSurvey": true,
+  "showTips": true,
+  "toolPermission": "always-proceed",
+  "trustedWorkspaces": [
+    "/Users/doc/dotfiles"
+  ],
+  "useG1Credits": false,
+  "useTerminalCursor": false,
+  "verbosity": "high",
+  "vimInsertFirst": false
+}

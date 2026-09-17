@@ -22,6 +22,9 @@ if status is-interactive
     abbr -a v nvim .
     abbr -a bu 'brew update'
     abbr -a buu 'brew update; and brew upgrade'
+    abbr -a ag agy
+    abbr -a agc 'agy --continue'
+    abbr -a agp 'agy --mode plan'
 end
 
 # function to run yazi as yy
