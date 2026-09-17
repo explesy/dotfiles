@@ -1,10 +1,29 @@
+# OS artifacts
 .DS_Store
+**/.DS_Store
 
-# Generated/backup files
+# Editor & runtime logs
+*.log
+*.swp
+*~
+.nvimlog
+lazy_nvim/.config/nvim/.nvimlog
+
+# Backup files
+**/*.bak
 zellij/.config/zellij/config.kdl.bak
 yazi/.config/yazi/*.toml-*
 karabiner/.config/karabiner/automatic_backups/*.json
+
+# Runtime & local state
 fish/.config/fish/fish_variables
 herdr/.config/herdr/*.bak
 herdr/.config/herdr/*.log
 herdr/.config/herdr/*.sock
+
+# Node / package manager runtime artifacts
+node_modules/
+**/node_modules/
+opencode/.config/opencode/package.json
+opencode/.config/opencode/package-lock.json
+opencode/.config/opencode/bun.lock

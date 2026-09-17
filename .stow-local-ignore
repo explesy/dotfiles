@@ -5,3 +5,14 @@ opencode/\.config/opencode/node_modules
 opencode/\.config/opencode/package\.json
 opencode/\.config/opencode/bun\.lock
 opencode/\.config/opencode/package-lock\.json
+
+# OS and logs
+\.DS_Store
+.*\.log$
+\.nvimlog
+
+# Backup and ephemeral files
+.*\.bak$
+.*\.toml-[0-9]+$
+karabiner/\.config/karabiner/automatic_backups
+fish/\.config/fish/fish_variables
