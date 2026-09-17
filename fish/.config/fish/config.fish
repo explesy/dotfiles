@@ -1,6 +1,7 @@
-# The following lines were added by Docker Desktop to add commands to your PATH.
-export PATH="$PATH:/Users/doc/.docker/bin"
-# End of Docker Desktop section.
+# Docker CLI path
+if test -d /Users/doc/.docker/bin
+    fish_add_path /Users/doc/.docker/bin
+end
 
 if status is-interactive
     # Commands to run in interactive sessions can go here
@@ -20,6 +21,7 @@ if status is-interactive
     abbr -a clr clear
     abbr -a v nvim .
     abbr -a bu 'brew update'
+    abbr -a buu 'brew update; and brew upgrade'
 end
 
 # function to run yazi as yy
@@ -40,13 +42,19 @@ function c
 end
 
 # Added by LM Studio CLI (lms)
-set -gx PATH $PATH /Users/doc/.cache/lm-studio/bin
+if test -d /Users/doc/.cache/lm-studio/bin
+    fish_add_path /Users/doc/.cache/lm-studio/bin
+end
 
-# Added by Antigravity
-fish_add_path /Users/doc/.antigravity/antigravity/bin
+# Antigravity CLI
+if test -d /Users/doc/.antigravity/antigravity/bin
+    fish_add_path /Users/doc/.antigravity/antigravity/bin
+end
 
 # OpenClaw Completion
-source "/Users/doc/.openclaw/completions/openclaw.fish"
+if test -f /Users/doc/.openclaw/completions/openclaw.fish
+    source "/Users/doc/.openclaw/completions/openclaw.fish"
+end
 
 # bun
 set --export BUN_INSTALL "$HOME/.bun"
@@ -64,11 +72,9 @@ end
 abbr -a ddr 'cd /Users/doc/notes/dd && uv run python refresh.py'
 abbr -a ddw 'cd /Users/doc/notes/dd && uv run python refresh.py --watch'
 
-# Added by Antigravity
-fish_add_path /Users/doc/.antigravity/antigravity/bin
-
 # OpenCode optimizations (fast boot & offline/no-hang)
 set -gx OPENCODE_DISABLE_MODELS_FETCH 1
 set -gx OPENCODE_DISABLE_AUTOUPDATE 1
 set -gx OPENCODE_DISABLE_CLAUDE_CODE 1
 set -gx OPENCODE_FAST_BOOT 1
+
