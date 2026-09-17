@@ -139,13 +139,14 @@ stow -D alacritty
   - `1` — Браузер (Firefox)
   - `2` — Терминал (WezTerm / Ghostty)
   - `3` — Мессенджеры (Telegram)
-  - `4` — Редакторы и код (Zed, Codex)
+  - `4` — Редакторы и код (Zed, Codex, Claude)
   - `5` — Web / Misc (ChatGPT Atlas)
   - `M` — Музыка (Spotify)
+  - `A` — Коммуникации и AI (Microsoft Teams, Antigravity)
 - **Основные хоткеи:**
   - `Alt + h / n / e / i` — смена фокуса окна
   - `Alt + Shift + h / n / e / i` — перемещение окна
-  - `Alt + 1..5, M` — переход на воркспейс (`Alt + Shift + ...` — отправить окно)
+  - `Alt + 1..5, M, A` — переход на воркспейс (`Alt + Shift + ...` — отправить окно)
   - `Alt + Tab` — переключение на предыдущий воркспейс
   - `Alt + -` / `Alt + =` — уменьшить / увеличить размер окна
   - `Alt + Shift + \`` — вход в **Service Mode** (`r` — reload, `f` — toggle float, `esc` — exit)
