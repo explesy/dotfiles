@@ -31,7 +31,7 @@ delivery = "herdr"
 
 [keys]
 # Базовый префикс для команд Herdr (как в tmux)
-prefix = "ctrl+b"
+prefix = "ctrl+a"
 
 # --- Colemak Навигация по панелям (опционально) ---
 # По умолчанию Herdr использует Vim-навигацию (h/j/k/l), а клавиша prefix+n привязана к next_tab.

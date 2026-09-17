@@ -178,7 +178,7 @@ stow -D alacritty
 
 #### [herdr](./herdr)
 - **Концепция:** терминальный воркспейс-менеджер с отслеживанием состояний AI-агентов (`working` / `blocked` / `done` / `idle`), полным управлением мышью и богатым Socket API.
-- **Префикс:** `Ctrl + b`
+- **Префикс:** `Ctrl + a` (унифицирован с tmux)
 - **Сплиты:** `prefix + v` (вертикальный) и `prefix + -` (горизонтальный)
 - **Управление:** `prefix + z` (zoom), `prefix + b` (скрыть/показать sidebar), `prefix + q` (detach в фон)
 - **Сервер:** `herdr status`, `herdr server reload-config`, `herdr server stop`
