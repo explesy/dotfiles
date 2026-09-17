@@ -16,7 +16,7 @@
 - основной layout: `accordion`
 - orientation: `auto`
 - zero gaps
-- `persistent-workspaces = [1, 2, 3, 4, 5, M]`
+- `persistent-workspaces = [1, 2, 3, 4, 5, M, A]`
 - mouse follows focused monitor
 - скрытые через macOS приложения автоматически раскрываются обратно
 
@@ -28,18 +28,19 @@
 - `4` код
 - `5` misc / web apps
 - `M` музыка
+- `A` коммуникации и AI (Teams, Antigravity)
 
 ## Автораскладка окон
 
 Привязка сделана по `app-id`, а не по заголовкам окон. Это надёжнее и не ломается, когда приложение меняет title.
 
 - Firefox -> `1`
-- WezTerm -> `2`
+- WezTerm / Ghostty -> `2`
 - Telegram -> `3`
-- Zed -> `4`
-- Codex -> `4`
+- Zed / Codex / Claude -> `4`
 - ChatGPT Atlas -> `5`
 - Spotify -> `M`
+- Teams / Antigravity -> `A`
 
 Посмотреть актуальные `app-id` можно так:
 
@@ -77,10 +78,8 @@ Layout и fullscreen:
 
 Воркспейсы:
 
-- `alt-1..5` перейти на `1..5`
-- `alt-m` перейти на `M`
-- `alt-shift-1..5` отправить окно на `1..5`
-- `alt-shift-m` отправить окно на `M`
+- `alt-1..5, M, A` перейти на воркспейс
+- `alt-shift-1..5, M, A` отправить окно на воркспейс
 - `alt-tab` back-and-forth между воркспейсами
 - `alt-shift-tab` перенести текущий воркспейс на следующий монитор
 
