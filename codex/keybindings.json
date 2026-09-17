@@ -1,0 +1,10 @@
+[
+  {
+    "command": "globalDictationHold",
+    "key": "LeftControl"
+  },
+  {
+    "command": "openAvatarOverlay",
+    "key": null
+  }
+]

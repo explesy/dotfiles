@@ -44,6 +44,7 @@ validate_pet() {
 mkdir -p "$CODEX_HOME_DIR"
 
 ensure_link "$DOTFILES_DIR/codex/config.toml" "$CODEX_HOME_DIR/config.toml"
+ensure_link "$DOTFILES_DIR/codex/keybindings.json" "$CODEX_HOME_DIR/keybindings.json"
 ensure_link "$DOTFILES_DIR/codex/AGENTS.md" "$CODEX_HOME_DIR/AGENTS.md"
 ensure_link "$DOTFILES_DIR/codex/agents" "$CODEX_HOME_DIR/agents"
 ensure_link "$DOTFILES_DIR/codex/pets" "$CODEX_HOME_DIR/pets"
