@@ -1,5 +1,6 @@
 /** @jsxImportSource @opentui/solid */
 import type { TuiPlugin, TuiPluginApi, TuiPluginModule } from "@opencode-ai/plugin/tui"
+import { createMemo, Show } from "solid-js"
 
 const WORKFLOW = [
   {
@@ -87,6 +88,126 @@ const MODELS: Record<string, string> = {
 
 const titleCase = (value: string) => value.charAt(0).toUpperCase() + value.slice(1)
 
+const compact = (value: string) => value.replace(/\s+/g, " ").trim()
+
+const clip = (value: string, limit: number) => {
+  const text = compact(value)
+  if (text.length <= limit) return text
+
+  const head = text.slice(0, limit - 1)
+  const boundary = head.lastIndexOf(" ")
+  return `${head.slice(0, boundary > limit * 0.6 ? boundary : head.length).trimEnd()}…`
+}
+
+const visibleText = (api: TuiPluginApi, messageID: string) =>
+  (api.state.part(messageID) as readonly any[])
+    .filter((part) => part?.type === "text" && !part.synthetic && !part.ignored && typeof part.text === "string")
+    .map((part) => part.text)
+    .join(" ")
+
+const taskFromText = (value: string) => {
+  const text = compact(value)
+  if (!text) return undefined
+
+  const commandTask = text.match(/^\/(?:lp|luna|design|v)\s+(.+)$/i)
+  if (commandTask?.[1]) return clip(commandTask[1], 180)
+
+  if (/^\/(?:c|do|pr|review|hard|commit|simplify|ldo|workflow|wf)\s*$/i.test(text)) return undefined
+  if (/^(?:да|ага|ок(?:ей)?|продолжай|continue|go on|yes|yep|sure)[.!…\s]*$/i.test(text)) return undefined
+
+  return clip(text, 180)
+}
+
+const taskLabel = (api: TuiPluginApi, sessionID: string) => {
+  const messages = api.state.session.messages(sessionID) as readonly any[]
+
+  for (const message of [...(messages ?? [])].reverse()) {
+    if (message?.role !== "user") continue
+
+    const task = taskFromText(visibleText(api, message.id))
+    if (task) return task
+
+    const title = typeof message?.summary?.title === "string" ? compact(message.summary.title) : ""
+    if (title) return clip(title, 180)
+  }
+
+  return undefined
+}
+
+const toolActivity = (part: any) => {
+  const state = part?.state
+  if (state?.status !== "running") return undefined
+
+  if (typeof state.title === "string" && compact(state.title)) return clip(state.title, 120)
+
+  const input = (state.input ?? {}) as Record<string, unknown>
+  const target = [input.filePath, input.path, input.file, input.filename].find((value) => typeof value === "string")
+  const detail = target ?? input.pattern ?? input.query ?? input.command
+  const tool = titleCase(String(part.tool ?? "working"))
+
+  return typeof detail === "string" && compact(detail)
+    ? clip(`${tool} ${detail}`, 120)
+    : tool
+}
+
+const currentActivity = (api: TuiPluginApi, sessionID: string) => {
+  const messages = api.state.session.messages(sessionID) as readonly any[]
+
+  for (const message of [...(messages ?? [])].reverse()) {
+    if (message?.role !== "assistant") continue
+
+    for (const part of [...(api.state.part(message.id) as readonly any[])].reverse()) {
+      const activity = toolActivity(part)
+      if (activity) return activity
+    }
+  }
+
+  const status = api.state.session.status(sessionID) as any
+  if (status?.type === "retry") return clip(`Retry ${status.attempt}: ${status.message ?? "waiting"}`, 120)
+
+  if (status?.type === "busy") {
+    for (const message of [...(messages ?? [])].reverse()) {
+      if (message?.role !== "assistant") continue
+
+      for (const part of [...(api.state.part(message.id) as readonly any[])].reverse()) {
+        if ((part?.type === "reasoning" || part?.type === "text") && typeof part.text === "string" && compact(part.text)) {
+          return clip(part.text, 120)
+        }
+      }
+    }
+
+    return "Thinking…"
+  }
+
+  return "Idle"
+}
+
+function FocusView(props: { api: TuiPluginApi; session_id: string }) {
+  const theme = () => props.api.theme.current
+  const task = createMemo(() => taskLabel(props.api, props.session_id))
+  const activity = createMemo(() => currentActivity(props.api, props.session_id))
+
+  return (
+    <Show when={task() || activity()}>
+      <box>
+        <text fg={theme().text}>
+          <b>Focus</b>
+        </text>
+        <Show when={task()}>
+          <text fg={theme().textMuted}>
+            Task <span style={{ fg: theme().text }}>{task()}</span>
+          </text>
+        </Show>
+        <Show when={activity()}>
+          <text fg={theme().textMuted}>
+            Now  <span style={{ fg: theme().primary }}>{activity()}</span>
+          </text>
+        </Show>
+      </box>
+    </Show>
+  )
+}
+
 const routeLabel = (api: TuiPluginApi, sessionID: string) => {
   const session = api.state.session.get(sessionID) as any
   const messages = api.state.session.messages(sessionID) as readonly any[]
@@ -149,6 +270,16 @@ const tui: TuiPlugin = async (api) => {
         },
       },
     ],
+  })
+
+  // Todo is already rendered by OpenCode's built-in sidebar plugin; Focus intentionally does not duplicate it.
+  api.slots.register({
+    order: 50,
+    slots: {
+      sidebar_content(_ctx, value) {
+        return <FocusView api={api} session_id={value.session_id} />
+      },
+    },
   })
 
   api.slots.register({
