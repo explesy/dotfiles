@@ -183,13 +183,10 @@ stow -D alacritty
 | `ag` | `agy` | Запуск Antigravity CLI |
 | `agc` | `agy --continue` | Продолжить последнюю сессию Antigravity |
 | `agp` | `agy --mode plan` | Запуск Antigravity в режиме планирования |
-| `ddr` | `cd ~/notes/dd && uv run python refresh.py` | Обновление данных Project Dashboard |
-| `ddw` | `cd ~/notes/dd && uv run python refresh.py --watch` | Автообновление Project Dashboard (watch mode) |
 
 #### Функции (Functions)
 - `yy` — запуск `yazi` с автоматическим переходом (`cd`) в выбранную директорию при выходе.
 - `c` — удобное копирование вывода любой команды в системный буфер обмена (`pbcopy`).
-- `dd` — запуск локального веб-сервера Project Dashboard на порту 8787.
 
 ---
 

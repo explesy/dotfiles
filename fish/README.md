@@ -21,7 +21,6 @@
 - **Функции:**
   - `yy` — запуск `yazi` с автоматическим переходом (`cd`) в последнюю открытую папку.
   - `c` — копирование вывода любой команды в буфер обмена (`command $argv | pbcopy`).
-  - `dd`/`ddr`/`ddw` — Project Dashboard (`notes/dd`) вынесены в [`conf.d/projects.fish`](./.config/fish/conf.d/projects.fish) и тоже привязаны к `$HOME`.
 - **Интеграции:**
   - `starship` и `zoxide` инициализируются при запуске интерактивной сессии.
   - Конфиги `eza` и `zoxide` в [`.config/fish/conf.d/`](./.config/fish/conf.d).
