@@ -1,13 +1,17 @@
 # OpenCode config — optimized Go routing (Sep 2026)
 
-Canonical global OpenCode config for this dotfiles repository. From the repo root, `stow opencode` links `opencode/.config/opencode/` into `~/.config/opencode/`. Runtime package state (`node_modules`, `package.json`, `bun.lock`, `package-lock.json`) stays local and untracked via `.gitignore`.
+Canonical global OpenCode config for this dotfiles repository. From the repo root, `stow opencode` links `opencode/.config/opencode/` into `~/.config/opencode/`. `package.json` and `package-lock.json` are tracked (source of truth for the plugin dependency); `node_modules` and `bun.lock` are generated locally and never committed or stowed.
 
 The package keeps the existing safety/context controls and simplifies primary routing around current OpenCode Go economics: cheap high-throughput default work, strong planning/reasoning only where it pays off, and dedicated multimodal/design routes.
 
 ## Install
 
+`~/.config/opencode` must be a real directory (not a single stow-folder symlink) because `node_modules` is installed there at runtime. Create it **before** stowing so stow links the entries individually:
+
 ```sh
+mkdir -p ~/.config/opencode
 stow opencode
+cd ~/.config/opencode && npm install   # installs @opencode-ai/plugin locally
 ```
 
 ## Structure
@@ -213,6 +217,8 @@ The experimental DeepSeek V4 Flash Vision model is deliberately not the default 
 
 It adds:
 
+- a compact `Focus` block at the top of the session sidebar with the current task and current activity; it derives both from local session state and does not call another model;
+- the Focus block intentionally does **not** render task progress or Todo items because OpenCode already has a built-in `Todo` sidebar block;
 - a compact status beside the session prompt, e.g. `BUILD · DeepSeek V4 Flash · /wf`; `build-v41` is shown as `BUILD 4.1 · DeepSeek V4.1 Flash`;
 - the status is derived from the current session agent/model state, so it helps expose stale or unexpected routing;
 - `/workflow` (alias `/wf`) in the TUI command palette;

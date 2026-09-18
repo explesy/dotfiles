@@ -1,5 +1,4 @@
 # OS artifacts
-.DS_Store
 **/.DS_Store
 
 # Editor & runtime logs
@@ -7,9 +6,8 @@
 *.swp
 *~
 .nvimlog
-lazy_nvim/.config/nvim/.nvimlog
 
-# Backup files
+# Backup & ephemeral files
 **/*.bak
 zellij/.config/zellij/config.kdl.bak
 yazi/.config/yazi/*.toml-*
@@ -21,9 +19,7 @@ herdr/.config/herdr/*.bak
 herdr/.config/herdr/*.log
 herdr/.config/herdr/*.sock
 
-# Node / package manager runtime artifacts
+# Runtime dependencies (generated locally, never committed)
 node_modules/
 **/node_modules/
-opencode/.config/opencode/package.json
-opencode/.config/opencode/package-lock.json
 opencode/.config/opencode/bun.lock
