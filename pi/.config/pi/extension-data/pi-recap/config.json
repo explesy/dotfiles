@@ -1,0 +1,16 @@
+{
+  "recap": {
+    "auto": true,
+    "idleAfterTurnMs": 180000,
+    "model": "opencode-go/deepseek-v4-flash",
+    "fallbackToCurrentModel": true,
+    "language": "auto"
+  },
+  "title": {
+    "applyPolicy": "if-empty-or-auto"
+  },
+  "multiplexer": {
+    "enabled": true,
+    "template": "π {session} · {project}"
+  }
+}

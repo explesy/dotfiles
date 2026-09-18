@@ -23,3 +23,13 @@ herdr/.config/herdr/*.sock
 node_modules/
 **/node_modules/
 opencode/.config/opencode/bun.lock
+
+# Pi runtime and credentials (the tracked package contains only portable config).
+pi/.config/pi/auth.json
+pi/.config/pi/models-store.json
+pi/.config/pi/sessions/
+pi/.config/pi/pi-herdsman/
+pi/.config/pi/npm/node_modules/
+pi/.config/pi/extensions/*/state/
+pi/.config/pi/extensions/*/_tmp/
+pi/.config/pi/extensions/*/logs/

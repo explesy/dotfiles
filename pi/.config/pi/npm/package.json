@@ -1,0 +1,9 @@
+{
+  "name": "pi-extensions",
+  "private": true,
+  "dependencies": {
+    "@gotgenes/pi-permission-system": "^33.0.0",
+    "@zhcsyncer/pi-recap": "^0.4.3",
+    "pi-herdsman": "^0.9.0"
+  }
+}

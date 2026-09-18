@@ -32,6 +32,9 @@ cdls() {
 export VISUAL=nvim
 export EDITOR="$VISUAL"
 
+# Pi: keep global config and extension state under XDG config.
+export PI_CODING_AGENT_DIR="$HOME/.config/pi"
+
 # for poetry autocompletion
 fpath+=~/.zfunc
 autoload -Uz compinit && compinit
@@ -46,4 +49,3 @@ export OPENCODE_DISABLE_MODELS_FETCH=1
 export OPENCODE_DISABLE_AUTOUPDATE=1
 export OPENCODE_DISABLE_CLAUDE_CODE=1
 export OPENCODE_FAST_BOOT=1
-

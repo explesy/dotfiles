@@ -64,6 +64,7 @@
 | | [ranger](./ranger) | Классический терминальный менеджер на Python | `~/.config/ranger/` |
 | **AI & Агенты** | [codex](./codex) | Codex стек: MCP серверы, агенты, скиллы, runbooks | `~/.codex/` |
 | | [opencode](./opencode) | Глобальные настройки OpenCode (модели, TUI, права); зависимости устанавливаются локально через `npm install` | `~/.config/opencode/` |
+| | [pi](./pi) | Глобальные настройки Pi, Pi Recap и npm-зависимости расширений | `~/.config/pi/` |
 | | [antigravity](./antigravity) | Antigravity & agy CLI (автоподтверждение, MCP, глобальные правила) | `~/.gemini/` |
 | **Медиа & Разное** | [iina](./iina) | Конфигурация ввода IINA для macOS | `~/Library/Application Support/...` |
 | | [mpv](./mpv) | Минималистичный видеоплеер | `~/.config/mpv/` |
@@ -116,6 +117,8 @@ stow -D alacritty
 > stow opencode
 > cd ~/.config/opencode && npm install
 > ```
+
+> Пакет `pi` работает по той же схеме: `~/.config/pi` остаётся реальной директорией, а управляемые настройки подключаются через `stow pi`. См. [`pi/README.md`](./pi).
 
 ---
 

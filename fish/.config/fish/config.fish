@@ -4,6 +4,8 @@ if status is-interactive
     # Editor & tooling defaults
     set -gx EDITOR nvim
     set -gx HOMEBREW_NO_AUTO_UPDATE 1
+    # Pi: keep global config and extension state under XDG config.
+    set -gx PI_CODING_AGENT_DIR "$HOME/.config/pi"
 
     # PATH: единый источник через fish_add_path (дедупликация + prepend).
     # Порядок вызовов важен: последний оказывается в начале PATH.
