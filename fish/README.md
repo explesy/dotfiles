@@ -10,7 +10,7 @@
 
 ## Что настроено
 
-- **Окружение и пути:** `fish_greeting` отключено, `EDITOR=nvim`, `PATH` дополнен `/opt/homebrew/bin`, `~/.local/bin`, `~/.docker/bin`, `~/.bun/bin`, `~/.antigravity/antigravity/bin`, `~/.cache/lm-studio/bin`.
+- **Окружение и пути:** `fish_greeting` отключено, `EDITOR=nvim`, `PATH` собирается через `fish_add_path` (`/opt/homebrew/bin`, `~/.local/bin`, `~/.docker/bin`, `~/.bun/bin`, `~/.antigravity/antigravity/bin`, `~/.cache/lm-studio/bin`) — пути заданы относительно `$HOME`, без хардкода пользователя.
 - **Аббревиатуры CLI:**
   - `ls` -> `eza`, `ll` -> `eza -la --sort=type`
   - `lg` -> `lazygit`, `ld` -> `lazydocker`
@@ -18,11 +18,10 @@
   - `v` -> `nvim .`, `clr` -> `clear`
   - `bu` -> `brew update`, `buu` -> `brew update; and brew upgrade`
   - `ag` -> `agy`, `agc` -> `agy --continue`, `agp` -> `agy --mode plan` (Antigravity CLI)
-  - `ddr` / `ddw` -> обновление / автоотслеживание Project Dashboard (`dd`)
 - **Функции:**
   - `yy` — запуск `yazi` с автоматическим переходом (`cd`) в последнюю открытую папку.
   - `c` — копирование вывода любой команды в буфер обмена (`command $argv | pbcopy`).
-  - `dd` — запуск локального веб-дашборда проектов (`notes/dd`) на порту 8787 с проверкой занятости порта.
+  - `dd`/`ddr`/`ddw` — Project Dashboard (`notes/dd`) вынесены в [`conf.d/projects.fish`](./.config/fish/conf.d/projects.fish) и тоже привязаны к `$HOME`.
 - **Интеграции:**
   - `starship` и `zoxide` инициализируются при запуске интерактивной сессии.
   - Конфиги `eza` и `zoxide` в [`.config/fish/conf.d/`](./.config/fish/conf.d).
