@@ -16,7 +16,7 @@ brew install --cask orbstack
 brew install --cask docker
 ```
 
-CLI-утилиты будут доступны в `/Users/doc/.docker/bin` (путь автоматически добавляется в Fish).
+CLI-утилиты будут доступны в `$HOME/.docker/bin` (путь автоматически добавляется в Fish).
 
 ### Вариант 3: Colima (Open-source CLI контейнеризация)
 

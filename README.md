@@ -63,7 +63,7 @@
 | **Файловые менеджеры** | [yazi](./yazi) | Быстрый файловый менеджер (Gruvbox, превью PDF/картинок) | `~/.config/yazi/` |
 | | [ranger](./ranger) | Классический терминальный менеджер на Python | `~/.config/ranger/` |
 | **AI & Агенты** | [codex](./codex) | Codex стек: MCP серверы, агенты, скиллы, runbooks | `~/.codex/` |
-| | [opencode](./opencode) | Глобальные настройки OpenCode (модели, TUI, права) | `~/.config/opencode/` |
+| | [opencode](./opencode) | Глобальные настройки OpenCode (модели, TUI, права); зависимости устанавливаются локально через `npm install` | `~/.config/opencode/` |
 | | [antigravity](./antigravity) | Antigravity & agy CLI (автоподтверждение, MCP, глобальные правила) | `~/.gemini/` |
 | **Медиа & Разное** | [iina](./iina) | Конфигурация ввода IINA для macOS | `~/Library/Application Support/...` |
 | | [mpv](./mpv) | Минималистичный видеоплеер | `~/.config/mpv/` |
@@ -105,6 +105,16 @@ stow -D alacritty
 > При первой настройке системы можно накатить основной стек одной командой:
 > ```sh
 > stow aerospace ghostty fish starship tmux lazy_nvim yazi kanata
+> ```
+
+> [!NOTE]
+> `README.md` пакетов не линкуются через stow (правило `^README\.md$` в `.stow-local-ignore`).
+>
+> Пакет `opencode` требует **реальную** директорию `~/.config/opencode` (туда устанавливаются `node_modules`), поэтому перед stow создайте её и после — установите зависимости:
+> ```sh
+> mkdir -p ~/.config/opencode
+> stow opencode
+> cd ~/.config/opencode && npm install
 > ```
 
 ---
