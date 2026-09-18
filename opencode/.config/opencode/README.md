@@ -213,6 +213,8 @@ The experimental DeepSeek V4 Flash Vision model is deliberately not the default 
 
 It adds:
 
+- a compact `Focus` block at the top of the session sidebar with the current task and current activity; it derives both from local session state and does not call another model;
+- the Focus block intentionally does **not** render task progress or Todo items because OpenCode already has a built-in `Todo` sidebar block;
 - a compact status beside the session prompt, e.g. `BUILD · DeepSeek V4 Flash · /wf`; `build-v41` is shown as `BUILD 4.1 · DeepSeek V4.1 Flash`;
 - the status is derived from the current session agent/model state, so it helps expose stale or unexpected routing;
 - `/workflow` (alias `/wf`) in the TUI command palette;
