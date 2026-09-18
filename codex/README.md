@@ -275,6 +275,11 @@ Custom Codex pets также хранятся в репозитории: `codex/
 `AGENTS.md`, agents, skills и pets. Скрипт не заменяет существующие обычные
 файлы без явного ручного решения.
 
+В `codex/keybindings.json` зафиксированы глобальные сочетания клавиш:
+- `openAvatarOverlay: null` — отключён системный перехват `Alt + Space` для вызова плавающего оверлея питомца;
+- `globalDictationHold: "LeftControl"` — запуск диктовки по удержанию левого Control.
+Также в `~/.codex/hooks.json` подключен скрипт `herdr-agent-state.sh`, транслирующий жизненный цикл агента (генерация, ожидание подтверждения, завершение) в мультиплексор Herdr.
+
 Системные файлы ChatGPT из `~/Library` намеренно не копируются в Git:
 `com.openai.chat.plist` и каталоги Application Support содержат account ID,
 кэш, историю, аналитику и состояние конкретного Mac. Эти данные приложение

@@ -1,14 +1,24 @@
 # OpenCode config — optimized Go routing (Sep 2026)
 
-Ready to copy into `~/.config/opencode/`. This package keeps the existing safety/context controls and simplifies primary routing around current OpenCode Go economics: cheap high-throughput default work, strong planning/reasoning only where it pays off, and dedicated multimodal/design routes.
+Canonical global OpenCode config for this dotfiles repository. From the repo root, `stow opencode` links `opencode/.config/opencode/` into `~/.config/opencode/`. Runtime package state (`node_modules`, `package.json`, `bun.lock`, `package-lock.json`) stays local and untracked via `.gitignore`.
+
+The package keeps the existing safety/context controls and simplifies primary routing around current OpenCode Go economics: cheap high-throughput default work, strong planning/reasoning only where it pays off, and dedicated multimodal/design routes.
+
+## Install
+
+```sh
+stow opencode
+```
 
 ## Structure
 
 ```text
 opencode.jsonc
 tui.json
+herdr-tui-session.js
 
 agents/
+  build-v41.md
   cheap-explore.md
   coder.md
   reviewer.md
@@ -31,17 +41,23 @@ commands/
   design.md
 
 plugins/
+  herdr-agent-state.js
   mode-model-router.js
+
+tui-plugins/
+  workflow-ui.tsx
 ```
 
 ## Primary routing
 
 The primary-agent list is intentionally small:
 
-- `build` — **default**, `opencode-go/deepseek-v4-flash`. Everyday implementation, debugging and refactoring. This is now the main throughput/value route.
+- `build` — **default**, `opencode-go/deepseek-v4-flash`. Everyday implementation, debugging and refactoring. This remains the main throughput/value route.
+- `build-v41` — `opencode-go/deepseek-v4.1-flash`. Optional A/B route for ordinary implementation on DeepSeek V4.1 Flash, with the same orchestration policy as `build`. Use it to compare real task quality without replacing the stable default yet; it also supports image input.
 - `plan` — `opencode-go/gpt-5.6-luna`, **high** reasoning, read-only. Use for implementation-ready planning, architecture, migrations, state/concurrency, compatibility and screenshot/PDF-aware planning.
 - `quality` — `opencode-go/gpt-5.6-luna`, **high** reasoning. Explicit escalation for hard implementation/debugging, cross-cutting changes, difficult failures, or multimodal work where the default route is not enough.
-- `free-build` — `opencode/deepseek-v4-flash-free`. Zero-Go fallback for low-risk routine work or after Go quota exhaustion.
+- `free-build` — `opencode/nemotron-3.5-lightning-free`. Zero-Go fallback for low-risk routine work or after Go quota exhaustion.
+  DeepSeek V4 Flash Free was removed from this route after current OpenCode builds began rejecting it as an invalid configured model.
 - `design` — `opencode-go/glm-5.3-flash`, **high** reasoning. Screenshot/reference-driven frontend design, responsive layout, visual hierarchy and UI polish.
 - `vision` — `opencode-go/qwen3.8-flash`. Economical general multimodal diagnosis and small screenshot/image-driven coding tasks.
 
@@ -60,6 +76,8 @@ Routine task:
 ```text
 build -> automatic focused reviewer after non-trivial edits -> /commit
 ```
+
+To A/B test the new DeepSeek route on the same class of work, switch the primary agent to `build-v41`. The default `build` route is intentionally unchanged for now.
 
 Substantial feature/change:
 
@@ -95,7 +113,7 @@ For a cheap visual diagnosis/small screenshot-driven fix:
 
 ## Why this routing
 
-OpenCode Go limits are dollar-based, so long agentic sessions should spend expensive reasoning only when it materially reduces retries. DeepSeek V4 Flash is the default because it combines strong current OpenCode adoption with very high request throughput. Luna High is reserved for planning and explicit quality escalation. GLM-5.3 Flash replaces Kimi K3 for normal design work because it is multimodal and much more practical for iterative sessions. Qwen3.8 Flash provides a cheaper general vision route without relying on the experimental DeepSeek vision model.
+OpenCode Go limits are dollar-based, so long agentic sessions should spend expensive reasoning only when it materially reduces retries. DeepSeek V4 Flash remains the default because it combines strong current OpenCode adoption with very high request throughput. DeepSeek V4.1 Flash is available as a separate A/B build route so its newer agentic/vision behavior can be tested on real work without silently changing the established default. Luna High is reserved for planning and explicit quality escalation. GLM-5.3 Flash replaces Kimi K3 for normal design work because it is multimodal and much more practical for iterative sessions. Qwen3.8 Flash provides a cheaper general vision route without relying on the experimental DeepSeek V4 Flash Vision model.
 
 The config intentionally does **not** add every cheap/new model as a permanent mode. MiMo-V2.5, Hy3/Hy4, LongCat, Muse/Omen and newer previews can be A/B tested later, but adding them all to the primary picker would make everyday routing harder. A model earns a permanent route only when it clearly wins a real recurring role.
 
@@ -118,7 +136,7 @@ Primary prompts treat bounded-subagent exhaustion as a handoff rather than task 
 
 The existing cheap/free child-context strategy is preserved:
 
-- `cheap-explore` — DeepSeek V4 Flash Free, read-only, narrow codebase discovery.
+- `cheap-explore` — Nemotron 3.5 Lightning Free, read-only, narrow codebase discovery.
 - `coder` — Laguna S 2.1 Free, focused mechanical implementation only after scope/files are known.
 - `reviewer` — MiMo-V2.5 Free, one independent first-pass post-implementation review.
 - `translator` — GPT-5.6 Luna for production localization; preserves placeholders, keys, markup and technical identifiers.
@@ -189,6 +207,20 @@ The experimental DeepSeek V4 Flash Vision model is deliberately not the default 
 - `/simplify` — inspect recent changes for unnecessary complexity.
 - `/commit` — stage relevant files and create a local conventional commit; never push.
 
+## TUI workflow UI
+
+`workflow-ui.tsx` is a TUI-only presentation layer. It does not duplicate command routing or change agent/model configuration. `tui.json` loads it explicitly from `./tui-plugins/workflow-ui.tsx`.
+
+It adds:
+
+- a compact status beside the session prompt, e.g. `BUILD · DeepSeek V4 Flash · /wf`; `build-v41` is shown as `BUILD 4.1 · DeepSeek V4.1 Flash`;
+- the status is derived from the current session agent/model state, so it helps expose stale or unexpected routing;
+- `/workflow` (alias `/wf`) in the TUI command palette;
+- a searchable command cheat sheet for `/lp`, `/pr`, `/do`, `/ldo`, `/luna`, `/review`, `/hard`, `/design`, `/v`, `/c`, `/simplify`, and `/commit`;
+- a small `/workflow commands` hint on the home prompt.
+
+The UI plugin is intentionally separate from `plugins/mode-model-router.js`: TUI modules are target-exclusive and are loaded from `tui.json`, while the existing router is a server/runtime plugin. This UI is for the current TUI plugin system and does not add controls to OpenCode Desktop/Web.
+
 ## Desktop agent/model picker workaround
 
 Some OpenCode Desktop builds can display or retain a stale manually selected model when switching agents. `plugins/mode-model-router.js` therefore enforces the intended model on every user turn.
@@ -196,20 +228,22 @@ Some OpenCode Desktop builds can display or retain a stale manually selected mod
 Current enforced mapping:
 
 - `build` -> DeepSeek V4 Flash (OpenCode Go)
+- `build-v41` -> DeepSeek V4.1 Flash (OpenCode Go)
 - `plan` -> GPT-5.6 Luna High (OpenCode Go)
 - `quality` -> GPT-5.6 Luna High (OpenCode Go)
-- `free-build` -> DeepSeek V4 Flash Free
+- `free-build` -> Nemotron 3.5 Lightning Free
 - `design` -> GLM-5.3 Flash High (OpenCode Go)
 - `vision` -> Qwen3.8 Flash (OpenCode Go)
 
 The plugin intentionally does not remap subagents; each subagent keeps its own pinned model.
 
-The specialized workflow commands also pin agent/model (and reasoning variant where applicable), so `/lp`, `/do`, `/ldo`, `/luna`, `/design`, and `/v` are the safest entry points when the Desktop picker appears stale.
+The specialized workflow commands also pin agent/model (and reasoning variant where applicable), so `/lp`, `/do`, `/ldo`, `/luna`, `/design`, and `/v` are the safest entry points when the Desktop picker appears stale. `build-v41` is selected directly as a primary agent and is protected by the same runtime router.
 
 ## Safety / context controls preserved
 
 - secrets and private keys remain protected;
-- destructive shell commands, dependency installs, publishing and network research still require approval;
+- destructive shell commands (rm, sudo, git reset --hard) and process kills still require approval;
+- routine git operations, dependency installation, web research and external directory access are autonomous;
 - sharing remains disabled;
 - compaction/pruning and watcher ignores remain enabled;
 - normal coding remains autonomous;

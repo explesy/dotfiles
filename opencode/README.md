@@ -15,6 +15,7 @@ stow opencode
 ```text
 opencode.jsonc
 tui.json
+herdr-tui-session.js
 
 agents/
   build-v41.md
@@ -40,6 +41,7 @@ commands/
   design.md
 
 plugins/
+  herdr-agent-state.js
   mode-model-router.js
 
 tui-plugins/

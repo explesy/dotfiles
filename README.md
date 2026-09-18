@@ -168,11 +168,18 @@ stow -D alacritty
 | `dcu` / `dcd` | `docker compose up` / `down` | Управление Compose-стеком |
 | `v` | `nvim .` | Быстрый запуск Neovim в текущей папке |
 | `clr` | `clear` | Очистка экрана |
+| `bu` | `brew update` | Обновление списков Homebrew |
 | `buu` | `brew update; and brew upgrade` | Полное обновление системы через Brew |
+| `ag` | `agy` | Запуск Antigravity CLI |
+| `agc` | `agy --continue` | Продолжить последнюю сессию Antigravity |
+| `agp` | `agy --mode plan` | Запуск Antigravity в режиме планирования |
+| `ddr` | `cd ~/notes/dd && uv run python refresh.py` | Обновление данных Project Dashboard |
+| `ddw` | `cd ~/notes/dd && uv run python refresh.py --watch` | Автообновление Project Dashboard (watch mode) |
 
 #### Функции (Functions)
 - `yy` — запуск `yazi` с автоматическим переходом (`cd`) в выбранную директорию при выходе.
 - `c` — удобное копирование вывода любой команды в системный буфер обмена (`pbcopy`).
+- `dd` — запуск локального веб-сервера Project Dashboard на порту 8787.
 
 ---
 
@@ -224,7 +231,13 @@ stow -D alacritty
   - Кастомные агенты (`scout`, `hard-review`, `plan-reviewer`).
   - Набор готовых скиллов (`commit`, `pr`, `simplify`, `ui`, `preflight` и др.).
   - Кастомные TUI-питомцы в `codex/pets/`.
-- **[opencode/](./opencode):** глобальная конфигурация [OpenCode](https://opencode.ai) с предустановленными моделями, правилами доступа (permissions) и темой.
+  - Управление горячими клавишами через `keybindings.json` (отключён глобальный вызов оверлея питомца `Alt+Space`, удержание диктовки на `LeftControl`).
+  - Интеграция со статусами Herdr через хук `~/.codex/herdr-agent-state.sh`.
+- **[opencode/](./opencode):** глобальная конфигурация [OpenCode](https://opencode.ai):
+  - Оптимизированный роутинг моделей под экономику OpenCode Go (DeepSeek V4 Flash, GPT-5.6 Luna High, GLM-5.3 Flash).
+  - Сбалансированный режим автономности: рутинный Git (`commit`, `push`, `checkout`), установка зависимостей, чтение внешних папок и веб-поиск выполняются без подтверждений; деструктивные операции (`rm`, `sudo`, `reset --hard`) и секреты (`*.env`) защищены.
+  - Быстрое переключение автоподтверждения в TUI по горячей клавише `Cmd + Shift + A` (`mod+shift+a`).
+  - Интеграция с мультиплексором Herdr (`plugins/herdr-agent-state.js`, `herdr-tui-session.js`).
 - **[antigravity/](./antigravity):** конфигурация Google Antigravity и терминального агента `agy`:
   - Включен режим **автоподтверждения по умолчанию** (`toolPermission: always-proceed`, `agentMode: accept-edits`).
   - Разрешён доступ к файлам вне текущего воркспейса (`allowNonWorkspaceAccess: true`).
