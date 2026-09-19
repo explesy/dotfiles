@@ -10,6 +10,32 @@ type WorkflowKind = "N" | "I" | "B" | "BH";
 
 const BUILD_PROVIDER = "opencode-go";
 const BUILD_MODEL = "deepseek-v4.1-flash";
+
+type ModelRoute = {
+  provider: string;
+  model: string;
+  thinking: ThinkingLevel;
+};
+
+const DEFAULT_NEXT_MODEL = "ds";
+const NEXT_MODEL_ROUTES = {
+  ds: {
+    provider: "opencode-go",
+    model: "deepseek-v4.1-flash",
+    thinking: "low",
+  },
+  codex: {
+    provider: "openai-codex",
+    model: "gpt-5.6-sol",
+    thinking: "medium",
+  },
+  agy: {
+    provider: "antigravity",
+    model: "gemini-3-8-flash",
+    thinking: "low",
+  },
+} satisfies Record<string, ModelRoute>;
+
 const WORKFLOW_STATUS_KEY = "workflow";
 /**
  * Phases that end the run: the footer is cleared immediately so a finished or
@@ -349,14 +375,14 @@ export default function workflowCommands(pi: ExtensionAPI) {
     clearWorkflowStatus(ctx);
   });
 
-  const switchToBuildModel = async (
+  const switchToModel = async (
     ctx: ExtensionCommandContext,
-    thinking: ThinkingLevel,
+    route: ModelRoute,
   ) => {
-    const model = ctx.modelRegistry.find(BUILD_PROVIDER, BUILD_MODEL);
+    const model = ctx.modelRegistry.find(route.provider, route.model);
     if (!model) {
       ctx.ui.notify(
-        `Build model not found: ${BUILD_PROVIDER}/${BUILD_MODEL}`,
+        `Model not found: ${route.provider}/${route.model}`,
         "error",
       );
       return false;
@@ -365,17 +391,27 @@ export default function workflowCommands(pi: ExtensionAPI) {
     const ok = await pi.setModel(model);
     if (!ok) {
       ctx.ui.notify(
-        `No authentication configured for ${BUILD_PROVIDER}/${BUILD_MODEL}`,
+        `No authentication configured for ${route.provider}/${route.model}`,
         "error",
       );
       return false;
     }
 
     // Footer label comes from the model that actually got selected.
-    workflowModelLabel = model.name?.trim() || model.id || BUILD_MODEL;
-    pi.setThinkingLevel(thinking);
+    workflowModelLabel = model.name?.trim() || model.id || route.model;
+    pi.setThinkingLevel(route.thinking);
     return true;
   };
+
+  const switchToBuildModel = async (
+    ctx: ExtensionCommandContext,
+    thinking: ThinkingLevel,
+  ) =>
+    switchToModel(ctx, {
+      provider: BUILD_PROVIDER,
+      model: BUILD_MODEL,
+      thinking,
+    });
 
   const runBuild = async (
     args: string,
@@ -410,17 +446,29 @@ export default function workflowCommands(pi: ExtensionAPI) {
     runBuild(args, ctx, "high");
 
   const runNext = async (args: string, ctx: ExtensionCommandContext) => {
-    const ok = await switchToBuildModel(ctx, "low");
+    const input = args.trim();
+    const firstSpace = input.search(/\s/);
+    const firstToken =
+      firstSpace === -1 ? input : input.slice(0, firstSpace);
+    const explicitRoute =
+      firstToken &&
+      NEXT_MODEL_ROUTES[firstToken.toLowerCase() as keyof typeof NEXT_MODEL_ROUTES];
+
+    const route = explicitRoute ?? NEXT_MODEL_ROUTES[DEFAULT_NEXT_MODEL];
+    const extra = explicitRoute
+      ? input.slice(firstToken.length).trim()
+      : input;
+
+    const ok = await switchToModel(ctx, route);
     if (!ok) {
       return;
     }
 
-    const extra = args.trim();
     const prompt = extra
       ? `${NEXT_TASK_PROMPT}\n\nAdditional instruction from me:\n${extra}`
       : NEXT_TASK_PROMPT;
 
-    startWorkflowStatus(ctx, "N", "low", { phase: "selecting" });
+    startWorkflowStatus(ctx, "N", route.thinking, { phase: "selecting" });
     pi.sendUserMessage(prompt);
   };
 
@@ -476,7 +524,7 @@ export default function workflowCommands(pi: ExtensionAPI) {
 
   pi.registerCommand("n", {
     description:
-      "Execute exactly one next queued GitHub issue through implementation, verification, review, and queue update",
+      "Execute one next queued GitHub issue; optional model selector: ds, codex, agy",
     handler: runNext,
   });
 
