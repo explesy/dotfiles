@@ -2,14 +2,10 @@
   "name": "pi-extensions",
   "private": true,
   "dependencies": {
-    "@estebanforge/pi-antigravity-bridge": "1.6.0",
+    "@estebanforge/pi-antigravity-bridge": "https://github.com/explesy/pi-antigravity-bridge/archive/da57fd82168430966049563ab32b9f4c10a6bd16.tar.gz",
     "@gotgenes/pi-permission-system": "^33.0.0",
     "@zhcsyncer/pi-recap": "^0.4.3",
     "pi-subagents": "0.69.0"
   },
-  "scripts": {
-    "patch:bridge-compat": "node \"$(dirname \"$(realpath package.json)\")/scripts/apply-pi-antigravity-bridge-compat-patch.mjs\"",
-    "postinstall": "npm run patch:bridge-compat",
-    "test:bridge-compat": "node --experimental-strip-types \"$(dirname \"$(realpath package.json)\")/scripts/verify-pi-antigravity-bridge-compat-patch.mjs\""
-  }
+  "scripts": {}
 }

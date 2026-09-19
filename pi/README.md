@@ -18,30 +18,20 @@ stow pi
 cd "$HOME/.config/pi/npm" && npm install
 ```
 
-### Local bridge compatibility patch
+### Managed bridge fork
 
-Пока upstream не исправил issue [#5](https://github.com/EstebanForge/pi-antigravity-bridge/issues/5),
-`npm install` автоматически применяет к строго закреплённому
-`@estebanforge/pi-antigravity-bridge` 1.6.0 маленький compatibility patch.
-Он сохраняет полный JSON-объект `{ decision, reason }` в ответе approval hook:
-иначе Antigravity получает строку `"deny"` вместо объекта и аварийно завершает
-hook с protobuf/parser error.
+Pi использует закреплённый Git commit нашего форка
+[`explesy/pi-antigravity-bridge`](https://github.com/explesy/pi-antigravity-bridge),
+а не патчит опубликованный npm-пакет после установки. Первый fork-патч
+сохраняет полный approval-ответ `{ decision, reason }`: иначе Antigravity
+получает только строку `"deny"` и аварийно завершает hook с protobuf/parser
+error.
 
-Скрипт намеренно отказывается работать с другой версией или неизвестным
-исходным фрагментом. Это не ослабляет permission gate и не решает отдельную
-upstream-проблему изоляции общего workspace hook; он только превращает падение
-в корректный `deny`. Повторный запуск безопасен:
-
-```sh
-cd "$HOME/.config/pi/npm" && npm run patch:bridge-compat
-```
-
-Проверка обоих ответов hook (direct и polling) без запуска Pi или реального
-Antigravity turn:
-
-```sh
-cd "$HOME/.config/pi/npm" && npm run test:bridge-compat
-```
+Commit закреплён в `npm/package.json` и `npm/package-lock.json`, поэтому
+`npm install` воспроизводимо берёт именно проверенный исходник. Обновление
+bridge теперь выполняется отдельным изменением commit SHA в dotfiles после
+проверок в форке; локальные изменения `node_modules` не являются источником
+истины.
 
 Herdr больше не участвует в оркестрации Pi. Его можно использовать отдельно как
 терминальный мультиплексор, а дочерние задания запускаются через
