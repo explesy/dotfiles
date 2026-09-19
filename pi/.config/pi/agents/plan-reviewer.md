@@ -4,9 +4,6 @@ description: Manual-only independent pre-implementation plan reviewer using GPT-
 model: openai/gpt-5.6-terra
 thinking: high
 tools: read, grep, find, ls, bash
-session-mode: standalone
-spawning: false
-auto-exit: true
 permission:
   "*": deny
   read: allow

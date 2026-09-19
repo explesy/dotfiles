@@ -4,9 +4,6 @@ description: Independent first-pass implementation reviewer focused on concrete 
 model: opencode/mimo-v2.5-free
 thinking: medium
 tools: read, grep, find, ls, bash
-session-mode: standalone
-spawning: false
-auto-exit: true
 permission:
   "*": deny
   read: allow

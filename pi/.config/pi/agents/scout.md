@@ -4,9 +4,6 @@ description: Fast cheap read-only codebase reconnaissance for focused questions 
 model: opencode/nemotron-3.5-lightning-free
 thinking: low
 tools: read, grep, find, ls
-session-mode: standalone
-spawning: false
-auto-exit: true
 permission:
   "*": deny
   read: allow
