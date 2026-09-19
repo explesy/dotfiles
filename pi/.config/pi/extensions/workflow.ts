@@ -46,12 +46,9 @@ backlog or silently reprioritize planned work.
 5. Run the smallest meaningful verification set: focused tests/checks first,
    then broader checks only when the change warrants them.
 
-6. For a non-trivial diff, delegate exactly one independent read-only pass to
-   delivery-reviewer. Give it the selected issue/task, acceptance criteria,
-   intended behavior, and tell it to inspect the actual working-tree diff.
+6. For a non-trivial diff, delegate one independent read-only pass to reviewer.
    Fix valid blocking and important findings, then rerun the affected checks.
-   Do not create a second independent review loop and do not spend time on
-   cosmetic nits.
+   Do not create an endless review loop and do not spend time on cosmetic nits.
 
 7. Finish the repository workflow honestly:
    - satisfy the issue acceptance criteria before marking it complete;
