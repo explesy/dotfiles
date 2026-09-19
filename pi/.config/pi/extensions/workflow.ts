@@ -1,13 +1,13 @@
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import type {
+  ExtensionAPI,
+  ExtensionCommandContext,
+} from "@earendil-works/pi-coding-agent";
 
 const BUILD_PROVIDER = "opencode-go";
 const BUILD_MODEL = "deepseek-v4-flash";
 
 export default function workflowCommands(pi: ExtensionAPI) {
-  const runBuild = async (
-    args: string,
-    ctx: Parameters<Parameters<ExtensionAPI["registerCommand"]>[1]["handler"]>[1],
-  ) => {
+  const runBuild = async (args: string, ctx: ExtensionCommandContext) => {
     const model = ctx.modelRegistry.find(BUILD_PROVIDER, BUILD_MODEL);
     if (!model) {
       ctx.ui.notify(
