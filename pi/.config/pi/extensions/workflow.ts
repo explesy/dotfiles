@@ -1,8 +1,9 @@
 import type {
   ExtensionAPI,
   ExtensionCommandContext,
-  ThinkingLevel,
 } from "@earendil-works/pi-coding-agent";
+
+type ThinkingLevel = Parameters<ExtensionAPI["setThinkingLevel"]>[0];
 
 const BUILD_PROVIDER = "opencode-go";
 const BUILD_MODEL = "deepseek-v4.1-flash";
