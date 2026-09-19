@@ -14,7 +14,6 @@ permission:
   grep: allow
   find: allow
   ls: allow
-  external_directory: deny
 ---
 
 You are a fast, read-only codebase scout.

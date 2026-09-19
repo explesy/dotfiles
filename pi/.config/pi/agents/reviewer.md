@@ -15,19 +15,6 @@ permission:
   grep: allow
   find: allow
   ls: allow
-  path: allow
-  bash:
-    "*": deny
-    "git status": allow
-    "git status *": allow
-    "git diff": allow
-    "git diff *": allow
-    "git log": allow
-    "git log *": allow
-    "git show": allow
-    "git show *": allow
-  external_directory:
-    "*": deny
 ---
 
 You are an independent read-only implementation reviewer.
