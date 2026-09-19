@@ -29,7 +29,8 @@ launcher автоматически. Pi запускается в доверен
 автоматически разрешает действия со статусом `ask`, не показывая диалогов.
 Явные запреты (`deny`) сохраняются — в частности, для `.env` и Pi credentials.
 
-Launcher запускает subagents, recap и workflow. Herdsman не загружается, поэтому
+Launcher запускает subagents, Antigravity bridge, recap и workflow. Herdsman не
+загружается, поэтому
 запросы к Console Go не содержат несовместимые старые схемы `agent`, `chief` и
 `staff`.
 Для делегирования используется плоский инструмент `subagent`, а глубина вложенной
@@ -62,6 +63,34 @@ Prompt templates лежат в `prompts/` и появляются в slash autoc
 После изменения prompt templates или `extensions/workflow.ts` используйте
 `/reload` либо перезапустите Pi.
 
+## Antigravity через `agy`
+
+В launcher добавлен `@estebanforge/pi-antigravity-bridge`. Он подключает модели
+через установленный и авторизованный официальный CLI `agy`, а не через отдельный
+OAuth-токен внутри Pi. После перезапуска доступны модели провайдера
+`antigravity`:
+
+- `antigravity/gemini-3-8-flash`;
+- `antigravity/gemini-3-7-flash`;
+- `antigravity/gemini-3-6-flash`;
+- `antigravity/gemini-3-1-pro`;
+- `antigravity/claude-sonnet-4-6`;
+- `antigravity/claude-opus-4-6-thinking`;
+- `antigravity/gpt-oss-120b-medium`.
+
+Выбор модели:
+
+```text
+/model antigravity/gemini-3-8-flash
+```
+
+Диагностика bridge выполняется командами `/agy status` и `/agy doctor`. После
+обновления каталога моделей через `agy update` используйте `/reload` или
+перезапустите Pi. Bridge по умолчанию запускает собственный закрытый tool loop
+`agy`; его изменения файлов не проходят через обычный inline diff Pi. Команды
+`agy` выполняются без отдельного подтверждения, поэтому не выбирайте
+`accept-edits` для непроверенных репозиториев.
+
 ## Agent definitions
 
 Пользовательские роли лежат в `agents/` и переопределяют одноимённые bundled-роли
@@ -85,13 +114,13 @@ Prompt templates лежат в `prompts/` и появляются в slash autoc
 - `extensions/workflow.ts` — локальные workflow-команды, требующие поведения
   сложнее обычного prompt template;
 - `.local/bin/pi` — единственный launcher Pi с permission system,
-  `pi-subagents`, recap и workflow;
+  `pi-subagents`, Antigravity bridge, recap и workflow;
 - `agents/*.md` — пользовательские определения ролей `pi-subagents`;
 - `prompts/*.md` — короткие slash workflow templates;
 - `npm/package.json` и `npm/package-lock.json` — воспроизводимый список npm-зависимостей.
 
 `auth.json`, `models-store.json`, `sessions/`, `pi-subagents/`,
-`extensions/*/state` и `npm/node_modules/` остаются локальными и не должны
+`extensions/*/state`, `.agents/hooks.json` и `npm/node_modules/` остаются локальными и не должны
 попадать в Git.
 
 ## Политика разрешений

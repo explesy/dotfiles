@@ -19,6 +19,9 @@ herdr/.config/herdr/*.bak
 herdr/.config/herdr/*.log
 herdr/.config/herdr/*.sock
 
+# Antigravity CLI runtime state
+.agents/hooks.json
+
 # Runtime dependencies (generated locally, never committed)
 node_modules/
 **/node_modules/
