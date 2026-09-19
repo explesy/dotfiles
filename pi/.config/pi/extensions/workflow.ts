@@ -2,12 +2,47 @@ import type {
   ExtensionAPI,
   ExtensionCommandContext,
 } from "@earendil-works/pi-coding-agent";
+import { Type } from "typebox";
 
 type ThinkingLevel = Parameters<ExtensionAPI["setThinkingLevel"]>[0];
+type WorkflowKind = "N" | "I" | "B" | "BH";
 
 const BUILD_PROVIDER = "opencode-go";
 const BUILD_MODEL = "deepseek-v4.1-flash";
 const WORKFLOW_STATUS_KEY = "workflow";
+const STATUS_PHASES = new Set([
+  "selecting",
+  "selected",
+  "investigating",
+  "planning",
+  "implementing",
+  "testing",
+  "reviewing",
+  "fixing",
+  "finishing",
+  "blocked",
+]);
+
+const WORKFLOW_STATUS_PROTOCOL = `
+Keep the Pi footer useful during this workflow by calling workflow_status only
+when the major phase changes. This tool is UI-only; it never replaces actual
+work.
+
+- after the issue is known, call phase "selected" with its number and short
+  title;
+- use "investigating" for narrow code/repository investigation after selection;
+- use "planning" only if the task genuinely escalates to planner/plan-reviewer;
+- call "implementing" immediately before the main implementation work;
+- call "testing" immediately before verification;
+- call "reviewing" immediately before the independent reviewer pass;
+- if reviewer findings require changes, call "fixing" before those fixes;
+- call "finishing" before issue/queue/handoff completion;
+- if execution must stop because the issue is blocked or ambiguous, call
+  "blocked" before the final explanation.
+
+Do not call workflow_status for every tool invocation. One call per meaningful
+phase transition is enough.
+`.trim();
 
 const NEXT_TASK_PROMPT = `
 Execute exactly one next queued GitHub issue for this repository end-to-end.
@@ -15,6 +50,8 @@ Execute exactly one next queued GitHub issue for this repository end-to-end.
 Use the project's existing GitHub Issues, queue, labels, project fields, docs,
 and repository instructions as the source of truth. Do not invent a parallel
 backlog or silently reprioritize planned work.
+
+${WORKFLOW_STATUS_PROTOCOL}
 
 1. Ground the current state first:
    - read the repository instructions that are directly relevant;
@@ -28,7 +65,10 @@ backlog or silently reprioritize planned work.
      unfinished unblocked item in an explicitly ordered queue;
    - respect gated, blocked, research-only, dated, and dependency conditions;
    - if there is no unambiguous next task, or the apparent next task is blocked,
-     report the ambiguity/blocker and stop instead of guessing.
+     call workflow_status with phase "blocked", report the ambiguity/blocker,
+     and stop instead of guessing;
+   - as soon as the task is selected, call workflow_status with phase
+     "selected", issue number, and a short issue title.
 
 3. Read the selected issue, its acceptance criteria, relevant linked issues,
    and only the code/docs needed to execute it. Existing issue plans/checklists
@@ -74,6 +114,8 @@ Use the issue, repository instructions, existing docs, and the project's
 established GitHub workflow as the source of truth. Do not select or begin a
 different issue during this command.
 
+${WORKFLOW_STATUS_PROTOCOL}
+
 1. Ground the current state first:
    - read the repository instructions that are directly relevant;
    - inspect git status and preserve unrelated working-tree changes;
@@ -81,9 +123,12 @@ different issue during this command.
 
 2. Read issue #${issueNumber}, its acceptance criteria, relevant comments and
    linked issues, and only the code/docs needed to execute it.
+   - As soon as its title is known, call workflow_status with phase "selected",
+     issue ${issueNumber}, and the short issue title.
    - If the issue is already closed, ambiguous, explicitly gated, blocked by an
-     unmet dependency, research-only, or otherwise not executable now, report
-     that state and stop instead of bypassing the project's process.
+     unmet dependency, research-only, or otherwise not executable now, call
+     workflow_status with phase "blocked", report that state, and stop instead
+     of bypassing the project's process.
    - Treat an existing implementation plan/checklist in the issue as the plan;
      do not redo broad planning merely for ceremony.
    - If essential implementation details are genuinely missing, investigate
@@ -120,6 +165,30 @@ different issue during this command.
 
 export default function workflowCommands(pi: ExtensionAPI) {
   let workflowStatusActive = false;
+  let workflowKind: WorkflowKind | undefined;
+  let workflowThinking: ThinkingLevel = "low";
+  let workflowIssueNumber: number | undefined;
+  let workflowIssueTitle: string | undefined;
+
+  const compactText = (value: string, maxLength = 48) => {
+    const compact = value.replace(/\s+/g, " ").trim();
+    return compact.length > maxLength
+      ? `${compact.slice(0, maxLength - 3)}...`
+      : compact;
+  };
+
+  const buildWorkflowStatus = (phase?: string) => {
+    const parts = [
+      workflowKind,
+      "DS4.1",
+      workflowThinking,
+      workflowIssueNumber ? `#${workflowIssueNumber}` : undefined,
+      phase,
+      workflowIssueTitle,
+    ].filter((part): part is string => Boolean(part));
+
+    return parts.join(" · ");
+  };
 
   const setWorkflowStatus = (
     ctx: ExtensionCommandContext,
@@ -129,16 +198,112 @@ export default function workflowCommands(pi: ExtensionAPI) {
     workflowStatusActive = true;
   };
 
-  const shortTask = (task: string) =>
-    task.length > 56 ? `${task.slice(0, 53)}...` : task;
+  const startWorkflowStatus = (
+    ctx: ExtensionCommandContext,
+    kind: WorkflowKind,
+    thinking: ThinkingLevel,
+    options: {
+      issueNumber?: number;
+      title?: string;
+      phase?: string;
+    } = {},
+  ) => {
+    workflowKind = kind;
+    workflowThinking = thinking;
+    workflowIssueNumber = options.issueNumber;
+    workflowIssueTitle = options.title
+      ? compactText(options.title)
+      : undefined;
+    setWorkflowStatus(ctx, buildWorkflowStatus(options.phase));
+  };
+
+  const clearWorkflowStatus = (ctx: ExtensionCommandContext) => {
+    ctx.ui.setStatus(WORKFLOW_STATUS_KEY, undefined);
+    workflowStatusActive = false;
+    workflowKind = undefined;
+    workflowThinking = "low";
+    workflowIssueNumber = undefined;
+    workflowIssueTitle = undefined;
+  };
+
+  pi.registerTool({
+    name: "workflow_status",
+    label: "Workflow status",
+    description:
+      "Update the footer for an active /n or /i workflow when its major phase changes. UI-only; never changes repository state.",
+    promptSnippet:
+      "workflow_status: update the active /n or /i footer on major phase transitions.",
+    parameters: Type.Object({
+      phase: Type.String({
+        description:
+          "One of: selecting, selected, investigating, planning, implementing, testing, reviewing, fixing, finishing, blocked",
+      }),
+      issue: Type.Optional(
+        Type.Integer({
+          minimum: 1,
+          description: "Selected GitHub issue number when known",
+        }),
+      ),
+      title: Type.Optional(
+        Type.String({
+          description: "Short selected issue title; keep it concise",
+        }),
+      ),
+    }),
+    async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
+      if (!workflowStatusActive || !workflowKind) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: "No active workflow command; footer status unchanged.",
+            },
+          ],
+          details: { updated: false },
+        };
+      }
+
+      const phase = compactText(params.phase, 20);
+      if (!STATUS_PHASES.has(phase)) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Unsupported workflow phase: ${phase}`,
+            },
+          ],
+          details: { updated: false },
+        };
+      }
+
+      if (params.issue !== undefined) {
+        workflowIssueNumber = params.issue;
+      }
+      if (params.title) {
+        workflowIssueTitle = compactText(params.title);
+      }
+
+      const status = buildWorkflowStatus(phase);
+      ctx.ui.setStatus(WORKFLOW_STATUS_KEY, status);
+
+      return {
+        content: [{ type: "text", text: `Footer: ${status}` }],
+        details: {
+          updated: true,
+          phase,
+          issue: workflowIssueNumber,
+          title: workflowIssueTitle,
+        },
+      };
+    },
+  });
 
   pi.on("turn_end", async (_event, ctx) => {
     if (!workflowStatusActive) {
       return;
     }
 
-    ctx.ui.setStatus(WORKFLOW_STATUS_KEY, undefined);
-    workflowStatusActive = false;
+    clearWorkflowStatus(ctx);
   });
 
   const switchToBuildModel = async (
@@ -179,11 +344,10 @@ export default function workflowCommands(pi: ExtensionAPI) {
 
     const task = args.trim();
     if (task) {
-      const command = thinking === "high" ? "BH" : "B";
-      setWorkflowStatus(
-        ctx,
-        `${command} · DS4.1 · ${thinking} · ${shortTask(task)}`,
-      );
+      const kind: WorkflowKind = thinking === "high" ? "BH" : "B";
+      startWorkflowStatus(ctx, kind, thinking, {
+        title: compactText(task, 56),
+      });
       pi.sendUserMessage(task);
       return;
     }
@@ -211,7 +375,7 @@ export default function workflowCommands(pi: ExtensionAPI) {
       ? `${NEXT_TASK_PROMPT}\n\nAdditional instruction from me:\n${extra}`
       : NEXT_TASK_PROMPT;
 
-    setWorkflowStatus(ctx, "N · DS4.1 · low · next queued issue");
+    startWorkflowStatus(ctx, "N", "low", { phase: "selecting" });
     pi.sendUserMessage(prompt);
   };
 
@@ -241,7 +405,10 @@ export default function workflowCommands(pi: ExtensionAPI) {
       ? `${basePrompt}\n\nAdditional instruction from me:\n${extra}`
       : basePrompt;
 
-    setWorkflowStatus(ctx, `I · DS4.1 · low · #${issueNumber}`);
+    startWorkflowStatus(ctx, "I", "low", {
+      issueNumber,
+      phase: "selecting",
+    });
     pi.sendUserMessage(prompt);
   };
 
