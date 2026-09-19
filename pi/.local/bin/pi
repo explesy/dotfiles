@@ -2,6 +2,10 @@
 set -euo pipefail
 
 export PI_CODING_AGENT_DIR="${PI_CODING_AGENT_DIR:-$HOME/.config/pi}"
+# The bridge's workspace-level approval hook also intercepts standalone
+# Antigravity sessions in the same repository. Keep the bridge itself, but
+# disable only that optional gate until upstream isolates its session scope.
+export AGY_APPROVALS="off"
 
 readonly PI_BIN="/opt/homebrew/bin/pi"
 readonly EXTENSION_ROOT="$PI_CODING_AGENT_DIR/npm/node_modules"

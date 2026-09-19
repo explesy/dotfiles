@@ -18,6 +18,31 @@ stow pi
 cd "$HOME/.config/pi/npm" && npm install
 ```
 
+### Local bridge compatibility patch
+
+Пока upstream не исправил issue [#5](https://github.com/EstebanForge/pi-antigravity-bridge/issues/5),
+`npm install` автоматически применяет к строго закреплённому
+`@estebanforge/pi-antigravity-bridge` 1.6.0 маленький compatibility patch.
+Он сохраняет полный JSON-объект `{ decision, reason }` в ответе approval hook:
+иначе Antigravity получает строку `"deny"` вместо объекта и аварийно завершает
+hook с protobuf/parser error.
+
+Скрипт намеренно отказывается работать с другой версией или неизвестным
+исходным фрагментом. Это не ослабляет permission gate и не решает отдельную
+upstream-проблему изоляции общего workspace hook; он только превращает падение
+в корректный `deny`. Повторный запуск безопасен:
+
+```sh
+cd "$HOME/.config/pi/npm" && npm run patch:bridge-compat
+```
+
+Проверка обоих ответов hook (direct и polling) без запуска Pi или реального
+Antigravity turn:
+
+```sh
+cd "$HOME/.config/pi/npm" && npm run test:bridge-compat
+```
+
 Herdr больше не участвует в оркестрации Pi. Его можно использовать отдельно как
 терминальный мультиплексор, а дочерние задания запускаются через
 `pi-subagents` внутри одной Pi-сессии.
@@ -126,6 +151,18 @@ N · DeepSeek V4.1 Flash · low · #42 · fixing · Detect player languages
 
 После изменения prompt templates или `extensions/workflow.ts` используйте
 `/reload` либо перезапустите Pi.
+
+### Approval gate
+
+Launcher явно задаёт `AGY_APPROVALS=off`. Это отключает только optional
+approval gate bridge и не позволяет ему создавать workspace-level
+`.agents/hooks.json`, который перехватывает standalone Antigravity в той же
+папке. Модели Antigravity внутри Pi, MCP bridge и обычный Pi permission system
+остаются включены; нативные действия `agy` больше не проходят через отдельный
+Pi approval gate.
+
+Когда upstream исправит изоляцию в [issue #5](https://github.com/EstebanForge/pi-antigravity-bridge/issues/5),
+уберите эту переменную из launcher и верните `approvals.gateMode` в `auto`.
 
 ## Antigravity через `agy`
 
