@@ -35,7 +35,7 @@ Prompt templates лежат в `prompts/` и появляются в slash autoc
 - `/c [instruction]` — продолжить текущую задачу без повторного старта/перепланирования.
 
 `/build [task]` — extension-команда, которая переключает текущую Pi-сессию на
-`opencode-go/deepseek-v4-flash` и, если передан текст, сразу запускает его как
+`opencode-go/deepseek-v4.1-flash` и, если передан текст, сразу запускает его как
 новый user turn. Короткий alias: `/b [task]`.
 
 Примеры:
