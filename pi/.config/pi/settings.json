@@ -2,7 +2,7 @@
   "lastChangelogVersion": "0.85.1",
   "theme": "dark",
   "defaultProvider": "opencode-go",
-  "defaultModel": "deepseek-v4.1-flash",
+  "defaultModel": "deepseek-v4-flash",
   "packages": [
     "npm:@zhcsyncer/pi-recap",
     "npm:pi-herdsman",
