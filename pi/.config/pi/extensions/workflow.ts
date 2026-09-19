@@ -450,9 +450,11 @@ export default function workflowCommands(pi: ExtensionAPI) {
     const firstSpace = input.search(/\s/);
     const firstToken =
       firstSpace === -1 ? input : input.slice(0, firstSpace);
-    const explicitRoute =
-      firstToken &&
-      NEXT_MODEL_ROUTES[firstToken.toLowerCase() as keyof typeof NEXT_MODEL_ROUTES];
+    const explicitRoute = firstToken
+      ? NEXT_MODEL_ROUTES[
+          firstToken.toLowerCase() as keyof typeof NEXT_MODEL_ROUTES
+        ]
+      : undefined;
 
     const route = explicitRoute ?? NEXT_MODEL_ROUTES[DEFAULT_NEXT_MODEL];
     const extra = explicitRoute
