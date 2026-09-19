@@ -1,6 +1,7 @@
 import type {
   ExtensionAPI,
   ExtensionCommandContext,
+  ExtensionContext,
 } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 
@@ -191,7 +192,7 @@ export default function workflowCommands(pi: ExtensionAPI) {
   };
 
   const setWorkflowStatus = (
-    ctx: ExtensionCommandContext,
+    ctx: ExtensionContext,
     text: string,
   ) => {
     ctx.ui.setStatus(WORKFLOW_STATUS_KEY, text);
@@ -199,7 +200,7 @@ export default function workflowCommands(pi: ExtensionAPI) {
   };
 
   const startWorkflowStatus = (
-    ctx: ExtensionCommandContext,
+    ctx: ExtensionContext,
     kind: WorkflowKind,
     thinking: ThinkingLevel,
     options: {
@@ -217,7 +218,7 @@ export default function workflowCommands(pi: ExtensionAPI) {
     setWorkflowStatus(ctx, buildWorkflowStatus(options.phase));
   };
 
-  const clearWorkflowStatus = (ctx: ExtensionCommandContext) => {
+  const clearWorkflowStatus = (ctx: ExtensionContext) => {
     ctx.ui.setStatus(WORKFLOW_STATUS_KEY, undefined);
     workflowStatusActive = false;
     workflowKind = undefined;
