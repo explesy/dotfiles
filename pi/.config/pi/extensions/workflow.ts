@@ -11,6 +11,11 @@ type WorkflowKind = "N" | "I" | "B" | "BH";
 const BUILD_PROVIDER = "opencode-go";
 const BUILD_MODEL = "deepseek-v4.1-flash";
 const WORKFLOW_STATUS_KEY = "workflow";
+/**
+ * Phases that end the run: the footer is cleared immediately so a finished or
+ * stopped workflow does not keep looking active.
+ */
+const TERMINAL_STATUS_PHASES = new Set(["finishing", "blocked"]);
 const STATUS_PHASES = new Set([
   "selecting",
   "selected",
@@ -168,6 +173,10 @@ export default function workflowCommands(pi: ExtensionAPI) {
   let workflowStatusActive = false;
   let workflowKind: WorkflowKind | undefined;
   let workflowThinking: ThinkingLevel = "low";
+  // Human-readable label of the model that actually got selected. Derived from
+  // the resolved model instead of a hardcoded brand string so the footer cannot
+  // silently lie after BUILD_MODEL changes.
+  let workflowModelLabel = BUILD_MODEL;
   let workflowIssueNumber: number | undefined;
   let workflowIssueTitle: string | undefined;
 
@@ -181,7 +190,7 @@ export default function workflowCommands(pi: ExtensionAPI) {
   const buildWorkflowStatus = (phase?: string) => {
     const parts = [
       workflowKind,
-      "DS4.1",
+      workflowModelLabel,
       workflowThinking,
       workflowIssueNumber ? `#${workflowIssueNumber}` : undefined,
       phase,
@@ -223,6 +232,7 @@ export default function workflowCommands(pi: ExtensionAPI) {
     workflowStatusActive = false;
     workflowKind = undefined;
     workflowThinking = "low";
+    workflowModelLabel = BUILD_MODEL;
     workflowIssueNumber = undefined;
     workflowIssueTitle = undefined;
   };
@@ -237,7 +247,7 @@ export default function workflowCommands(pi: ExtensionAPI) {
     parameters: Type.Object({
       phase: Type.String({
         description:
-          "One of: selecting, selected, investigating, planning, implementing, testing, reviewing, fixing, finishing, blocked",
+          "One of: selecting, selected, investigating, planning, implementing, testing, reviewing, fixing, finishing, blocked. finishing and blocked end the run and clear the footer.",
       }),
       issue: Type.Optional(
         Type.Integer({
@@ -252,18 +262,9 @@ export default function workflowCommands(pi: ExtensionAPI) {
       ),
     }),
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
-      if (!workflowStatusActive || !workflowKind) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: "No active workflow command; footer status unchanged.",
-            },
-          ],
-          details: { updated: false },
-        };
-      }
-
+      // Validate the tool's own contract before the workflow state: an invalid
+      // phase is a caller mistake and should be diagnosable even when no
+      // workflow is active.
       const phase = compactText(params.phase, 20);
       if (!STATUS_PHASES.has(phase)) {
         return {
@@ -271,6 +272,18 @@ export default function workflowCommands(pi: ExtensionAPI) {
             {
               type: "text",
               text: `Unsupported workflow phase: ${phase}`,
+            },
+          ],
+          details: { updated: false },
+        };
+      }
+
+      if (!workflowStatusActive || !workflowKind) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: "No active workflow command; footer status unchanged.",
             },
           ],
           details: { updated: false },
@@ -285,6 +298,31 @@ export default function workflowCommands(pi: ExtensionAPI) {
       }
 
       const status = buildWorkflowStatus(phase);
+
+      // Terminal phases end the run, so do not leave the footer pinned as if
+      // the workflow were still active. Read the resolved issue/title before the
+      // clear resets them.
+      if (TERMINAL_STATUS_PHASES.has(phase)) {
+        const resolvedIssue = workflowIssueNumber;
+        const resolvedTitle = workflowIssueTitle;
+        clearWorkflowStatus(ctx);
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Footer cleared after terminal phase: ${status}`,
+            },
+          ],
+          details: {
+            updated: true,
+            cleared: true,
+            phase,
+            issue: resolvedIssue,
+            title: resolvedTitle,
+          },
+        };
+      }
+
       ctx.ui.setStatus(WORKFLOW_STATUS_KEY, status);
 
       return {
@@ -299,7 +337,11 @@ export default function workflowCommands(pi: ExtensionAPI) {
     },
   });
 
-  pi.on("turn_end", async (_event, ctx) => {
+  // The footer must survive individual turns: clearing it on `turn_end` made
+  // `workflow_status` unusable, because the first phase call always happens in a
+  // later turn than the one that started the workflow. Clear only once the whole
+  // agent run has settled, in addition to the explicit terminal phases above.
+  pi.on("agent_settled", async (_event, ctx) => {
     if (!workflowStatusActive) {
       return;
     }
@@ -329,6 +371,8 @@ export default function workflowCommands(pi: ExtensionAPI) {
       return false;
     }
 
+    // Footer label comes from the model that actually got selected.
+    workflowModelLabel = model.name?.trim() || model.id || BUILD_MODEL;
     pi.setThinkingLevel(thinking);
     return true;
   };

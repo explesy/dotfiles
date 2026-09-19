@@ -87,32 +87,42 @@ Build-команды переключают текущую Pi-сессию на
 ### Workflow status в footer
 
 Execution-команды показывают короткий live status в footer, пока идёт
-соответствующий turn.
+соответствующий запуск.
 
 Для `/n` и `/i` extension регистрирует UI-only tool `workflow_status`.
 Агент вызывает его только при крупных переходах workflow, поэтому footer
 показывает не просто запущенную команду, а текущую issue и фазу:
 
 ```text
-N · DS4.1 · low · selecting
-N · DS4.1 · low · #42 · selected · Detect player languages
-N · DS4.1 · low · #42 · implementing · Detect player languages
-N · DS4.1 · low · #42 · testing · Detect player languages
-N · DS4.1 · low · #42 · reviewing · Detect player languages
-N · DS4.1 · low · #42 · fixing · Detect player languages
-N · DS4.1 · low · #42 · finishing · Detect player languages
+N · DeepSeek V4.1 Flash · low · selecting
+N · DeepSeek V4.1 Flash · low · #42 · selected · Detect player languages
+N · DeepSeek V4.1 Flash · low · #42 · implementing · Detect player languages
+N · DeepSeek V4.1 Flash · low · #42 · testing · Detect player languages
+N · DeepSeek V4.1 Flash · low · #42 · reviewing · Detect player languages
+N · DeepSeek V4.1 Flash · low · #42 · fixing · Detect player languages
 ```
 
 Поддерживаемые фазы: `selecting`, `selected`, `investigating`, `planning`,
 `implementing`, `testing`, `reviewing`, `fixing`, `finishing`,
 `blocked`. Для `/i 37` номер известен сразу; для `/n` номер и короткий title
-появляются после выбора задачи.
+появляются после выбора задачи. Метка модели берётся из реально выбранной
+модели (`name`, иначе `id`), а не из захардкоженной строки.
 
 `/b <task>` и `/bh <task>` по-прежнему показывают режим, thinking level и
 сокращённое описание задачи без дополнительного phase protocol.
 
-После `turn_end` статус автоматически очищается, поэтому завершённая задача не
-остаётся висеть в интерфейсе как будто она всё ещё активна.
+Жизненный цикл статуса:
+
+- статус живёт **между turn'ами** всего запуска: `turn_end` его не очищает,
+  иначе первый же вызов `workflow_status` (он всегда происходит в turn'е позже
+  запуска команды) получал бы `No active workflow command` и footer был бы
+  бесполезен;
+- терминальные фазы `finishing` и `blocked` очищают footer сразу, поэтому
+  завершённая или остановленная задача не выглядит активной;
+- `agent_settled` очищает footer как страховка, если агент закончил запуск без
+  терминальной фазы (retry, compaction, прерывание);
+- фаза валидируется по списку фаз до проверки активности workflow, поэтому
+  опечатка в фазе диагностируется всегда.
 
 После изменения prompt templates или `extensions/workflow.ts` используйте
 `/reload` либо перезапустите Pi.
