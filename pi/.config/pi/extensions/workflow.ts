@@ -13,7 +13,7 @@ export default function workflowCommands(pi: ExtensionAPI) {
       pi.getActiveTools().some((tool) => HERDSMAN_COORDINATION_TOOLS.has(tool))
     ) {
       ctx.ui.notify(
-        "Use a normal prompt in pi-herd; /build is available only in the base pi mode.",
+        "Restart with the configured pi launcher; /build is unavailable while Herdsman tools are loaded.",
         "error",
       );
       return;

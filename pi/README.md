@@ -25,20 +25,12 @@ herdr integration status
 пишут туда сессии, модели, auth и runtime-состояние. Настройки из этого
 пакета линкуются в неё отдельными файлами.
 
-После `stow pi` в `~/.local/bin` появляются две команды. Каталог уже находится
-раньше Homebrew в `$PATH`, поэтому новые shell-сессии используют их автоматически.
-
-## Режимы запуска
-
-| Команда   | Загружаемые расширения                                           | Когда использовать                                                                                                                    |
-| --------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `pi`      | permission system, recap, workflow                               | Обычная работа с одним агентом, включая `/b` и DeepSeek V4.1 Flash. Herdr-инструменты не загружаются.                                 |
-| `pi-herd` | Полная конфигурация, включая `pi-herdsman` и `herdr-agent-state` | Явная координация Herdr: делегирование, `chief`, `staff` и agent definitions. По умолчанию используется `openai-codex/gpt-5.6-terra`. |
-
-Это разделение устраняет 400 от Console Go в обычном режиме: в запрос вообще не
-попадают несовместимые схемы `agent`, `chief` и `staff`. Не запускайте
-`pi-herd` с маршрутом Console Go/DeepSeek, пока тот не начнёт принимать
-корневые JSON Schema с `anyOf`.
+После `stow pi` в `~/.local/bin` появляется команда `pi`. Каталог уже находится
+раньше Homebrew в `$PATH`, поэтому новые shell-сессии используют launcher
+автоматически. Он запускает permission system, recap и workflow, но не
+загружает Herdr-инструменты. Поэтому запросы к Console Go не содержат
+несовместимые схемы `agent`, `chief` и `staff` и не получают 400 до начала
+работы модели.
 
 ## Короткие workflow-команды
 
@@ -52,7 +44,8 @@ Prompt templates лежат в `prompts/` и появляются в slash autoc
 `/build [task]` — extension-команда, которая переключает текущую Pi-сессию на
 `opencode-go/deepseek-v4.1-flash` и, если передан текст, сразу запускает его как
 новый user turn. Короткий alias: `/b [task]`. Команда доступна только в базовом
-`pi`; в `pi-herd` она завершается с подсказкой использовать обычный запрос.
+`pi`; если Herdr-инструменты всё же загружены, она завершится с подсказкой
+перезапустить Pi через настроенный launcher.
 
 Примеры:
 
@@ -88,7 +81,7 @@ workflow; в Pi для провайдера `openai` должна быть на�
 - `extensions/pi-permission-system/config.json` — глобальная политика доступа Pi;
 - `extensions/workflow.ts` — локальные workflow-команды, требующие поведения
   сложнее обычного prompt template;
-- `.local/bin/pi` и `.local/bin/pi-herd` — launchers базового и Herdr-режима;
+- `.local/bin/pi` — launcher базового режима;
 - `agents/*.md` — глобальные Herdsman agent definitions;
 - `prompts/*.md` — короткие slash workflow templates;
 - `npm/package.json` и `npm/package-lock.json` — воспроизводимый список npm-зависимостей.
