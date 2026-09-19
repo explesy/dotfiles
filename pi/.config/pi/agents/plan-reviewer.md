@@ -1,8 +1,8 @@
 ---
 name: plan-reviewer
-description: Manual-only independent pre-implementation plan reviewer using the configured high-thinking build model.
-model: opencode-go/deepseek-v4.1-flash
-thinking: high
+description: Manual-only independent pre-implementation plan reviewer using GPT-5.6 Terra.
+model: openai-codex/gpt-5.6-terra
+thinking: xhigh
 tools:
   - read
   - grep
