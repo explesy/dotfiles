@@ -1,5 +1,9 @@
 # Pi config
 
+Source of truth для конфигурации Pi — этот GitHub-репозиторий
+`explesy/dotfiles`, каталог `pi/`. Старый Google Drive `OpenCode Config`
+больше не используется и не должен считаться актуальным источником настроек.
+
 Глобальная конфигурация Pi хранится в `.config/pi/` и подключается через
 `stow pi`. В shell экспортируется `PI_CODING_AGENT_DIR=$HOME/.config/pi`,
 поэтому Pi использует XDG-путь вместо `~/.pi/agent`.
@@ -174,7 +178,7 @@ Luna → Terra planning на каждую заранее разобранную 
 - `scout` — `opencode-go/mimo-v2.5`, low thinking;
 - `reviewer` — `opencode-go/mimo-v2.5`, medium thinking;
 - `planner` — `opencode-go/gpt-5.6-luna`, high thinking;
-- `plan-reviewer` — `openai-codex/gpt-5.6-terra`, xhigh thinking.
+- `plan-reviewer` — `openai-codex/gpt-5.6-terra`, high thinking.
 
 `plan-reviewer` использует отдельный OpenAI Codex/ChatGPT provider ради
 независимого plan review. Если он ещё не авторизован в Pi, выполните login для
