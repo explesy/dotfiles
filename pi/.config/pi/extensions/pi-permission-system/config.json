@@ -181,7 +181,6 @@
       "pwd": "allow",
       "which *": "allow",
       "gh issue view *": "allow",
-      "node -e *": "allow",
       "command -v *": "allow",
       "uname *": "allow",
       "sw_vers": "allow",
