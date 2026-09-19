@@ -1,6 +1,6 @@
 ---
 name: plan-reviewer
-description: Manual-only independent pre-implementation plan reviewer using GPT-5.6 Terra.
+description: Independent pre-implementation plan reviewer using GPT-5.6 Terra.
 model: openai-codex/gpt-5.6-terra
 thinking: xhigh
 tools:
