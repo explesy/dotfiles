@@ -36,7 +36,7 @@ workflow extension. Глубина вложенной делегации огр�
 
 - `/n [instruction]` — выполнить ровно одну следующую задачу из уже
   существующей GitHub execution queue: выбрать незаблокированную issue →
-  реализовать → проверить → независимый Kimi review для нетривиального diff →
+  реализовать → проверить → независимый cheap review для нетривиального diff →
   исправить существенные замечания → закрыть/сдвинуть существующую очередь,
   если критерии действительно выполнены. Команда сама переключает сессию на
   DeepSeek V4.1 Flash, `low`.
@@ -93,8 +93,7 @@ Build-команды переключают текущую Pi-сессию на
 5. для отсутствующей и реально рискованной архитектуры может эскалировать в
    `planner → plan-reviewer`;
 6. реализует только одну issue за invocation, запускает нужные проверки и для
-   нетривиального diff делает один независимый pass через
-   `delivery-reviewer` на Kimi K2.7 Code;
+   нетривиального diff делает один независимый pass через `reviewer`;
 7. исправляет валидные blocking/important findings, повторяет затронутые
    проверки и только после этого завершает GitHub workflow;
 8. если в проекте уже есть `current/next` queue, обновляет её существующим
@@ -113,9 +112,7 @@ Luna → Terra planning на каждую заранее разобранную 
 - основной default Pi — `opencode-go/deepseek-v4-flash` (тестовый default);
 - `/n`, `/b`, `/build`, `/bh` — `opencode-go/deepseek-v4.1-flash`;
 - `scout` — `opencode-go/mimo-v2.5`, low thinking;
-- `reviewer` — `opencode-go/mimo-v2.5`, medium thinking (дешёвый ручной `/rv`);
-- `delivery-reviewer` — `opencode-go/kimi-k2.7-code`, medium thinking
-  (один финальный review внутри `/n`);
+- `reviewer` — `opencode-go/mimo-v2.5`, medium thinking;
 - `planner` — `opencode-go/gpt-5.6-luna`, high thinking;
 - `plan-reviewer` — `openai-codex/gpt-5.6-terra`, xhigh thinking.
 
@@ -147,9 +144,7 @@ Luna → Terra planning на каждую заранее разобранную 
 bundled-роли `pi-subagents`:
 
 - `scout` — дешёвая read-only разведка;
-- `reviewer` — дешёвый независимый first-pass code review для ручного `/rv`;
-- `delivery-reviewer` — более сильный Kimi-review одной queue issue перед
-  финализацией `/n`;
+- `reviewer` — дешёвый независимый first-pass code review;
 - `planner` — подробный repo-aware implementation planning;
 - `plan-reviewer` — дорогой независимый pre-implementation review.
 
