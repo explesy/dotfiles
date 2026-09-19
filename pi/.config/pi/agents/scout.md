@@ -3,7 +3,7 @@ name: scout
 description: Fast cheap read-only codebase reconnaissance for focused questions and handoff.
 model: opencode/nemotron-3.5-lightning-free
 thinking: low
-tools: read, grep, find, ls
+tools: [read, grep, find, ls]
 permission:
   "*": deny
   read: allow

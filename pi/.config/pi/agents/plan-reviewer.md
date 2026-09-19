@@ -3,7 +3,7 @@ name: plan-reviewer
 description: Manual-only independent pre-implementation plan reviewer using GPT-5.6 Terra High.
 model: openai/gpt-5.6-terra
 thinking: high
-tools: read, grep, find, ls, bash
+tools: [read, grep, find, ls, bash]
 permission:
   "*": deny
   read: allow
