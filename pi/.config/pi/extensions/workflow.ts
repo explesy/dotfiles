@@ -8,19 +8,17 @@ const BUILD_MODEL = "deepseek-v4.1-flash";
 const HERDSMAN_COORDINATION_TOOLS = new Set(["agent", "chief", "staff"]);
 
 export default function workflowCommands(pi: ExtensionAPI) {
-  let buildToolsBeforeRun: string[] | undefined;
-
-  const restoreBuildTools = () => {
-    if (!buildToolsBeforeRun) return;
-
-    pi.setActiveTools(buildToolsBeforeRun);
-    buildToolsBeforeRun = undefined;
-  };
-
-  pi.on("agent_end", restoreBuildTools);
-  pi.on("session_shutdown", restoreBuildTools);
-
   const runBuild = async (args: string, ctx: ExtensionCommandContext) => {
+    if (
+      pi.getActiveTools().some((tool) => HERDSMAN_COORDINATION_TOOLS.has(tool))
+    ) {
+      ctx.ui.notify(
+        "Use a normal prompt in pi-herd; /build is available only in the base pi mode.",
+        "error",
+      );
+      return;
+    }
+
     const model = ctx.modelRegistry.find(BUILD_PROVIDER, BUILD_MODEL);
     if (!model) {
       ctx.ui.notify(
@@ -41,26 +39,7 @@ export default function workflowCommands(pi: ExtensionAPI) {
 
     const task = args.trim();
     if (task) {
-      const activeTools = pi.getActiveTools();
-
-      // pi-herdsman exposes its coordination tools with root `anyOf` schemas.
-      // Some Console Go routes reject those schemas before the model sees the
-      // request, even though the rest of the tool surface is valid. /build is
-      // a single-agent build command, so omit only optional Herdsman
-      // coordination tools for its one turn.
-      if (activeTools.some((tool) => HERDSMAN_COORDINATION_TOOLS.has(tool))) {
-        buildToolsBeforeRun = activeTools;
-        pi.setActiveTools(
-          activeTools.filter((tool) => !HERDSMAN_COORDINATION_TOOLS.has(tool)),
-        );
-      }
-
-      try {
-        pi.sendUserMessage(task);
-      } catch (error) {
-        restoreBuildTools();
-        throw error;
-      }
+      pi.sendUserMessage(task);
       return;
     }
 

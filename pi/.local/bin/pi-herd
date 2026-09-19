@@ -1,0 +1,8 @@
+#!/usr/bin/env zsh
+set -euo pipefail
+
+export PI_CODING_AGENT_DIR="${PI_CODING_AGENT_DIR:-$HOME/.config/pi}"
+
+# Herdsman tools have schemas accepted by the Codex Responses route, unlike the
+# stricter Console Go route used by the lightweight DeepSeek build workflow.
+exec /opt/homebrew/bin/pi --model openai-codex/gpt-5.6-terra "$@"
