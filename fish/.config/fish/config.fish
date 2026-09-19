@@ -10,7 +10,6 @@ if status is-interactive
     set -gx HOMEBREW_NO_AUTO_UPDATE 1
 
     # PATH: единый источник через fish_add_path (дедупликация + prepend).
-    # Порядок вызовов важен: последний оказывается в начале PATH.
     fish_add_path /opt/homebrew/bin
     fish_add_path $HOME/.local/bin
     if test -d $HOME/.docker/bin
@@ -25,6 +24,11 @@ if status is-interactive
     # bun — в самом конце, чтобы его bin оказался в начале PATH
     set --export BUN_INSTALL "$HOME/.bun"
     fish_add_path "$BUN_INSTALL/bin"
+
+    # Personal launchers must override Homebrew programs of the same name.
+    # --move is required because fish otherwise keeps an inherited path where it
+    # already was; without it `pi` resolves to /opt/homebrew/bin/pi.
+    fish_add_path --move "$HOME/.local/bin"
 
     # Abbreviations
     abbr -a ls eza

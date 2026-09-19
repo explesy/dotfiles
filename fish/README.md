@@ -10,7 +10,7 @@
 
 ## Что настроено
 
-- **Окружение и пути:** `fish_greeting` отключено, `EDITOR=nvim`, `PATH` собирается через `fish_add_path` (`/opt/homebrew/bin`, `~/.local/bin`, `~/.docker/bin`, `~/.bun/bin`, `~/.antigravity/antigravity/bin`, `~/.cache/lm-studio/bin`) — пути заданы относительно `$HOME`, без хардкода пользователя.
+- **Окружение и пути:** `fish_greeting` отключено, `EDITOR=nvim`, `PATH` собирается через `fish_add_path` (`~/.local/bin`, `/opt/homebrew/bin`, `~/.docker/bin`, `~/.bun/bin`, `~/.antigravity/antigravity/bin`, `~/.cache/lm-studio/bin`) — пути заданы относительно `$HOME`, без хардкода пользователя. `~/.local/bin` принудительно перемещается вперёд, поэтому локальные launchers (включая `pi`) перекрывают одноимённые Homebrew-бинарники.
 - **Аббревиатуры CLI:**
   - `ls` -> `eza`, `ll` -> `eza -la --sort=type`
   - `lg` -> `lazygit`, `ld` -> `lazydocker`
