@@ -66,12 +66,17 @@ Console Go не содержат несовместимые старые схе�
 
 ## Короткие workflow-команды
 
-- `/n [instruction]` — выполнить ровно одну следующую задачу из уже
+- `/n [model] [instruction]` — выполнить ровно одну следующую задачу из уже
   существующей GitHub execution queue: выбрать незаблокированную issue →
   реализовать → проверить → независимый cheap review для нетривиального diff →
   исправить существенные замечания → закрыть/сдвинуть существующую очередь,
-  если критерии действительно выполнены. Команда сама переключает сессию на
-  DeepSeek V4.1 Flash, `low`.
+  если критерии действительно выполнены. Main worker выбирается коротким
+  селектором: `ds` = DeepSeek V4.1 Flash / OpenCode Go (`low`),
+  `codex` = GPT-5.6 Sol / ChatGPT Codex (`medium`), `agy` =
+  Gemini 3.8 Flash / Antigravity (`low`). Без селектора используется `ds`.
+  Если первое слово не является известным селектором, весь текст считается
+  обычной дополнительной инструкцией, поэтому старый синтаксис остаётся
+  совместимым.
 - `/i <issue> [instruction]` — выполнить одну конкретную GitHub issue тем же
   execution pipeline, не выбирая другую задачу. Принимает `/i 37` и
   `/i #37`; gated/blocked/closed issue не обходятся автоматически.
@@ -97,6 +102,9 @@ Build-команды переключают текущую Pi-сессию на
 
 ```text
 /n
+/n ds
+/n codex
+/n agy сначала внимательно проверь frontend
 /n сначала проверь, что текущая issue не gated
 /i 37
 /i #37 сначала проверь backward compatibility
@@ -237,7 +245,11 @@ Luna → Terra planning на каждую заранее разобранную 
 
 - основной default Pi — `opencode-go/deepseek-v4-flash` (тестовый default),
   startup thinking — `low`;
-- `/n`, `/i`, `/b`, `/build`, `/bh` —
+- `/n` — selectable main worker: default `ds` →
+  `opencode-go/deepseek-v4.1-flash` / low; `codex` →
+  `openai-codex/gpt-5.6-sol` / medium; `agy` →
+  `antigravity/gemini-3-8-flash` / low;
+- `/i`, `/b`, `/build`, `/bh` —
   `opencode-go/deepseek-v4.1-flash`;
 - `scout` — `opencode-go/mimo-v2.5`, low thinking;
 - `reviewer` — `opencode-go/mimo-v2.5`, medium thinking;
@@ -287,8 +299,9 @@ bundled-роли `pi-subagents`:
 - `.local/bin/pi` — единственный launcher Pi с permission system,
   `pi-subagents`, Antigravity bridge, recap и workflow;
 - `extensions/subagent/config.json` — компактное описание subagent tool и depth=1;
-- `extensions/workflow.ts` — `/n`, `/i`, build-команды, model/thinking
-  routing, `workflow_status` tool и live workflow phase в footer;
+- `extensions/workflow.ts` — `/n` с коротким worker selector
+  (`ds|codex|agy`), `/i`, build-команды, model/thinking routing,
+  `workflow_status` tool и live workflow phase в footer;
 - `agents/*.md` — пользовательские определения ролей `pi-subagents`;
 - `prompts/*.md` — короткие slash workflow templates;
 - `npm/package.json` и `npm/package-lock.json` — воспроизводимый список
