@@ -34,8 +34,12 @@ workflow extension. Глубина вложенной делегации огр�
 
 ## Короткие workflow-команды
 
-Prompt templates лежат в `prompts/` и появляются в slash autocomplete:
-
+- `/n [instruction]` — выполнить ровно одну следующую задачу из уже
+  существующей GitHub execution queue: выбрать незаблокированную issue →
+  реализовать → проверить → независимый cheap review для нетривиального diff →
+  исправить существенные замечания → закрыть/сдвинуть существующую очередь,
+  если критерии действительно выполнены. Команда сама переключает сессию на
+  DeepSeek V4.1 Flash, `low`.
 - `/p <task>` — автоматически: repository-aware plan → independent plan review →
   исправленный final plan; ручной `/pl` посередине не нужен;
 - `/pl [focus]` — только независимый review уже существующего plan через
@@ -57,6 +61,8 @@ Build-команды переключают текущую Pi-сессию на
 Примеры:
 
 ```text
+/n
+/n сначала проверь, что текущая issue не gated
 /p добавь кеширование результатов player probe
 /sc найди где формируется список subtitle tracks
 /pl особенно проверь миграции и backward compatibility
@@ -69,13 +75,42 @@ Build-команды переключают текущую Pi-сессию на
 После изменения prompt templates или `extensions/workflow.ts` используйте
 `/reload` либо перезапустите Pi.
 
+## Next-issue workflow
+
+`/n` предназначен для проектов, где backlog уже организован в GitHub Issues и
+есть понятная очередь выполнения. Он не создаёт второй планировщик поверх
+существующей системы.
+
+Алгоритм:
+
+1. определяет текущий GitHub repository и читает только релевантные инструкции;
+2. ищет каноническую execution queue / `START HERE` issue, затем `current`,
+   `next` или первый незавершённый незаблокированный пункт явной очереди;
+3. уважает `gated`, blocked/research/date/dependency условия и останавливается,
+   если next нельзя определить однозначно;
+4. считает существующий issue body/checklist текущим планом и не запускает
+   дорогой planning заново без необходимости;
+5. для отсутствующей и реально рискованной архитектуры может эскалировать в
+   `planner → plan-reviewer`;
+6. реализует только одну issue за invocation, запускает нужные проверки и для
+   нетривиального diff делает один независимый pass через `reviewer`;
+7. исправляет валидные blocking/important findings, повторяет затронутые
+   проверки и только после этого завершает GitHub workflow;
+8. если в проекте уже есть `current/next` queue, обновляет её существующим
+   способом, не создавая новые labels и не переприоритизируя остальной backlog.
+
+Такой режим особенно полезен для репозиториев вроде SakuSaku/Roman AC 01, где
+GitHub Issues уже содержат порядок работы и acceptance criteria: повторный
+Luna → Terra planning на каждую заранее разобранную issue только зря тратил бы
+контекст и дорогой review.
+
 ## Model routing
 
 Текущая схема специально разделяет дешёвые механические роли, planning,
 независимый review и реализацию:
 
 - основной default Pi — `opencode-go/deepseek-v4-flash` (тестовый default);
-- `/b`, `/build`, `/bh` — `opencode-go/deepseek-v4.1-flash`;
+- `/n`, `/b`, `/build`, `/bh` — `opencode-go/deepseek-v4.1-flash`;
 - `scout` — `opencode-go/mimo-v2.5`, low thinking;
 - `reviewer` — `opencode-go/mimo-v2.5`, medium thinking;
 - `planner` — `opencode-go/gpt-5.6-luna`, high thinking;
@@ -119,7 +154,7 @@ bundled-роли `pi-subagents`:
 - `extension-data/pi-recap/config.json` — настройки recap;
 - `extensions/pi-permission-system/config.json` — глобальная политика доступа Pi;
 - `extensions/subagent/config.json` — компактное описание subagent tool и depth=1;
-- `extensions/workflow.ts` — build-команды и model/thinking routing;
+- `extensions/workflow.ts` — `/n`, build-команды и model/thinking routing;
 - `.local/bin/pi` — единственный launcher Pi;
 - `agents/*.md` — пользовательские определения ролей `pi-subagents`;
 - `prompts/*.md` — короткие slash workflow templates;
@@ -137,7 +172,7 @@ bundled-роли `pi-subagents`:
 Остальные действия в доверенном режиме проходят без подтверждения.
 
 Pi работает в доверенном режиме (`yoloMode: true`): результаты `ask`
-автоматически разрешяются. Политика остаётся важной для явных `deny`:
+автоматически разрешаются. Политика остаётся важной для явных `deny`:
 `.env`, ключи, SSH-файлы, npm/netrc credentials и Pi auth остаются
 заблокированными. Это режим полного доверия к агенту в локальной среде — он
 может выполнять в том числе `rm`, `git push` и сетевые операции.
