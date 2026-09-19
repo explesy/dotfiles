@@ -5,7 +5,7 @@
   "defaultModel": "deepseek-v4-flash",
   "packages": [
     "npm:@zhcsyncer/pi-recap",
-    "npm:pi-herdsman",
+    "npm:pi-subagents",
     "npm:@gotgenes/pi-permission-system"
   ]
 }

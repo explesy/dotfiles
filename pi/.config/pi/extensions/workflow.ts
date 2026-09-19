@@ -5,20 +5,9 @@ import type {
 
 const BUILD_PROVIDER = "opencode-go";
 const BUILD_MODEL = "deepseek-v4.1-flash";
-const HERDSMAN_COORDINATION_TOOLS = new Set(["agent", "chief", "staff"]);
 
 export default function workflowCommands(pi: ExtensionAPI) {
   const runBuild = async (args: string, ctx: ExtensionCommandContext) => {
-    if (
-      pi.getActiveTools().some((tool) => HERDSMAN_COORDINATION_TOOLS.has(tool))
-    ) {
-      ctx.ui.notify(
-        "Restart with the configured pi launcher; /build is unavailable while Herdsman tools are loaded.",
-        "error",
-      );
-      return;
-    }
-
     const model = ctx.modelRegistry.find(BUILD_PROVIDER, BUILD_MODEL);
     if (!model) {
       ctx.ui.notify(

@@ -12,14 +12,12 @@
 mkdir -p "$HOME/.config/pi" "$HOME/.config/pi/npm"
 stow pi
 cd "$HOME/.config/pi/npm" && npm install
-herdr integration install pi
-herdr integration status
 ```
 
-Команды `herdr integration install pi` и `herdr integration status` устанавливают
-или обновляют Pi-интеграцию Herdr и проверяют, что она доступна. Повторите их
-после заметного обновления Herdr или `pi-herdsman`, если интеграция ведёт себя
-неожиданно.
+Команды `herdr integration install pi` и `herdr integration status` больше не
+нужны для обычной работы Pi. Их можно использовать отдельно, если нужен Herdr
+как терминальный мультиплексор, но дочерние задания Pi теперь запускаются через
+`pi-subagents` внутри одной Pi-сессии.
 
 `~/.config/pi` должна оставаться реальной директорией: Pi и его расширения
 пишут туда сессии, модели, auth и runtime-состояние. Настройки из этого
@@ -31,9 +29,11 @@ launcher автоматически. Pi запускается в доверен
 автоматически разрешает действия со статусом `ask`, не показывая диалогов.
 Явные запреты (`deny`) сохраняются — в частности, для `.env` и Pi credentials.
 
-Launcher запускает recap и workflow, но не загружает Herdr-инструменты.
-Поэтому запросы к Console Go не содержат несовместимые схемы `agent`, `chief`
-и `staff` и не получают 400 до начала работы модели.
+Launcher запускает subagents, recap и workflow. Herdsman не загружается, поэтому
+запросы к Console Go не содержат несовместимые старые схемы `agent`, `chief` и
+`staff`.
+Для делегирования используется плоский инструмент `subagent`, а глубина вложенной
+делегации ограничена одним уровнем.
 
 ## Короткие workflow-команды
 
@@ -47,8 +47,7 @@ Prompt templates лежат в `prompts/` и появляются в slash autoc
 `/build [task]` — extension-команда, которая переключает текущую Pi-сессию на
 `opencode-go/deepseek-v4.1-flash` и, если передан текст, сразу запускает его как
 новый user turn. Короткий alias: `/b [task]`. Команда доступна только в базовом
-`pi`; если Herdr-инструменты всё же загружены, она завершится с подсказкой
-перезапустить Pi через настроенный launcher.
+`pi` и работает через тот же единственный launcher.
 
 Примеры:
 
@@ -65,17 +64,18 @@ Prompt templates лежат в `prompts/` и появляются в slash autoc
 
 ## Agent definitions
 
-Глобальные роли лежат в `agents/` и переопределяют одноимённые bundled-роли
-Herdsman:
+Пользовательские роли лежат в `agents/` и переопределяют одноимённые bundled-роли
+`pi-subagents`:
 
-- `scout` — `opencode/nemotron-3.5-lightning-free`, low thinking, read-only;
-- `reviewer` — `opencode/mimo-v2.5-free`, medium thinking, read-only review +
+- `scout` — `opencode-go/deepseek-v4-flash`, low thinking, read-only;
+- `reviewer` — `opencode-go/deepseek-v4.1-flash`, medium thinking, read-only review +
   только read-only git через bash;
-- `plan-reviewer` — `openai/gpt-5.6-terra`, high thinking, независимый
-  pre-implementation plan review.
+- `plan-reviewer` — `opencode-go/deepseek-v4.1-flash`, high thinking,
+  независимый pre-implementation plan review.
 
-`plan-reviewer` использует тот же Terra mapping, что и текущий OpenCode
-workflow; в Pi для провайдера `openai` должна быть настроена аутентификация.
+Модели выбраны из текущего каталога и используют тот же `opencode-go`-маршрут,
+что и основной workflow. Старые `opencode/*`-пины не использовались: для них в
+локальной конфигурации нет API-ключа.
 
 ## Что хранится в Git
 
@@ -84,25 +84,40 @@ workflow; в Pi для провайдера `openai` должна быть на�
 - `extensions/pi-permission-system/config.json` — глобальная политика доступа Pi;
 - `extensions/workflow.ts` — локальные workflow-команды, требующие поведения
   сложнее обычного prompt template;
-- `.local/bin/pi` — launcher базового режима;
-- `agents/*.md` — глобальные Herdsman agent definitions;
+- `.local/bin/pi` — единственный launcher Pi с permission system,
+  `pi-subagents`, recap и workflow;
+- `agents/*.md` — пользовательские определения ролей `pi-subagents`;
 - `prompts/*.md` — короткие slash workflow templates;
 - `npm/package.json` и `npm/package-lock.json` — воспроизводимый список npm-зависимостей.
 
-`auth.json`, `models-store.json`, `sessions/`, `pi-herdsman/`,
+`auth.json`, `models-store.json`, `sessions/`, `pi-subagents/`,
 `extensions/*/state` и `npm/node_modules/` остаются локальными и не должны
 попадать в Git.
 
 ## Политика разрешений
 
 Обычные чтение, поиск и редактирование внутри рабочего каталога разрешены
-автоматически. `.env` и Pi credentials запрещены явно. Другие пути, включая
-ключи и SSH-файлы, в доверенном режиме не запрашивают подтверждение, поэтому
+автоматически. `.env`, ключи, SSH-файлы и Pi credentials запрещены явно.
+Остальные действия в доверенном режиме проходят без подтверждения, поэтому
 не размещайте секреты в рабочем каталоге Pi.
 
 Pi работает в доверенном режиме (`yoloMode: true`): все результаты `ask`
 автоматически разрешаются, поэтому Bash, `node -e`, внешние запросы и изменения
 файлов больше не требуют интерактивного подтверждения. Политика всё ещё важна
-для явных `deny`: `.env` и Pi credentials остаются заблокированными. Это режим
-полного доверия к агенту в локальной среде — он может выполнить в том числе
-`rm`, `git push` и сетевые операции.
+для явных `deny`: `.env`, ключи, SSH-файлы, npm/netrc credentials и Pi auth
+остаются заблокированными. Это режим полного доверия к агенту в локальной
+среде — он может выполнить в том числе `rm`, `git push` и сетевые операции.
+
+## Subagents
+
+Subagents — это единственный механизм дочерних Pi-сессий в текущей схеме.
+Используйте существующие команды:
+
+- `/sc [вопрос]` — read-only разведка через `scout`;
+- `/pl [фокус]` — независимая проверка плана через `plan-reviewer`;
+- `/rv [фокус]` — read-only ревью через `reviewer`.
+
+`pi-subagents` запускает дочерние задания в текущем Pi-контексте, а не через
+внешний мультиплексор. Глубина ограничена одним уровнем, поэтому scout/reviewer не смогут
+самостоятельно породить цепочку новых агентов. Основной Pi сохраняет контроль
+над архитектурой, изменениями и финальным решением.

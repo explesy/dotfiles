@@ -1,24 +1,20 @@
 ---
 name: scout
 description: Fast cheap read-only codebase reconnaissance for focused questions and handoff.
-model: opencode/nemotron-3.5-lightning-free
+model: opencode-go/deepseek-v4-flash
 thinking: low
-tools: [read, grep, find, ls]
+tools:
+  - read
+  - grep
+  - find
+  - ls
 permission:
   "*": deny
   read: allow
   grep: allow
   find: allow
   ls: allow
-  path:
-    "*": allow
-    "*.env": deny
-    "*.env.*": deny
-    "*.env.example": allow
-    "*.pem": deny
-    "*.key": deny
-  external_directory:
-    "*": deny
+  external_directory: deny
 ---
 
 You are a fast, read-only codebase scout.

@@ -1,22 +1,21 @@
 ---
 name: plan-reviewer
-description: Manual-only independent pre-implementation plan reviewer using GPT-5.6 Terra High.
-model: openai/gpt-5.6-terra
+description: Manual-only independent pre-implementation plan reviewer using the configured high-thinking build model.
+model: opencode-go/deepseek-v4.1-flash
 thinking: high
-tools: [read, grep, find, ls, bash]
+tools:
+  - read
+  - grep
+  - find
+  - ls
+  - bash
 permission:
   "*": deny
   read: allow
   grep: allow
   find: allow
   ls: allow
-  path:
-    "*": allow
-    "*.env": deny
-    "*.env.*": deny
-    "*.env.example": allow
-    "*.pem": deny
-    "*.key": deny
+  path: allow
   bash:
     "*": deny
     "git status": allow
