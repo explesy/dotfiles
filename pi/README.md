@@ -72,7 +72,7 @@ Console Go не содержат несовместимые старые схе�
   исправить существенные замечания → закрыть/сдвинуть существующую очередь,
   если критерии действительно выполнены. Main worker выбирается коротким
   селектором: `ds` = DeepSeek V4.1 Flash / OpenCode Go (`low`),
-  `codex` = GPT-5.6 Sol / ChatGPT Codex (`medium`), `agy` =
+  `codex` = GPT-5.6 Terra / ChatGPT Codex (`medium`), `agy` =
   Gemini 3.8 Flash / Antigravity (`low`). Без селектора используется `ds`.
   Если первое слово не является известным селектором, весь текст считается
   обычной дополнительной инструкцией, поэтому старый синтаксис остаётся
@@ -247,7 +247,7 @@ Luna → Terra planning на каждую заранее разобранную 
   startup thinking — `low`;
 - `/n` — selectable main worker: default `ds` →
   `opencode-go/deepseek-v4.1-flash` / low; `codex` →
-  `openai-codex/gpt-5.6-sol` / medium; `agy` →
+  `openai-codex/gpt-5.6-terra` / medium; `agy` →
   `antigravity/gemini-3-8-flash` / low;
 - `/i`, `/b`, `/build`, `/bh` —
   `opencode-go/deepseek-v4.1-flash`;
