@@ -43,6 +43,9 @@ Console Go не содержат несовместимые старые схе�
   исправить существенные замечания → закрыть/сдвинуть существующую очередь,
   если критерии действительно выполнены. Команда сама переключает сессию на
   DeepSeek V4.1 Flash, `low`.
+- `/i <issue> [instruction]` — выполнить одну конкретную GitHub issue тем же
+  execution pipeline, не выбирая другую задачу. Принимает `/i 37` и
+  `/i #37`; gated/blocked/closed issue не обходятся автоматически.
 - `/p <task>` — автоматически: repository-aware plan → independent plan review →
   исправленный final plan; ручной `/pl` посередине не нужен;
 - `/pl [focus]` — только независимый review уже существующего plan через
@@ -66,6 +69,8 @@ Build-команды переключают текущую Pi-сессию на
 ```text
 /n
 /n сначала проверь, что текущая issue не gated
+/i 37
+/i #37 сначала проверь backward compatibility
 /p добавь кеширование результатов player probe
 /sc найди где формируется список subtitle tracks
 /pl особенно проверь миграции и backward compatibility
@@ -74,6 +79,19 @@ Build-команды переключают текущую Pi-сессию на
 /rv проверь exceptional paths и регрессии
 /c исправь найденные blocking issues и закончи задачу
 ```
+
+### Workflow status в footer
+
+Execution-команды показывают короткий статус в footer, пока идёт соответствующий
+turn:
+
+- `/n` → `N · DS4.1 · low · next queued issue`;
+- `/i 37` → `I · DS4.1 · low · #37`;
+- `/b <task>` и `/bh <task>` → режим, thinking level и сокращённое описание
+  задачи.
+
+После `turn_end` статус автоматически очищается, поэтому завершённая задача не
+остаётся висеть в интерфейсе как будто она всё ещё активна.
 
 После изменения prompt templates или `extensions/workflow.ts` используйте
 `/reload` либо перезапустите Pi.
@@ -106,11 +124,16 @@ OAuth-токен внутри Pi. После перезапуска доступ
 `agy` выполняются без отдельного подтверждения, поэтому не выбирайте
 `accept-edits` для непроверенных репозиториев.
 
-## Next-issue workflow
+## Issue execution workflow
 
 `/n` предназначен для проектов, где backlog уже организован в GitHub Issues и
 есть понятная очередь выполнения. Он не создаёт второй планировщик поверх
 существующей системы.
+
+`/i <issue>` использует тот же implementation/verification/review pipeline, но
+не ищет следующую задачу: выполняется ровно указанная issue. Если она закрыта,
+gated, blocked зависимостью или иным образом сейчас не исполнима, workflow
+останавливается вместо обхода проектных ограничений.
 
 Алгоритм:
 
@@ -130,6 +153,10 @@ OAuth-токен внутри Pi. После перезапуска доступ
 8. если в проекте уже есть `current/next` queue, обновляет её существующим
    способом, не создавая новые labels и не переприоритизируя остальной backlog.
 
+При `/i` шаг выбора задачи пропускается. Existing queue обновляется только если
+указанная issue действительно представлена в ней и текущие правила проекта
+требуют такого обновления; unrelated backlog не переставляется.
+
 Такой режим особенно полезен для репозиториев вроде SakuSaku/Roman AC 01, где
 GitHub Issues уже содержат порядок работы и acceptance criteria: повторный
 Luna → Terra planning на каждую заранее разобранную issue только зря тратил бы
@@ -140,8 +167,10 @@ Luna → Terra planning на каждую заранее разобранную 
 Текущая схема специально разделяет дешёвые механические роли, planning,
 независимый review и реализацию:
 
-- основной default Pi — `opencode-go/deepseek-v4-flash` (тестовый default);
-- `/n`, `/b`, `/build`, `/bh` — `opencode-go/deepseek-v4.1-flash`;
+- основной default Pi — `opencode-go/deepseek-v4-flash` (тестовый default),
+  startup thinking — `low`;
+- `/n`, `/i`, `/b`, `/build`, `/bh` —
+  `opencode-go/deepseek-v4.1-flash`;
 - `scout` — `opencode-go/mimo-v2.5`, low thinking;
 - `reviewer` — `opencode-go/mimo-v2.5`, medium thinking;
 - `planner` — `opencode-go/gpt-5.6-luna`, high thinking;
@@ -181,7 +210,8 @@ bundled-роли `pi-subagents`:
 
 ## Что хранится в Git
 
-- `settings.json` — тема, модель по умолчанию и список пакетов;
+- `settings.json` — тема, модель по умолчанию, безопасный startup
+  `defaultThinkingLevel: low` и список пакетов;
 - `extension-data/pi-recap/config.json` — настройки recap;
 - `extensions/pi-permission-system/config.json` — глобальная политика доступа Pi;
 - `extensions/workflow.ts` — локальные workflow-команды, требующие поведения
@@ -189,7 +219,8 @@ bundled-роли `pi-subagents`:
 - `.local/bin/pi` — единственный launcher Pi с permission system,
   `pi-subagents`, Antigravity bridge, recap и workflow;
 - `extensions/subagent/config.json` — компактное описание subagent tool и depth=1;
-- `extensions/workflow.ts` — `/n`, build-команды и model/thinking routing;
+- `extensions/workflow.ts` — `/n`, `/i`, build-команды, model/thinking
+  routing и временный workflow status в footer;
 - `agents/*.md` — пользовательские определения ролей `pi-subagents`;
 - `prompts/*.md` — короткие slash workflow templates;
 - `npm/package.json` и `npm/package-lock.json` — воспроизводимый список
