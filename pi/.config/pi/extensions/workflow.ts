@@ -4,7 +4,7 @@ import type {
 } from "@earendil-works/pi-coding-agent";
 
 const BUILD_PROVIDER = "opencode-go";
-const BUILD_MODEL = "deepseek-v4-flash";
+const BUILD_MODEL = "deepseek-v4.1-flash";
 
 export default function workflowCommands(pi: ExtensionAPI) {
   const runBuild = async (args: string, ctx: ExtensionCommandContext) => {
@@ -39,7 +39,7 @@ export default function workflowCommands(pi: ExtensionAPI) {
   };
 
   pi.registerCommand("build", {
-    description: "Switch to DeepSeek V4 Flash build model and optionally run a task",
+    description: "Switch to DeepSeek V4.1 Flash build model and optionally run a task",
     handler: runBuild,
   });
 
