@@ -86,13 +86,30 @@ Build-команды переключают текущую Pi-сессию на
 
 ### Workflow status в footer
 
-Execution-команды показывают короткий статус в footer, пока идёт соответствующий
-turn:
+Execution-команды показывают короткий live status в footer, пока идёт
+соответствующий turn.
 
-- `/n` → `N · DS4.1 · low · next queued issue`;
-- `/i 37` → `I · DS4.1 · low · #37`;
-- `/b <task>` и `/bh <task>` → режим, thinking level и сокращённое описание
-  задачи.
+Для `/n` и `/i` extension регистрирует UI-only tool `workflow_status`.
+Агент вызывает его только при крупных переходах workflow, поэтому footer
+показывает не просто запущенную команду, а текущую issue и фазу:
+
+```text
+N · DS4.1 · low · selecting
+N · DS4.1 · low · #42 · selected · Detect player languages
+N · DS4.1 · low · #42 · implementing · Detect player languages
+N · DS4.1 · low · #42 · testing · Detect player languages
+N · DS4.1 · low · #42 · reviewing · Detect player languages
+N · DS4.1 · low · #42 · fixing · Detect player languages
+N · DS4.1 · low · #42 · finishing · Detect player languages
+```
+
+Поддерживаемые фазы: `selecting`, `selected`, `investigating`, `planning`,
+`implementing`, `testing`, `reviewing`, `fixing`, `finishing`,
+`blocked`. Для `/i 37` номер известен сразу; для `/n` номер и короткий title
+появляются после выбора задачи.
+
+`/b <task>` и `/bh <task>` по-прежнему показывают режим, thinking level и
+сокращённое описание задачи без дополнительного phase protocol.
 
 После `turn_end` статус автоматически очищается, поэтому завершённая задача не
 остаётся висеть в интерфейсе как будто она всё ещё активна.
@@ -224,7 +241,7 @@ bundled-роли `pi-subagents`:
   `pi-subagents`, Antigravity bridge, recap и workflow;
 - `extensions/subagent/config.json` — компактное описание subagent tool и depth=1;
 - `extensions/workflow.ts` — `/n`, `/i`, build-команды, model/thinking
-  routing и временный workflow status в footer;
+  routing, `workflow_status` tool и live workflow phase в footer;
 - `agents/*.md` — пользовательские определения ролей `pi-subagents`;
 - `prompts/*.md` — короткие slash workflow templates;
 - `npm/package.json` и `npm/package-lock.json` — воспроизводимый список
