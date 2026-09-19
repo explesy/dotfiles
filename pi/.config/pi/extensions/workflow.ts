@@ -5,6 +5,7 @@ import type {
 
 const BUILD_PROVIDER = "opencode-go";
 const BUILD_MODEL = "deepseek-v4.1-flash";
+const HERDSMAN_COORDINATION_TOOLS = new Set(["agent", "chief", "staff"]);
 
 export default function workflowCommands(pi: ExtensionAPI) {
   let buildToolsBeforeRun: string[] | undefined;
@@ -42,13 +43,16 @@ export default function workflowCommands(pi: ExtensionAPI) {
     if (task) {
       const activeTools = pi.getActiveTools();
 
-      // pi-herdsman exposes `agent` with a root `anyOf` schema. Some Console Go
-      // routes reject that schema before the model sees the request, even though
-      // the rest of the tool surface is valid. /build is a single-agent build
-      // command, so omit only this optional delegation tool for its one turn.
-      if (activeTools.includes("agent")) {
+      // pi-herdsman exposes its coordination tools with root `anyOf` schemas.
+      // Some Console Go routes reject those schemas before the model sees the
+      // request, even though the rest of the tool surface is valid. /build is
+      // a single-agent build command, so omit only optional Herdsman
+      // coordination tools for its one turn.
+      if (activeTools.some((tool) => HERDSMAN_COORDINATION_TOOLS.has(tool))) {
         buildToolsBeforeRun = activeTools;
-        pi.setActiveTools(activeTools.filter((tool) => tool !== "agent"));
+        pi.setActiveTools(
+          activeTools.filter((tool) => !HERDSMAN_COORDINATION_TOOLS.has(tool)),
+        );
       }
 
       try {
