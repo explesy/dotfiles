@@ -25,11 +25,55 @@ herdr integration status
 пишут туда сессии, модели, auth и runtime-состояние. Настройки из этого
 пакета линкуются в неё отдельными файлами.
 
+## Короткие workflow-команды
+
+Prompt templates лежат в `prompts/` и появляются в slash autocomplete:
+
+- `/pl [focus]` — запустить независимый review текущего implementation plan через `plan-reviewer`;
+- `/rv [focus]` — запустить независимый review текущей реализации через `reviewer`;
+- `/sc [question]` — запустить узкое read-only исследование через `scout`;
+- `/c [instruction]` — продолжить текущую задачу без повторного старта/перепланирования.
+
+`/build [task]` — extension-команда, которая переключает текущую Pi-сессию на
+`opencode-go/deepseek-v4-flash` и, если передан текст, сразу запускает его как
+новый user turn. Короткий alias: `/b [task]`.
+
+Примеры:
+
+```text
+/sc найди где формируется список subtitle tracks
+/pl особенно проверь миграции и backward compatibility
+/rv проверь race conditions и exceptional paths
+/build реализуй утвержденный план
+/c закончи оставшиеся тесты
+```
+
+После изменения prompt templates или `extensions/workflow.ts` используйте
+`/reload` либо перезапустите Pi.
+
+## Agent definitions
+
+Глобальные роли лежат в `agents/` и переопределяют одноимённые bundled-роли
+Herdsman:
+
+- `scout` — `opencode/nemotron-3.5-lightning-free`, low thinking, read-only;
+- `reviewer` — `opencode/mimo-v2.5-free`, medium thinking, read-only review +
+  только read-only git через bash;
+- `plan-reviewer` — `openai/gpt-5.6-terra`, high thinking, независимый
+  pre-implementation plan review.
+
+`plan-reviewer` использует тот же Terra mapping, что и текущий OpenCode
+workflow; в Pi для провайдера `openai` должна быть настроена аутентификация.
+
 ## Что хранится в Git
 
 - `settings.json` — тема, модель по умолчанию и список пакетов;
 - `extension-data/pi-recap/config.json` — настройки recap;
 - `extensions/pi-permission-system/config.json` — глобальная политика доступа Pi;
+- `extensions/workflow.ts` — локальные workflow-команды, требующие поведения
+  сложнее обычного prompt template;
+- `agents/*.md` — глобальные Herdsman agent definitions;
+- `prompts/*.md` — короткие slash workflow templates;
 - `npm/package.json` и `npm/package-lock.json` — воспроизводимый список npm-зависимостей.
 
 `auth.json`, `models-store.json`, `sessions/`, `pi-herdsman/`,
