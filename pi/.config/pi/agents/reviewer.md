@@ -1,7 +1,7 @@
 ---
 name: reviewer
-description: Independent first-pass implementation reviewer focused on concrete bugs, regressions, and unnecessary complexity.
-model: opencode-go/deepseek-v4.1-flash
+description: Independent cheap first-pass implementation reviewer focused on concrete bugs, regressions, and unnecessary complexity.
+model: opencode-go/mimo-v2.5
 thinking: medium
 tools:
   - read
