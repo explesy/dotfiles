@@ -26,7 +26,7 @@ const NEXT_MODEL_ROUTES = {
   },
   codex: {
     provider: "openai-codex",
-    model: "gpt-5.6-sol",
+    model: "gpt-5.6-terra",
     thinking: "medium",
   },
   agy: {
