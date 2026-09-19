@@ -2,7 +2,7 @@
 name: plan-reviewer
 description: Independent pre-implementation plan reviewer using GPT-5.6 Terra.
 model: openai-codex/gpt-5.6-terra
-thinking: xhigh
+thinking: high
 tools:
   - read
   - grep
