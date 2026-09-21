@@ -10,7 +10,15 @@ Source of truth для конфигурации Pi — этот GitHub-репо�
 
 ## Установка
 
-Из корня репозитория:
+Текущий compatibility target этой конфигурации — **Pi 0.86.1**. На уже
+настроенной машине сначала обновите сам Pi, затем зависимости конфигурации:
+
+```sh
+brew upgrade pi
+cd "$HOME/.config/pi/npm" && npm install
+```
+
+Для новой установки из корня репозитория:
 
 ```sh
 mkdir -p "$HOME/.config/pi" "$HOME/.config/pi/npm"
@@ -28,10 +36,12 @@ Pi использует закреплённый Git commit нашего фор�
 error.
 
 Commit закреплён в `npm/package.json` и `npm/package-lock.json`, поэтому
-`npm install` воспроизводимо берёт именно проверенный исходник. Обновление
-bridge теперь выполняется отдельным изменением commit SHA в dotfiles после
-проверок в форке; локальные изменения `node_modules` не являются источником
-истины.
+`npm install` воспроизводимо берёт именно проверенный исходник. Текущий
+fork-pin основан на upstream bridge **1.6.2**: он включает совместимость с
+нормализованным `TranscriptContext` в Pi 0.86.x и сохраняет наш локальный fix
+полного approval payload `{ decision, reason }`. Обновление bridge выполняется
+отдельным изменением commit SHA в dotfiles после проверки в форке; локальные
+изменения `node_modules` не являются источником истины.
 
 Herdr больше не участвует в оркестрации Pi. Его можно использовать отдельно как
 терминальный мультиплексор, а дочерние задания запускаются через
@@ -300,6 +310,9 @@ bundled-роли `pi-subagents`:
 
 - `settings.json` — тема, модель по умолчанию, безопасный startup
   `defaultThinkingLevel: low` и список пакетов;
+- `npm/package.json` / `package-lock.json` — сейчас фиксируют bridge на
+  upstream-compatible 1.6.2 patch commit, `pi-subagents 0.70.1` и
+  `@gotgenes/pi-permission-system 33.0.5`;
 - `extension-data/pi-recap/config.json` — настройки recap;
 - `extensions/pi-permission-system/config.json` — глобальная политика доступа Pi;
 - `extensions/workflow.ts` — локальные workflow-команды, требующие поведения
