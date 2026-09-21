@@ -10,11 +10,12 @@ Source of truth для конфигурации Pi — этот GitHub-репо�
 
 ## Установка
 
-Текущий compatibility target этой конфигурации — **Pi 0.86.1**. На уже
-настроенной машине сначала обновите сам Pi, затем зависимости конфигурации:
+Текущий compatibility target этой конфигурации — **Pi 0.86.1**. Pi установлен
+глобально через npm, поэтому на уже настроенной машине сначала обновите сам Pi,
+затем зависимости конфигурации:
 
 ```sh
-brew upgrade pi
+npm install -g --ignore-scripts @earendil-works/pi-coding-agent@latest
 cd "$HOME/.config/pi/npm" && npm install
 ```
 
