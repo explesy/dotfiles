@@ -19,6 +19,31 @@ npm install -g --ignore-scripts @earendil-works/pi-coding-agent@latest
 cd "$HOME/.config/pi/npm" && npm install
 ```
 
+Для обычного обновления используйте команду `pi-update`, которая появляется в
+`~/.local/bin` после `stow pi`:
+
+```sh
+pi-update
+```
+
+Для проверки без обновления используйте:
+
+```sh
+pi-update --check
+```
+
+Команда обновляет сам Pi и затем зависимости расширений, после чего проверяет
+версию Pi и состояние локального `npm`-дерева. На текущей установке глобальный
+Pi находится в Homebrew-prefix, но установлен через npm, поэтому скрипт явно
+использует `/opt/homebrew/bin/npm`. Это важно: обычный `npm` может быть npm из
+fnm и обновить другой global-prefix.
+
+Если в будущем Pi будет зарегистрирован как Homebrew-формула
+`pi-coding-agent`, `pi-update` автоматически использует `brew upgrade
+pi-coding-agent`. Локальные расширения всё равно обновляются отдельным
+`npm install`, потому что bridge закреплён на проверенном fork commit и
+управляется этим репозиторием.
+
 Для новой установки из корня репозитория:
 
 ```sh
@@ -318,8 +343,10 @@ bundled-роли `pi-subagents`:
 - `extensions/pi-permission-system/config.json` — глобальная политика доступа Pi;
 - `extensions/workflow.ts` — локальные workflow-команды, требующие поведения
   сложнее обычного prompt template;
-- `.local/bin/pi` — единственный launcher Pi с permission system,
+- `.local/bin/pi` — launcher Pi с permission system,
   `pi-subagents`, Antigravity bridge, recap и workflow;
+- `.local/bin/pi-update` — единая команда обновления Pi и его расширений с
+  проверкой итоговых версий;
 - `extensions/subagent/config.json` — компактное описание subagent tool и depth=1;
 - `extensions/workflow.ts` — `/n` с коротким worker selector
   (`ds|codex|agy`), `/i`, build-команды, model/thinking routing,

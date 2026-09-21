@@ -1,0 +1,56 @@
+#!/usr/bin/env zsh
+set -euo pipefail
+
+readonly PI_PACKAGE="@earendil-works/pi-coding-agent"
+readonly PI_CONFIG_DIR="${PI_CODING_AGENT_DIR:-$HOME/.config/pi}"
+readonly PI_NPM_DIR="$PI_CONFIG_DIR/npm"
+readonly HOMEBREW_NPM="/opt/homebrew/bin/npm"
+
+if [[ "${1:-}" == "--check" ]]; then
+  if (( $# > 1 )); then
+    print -u2 "Usage: pi-update [--check]"
+    exit 2
+  fi
+
+  print "Pi: $(pi --version)"
+  cd "$PI_NPM_DIR"
+  npm ls --depth=0
+  exit 0
+elif (( $# > 0 )); then
+  print -u2 "Usage: pi-update [--check]"
+  exit 2
+fi
+
+print "== Updating Pi =="
+
+if [[ "$(uname -s)" != "Darwin" ]]; then
+  print -u2 "pi-update currently supports macOS only."
+  exit 1
+fi
+
+if (( $+commands[brew] )) && brew list --formula --versions pi-coding-agent >/dev/null 2>&1; then
+  print "Pi is managed by Homebrew; upgrading pi-coding-agent."
+  brew upgrade pi-coding-agent
+else
+  if [[ ! -x "$HOMEBREW_NPM" ]]; then
+    print -u2 "Homebrew npm was not found at $HOMEBREW_NPM."
+    exit 1
+  fi
+
+  print "Pi is managed by the Homebrew npm prefix; installing the latest npm package."
+  "$HOMEBREW_NPM" install -g --ignore-scripts "$PI_PACKAGE@latest"
+fi
+
+if [[ ! -f "$PI_NPM_DIR/package.json" ]]; then
+  print -u2 "Pi extension manifest was not found: $PI_NPM_DIR/package.json"
+  exit 1
+fi
+
+print "== Updating Pi extensions =="
+cd "$PI_NPM_DIR"
+npm install
+
+print "== Verification =="
+rehash
+print "Pi: $(pi --version)"
+npm ls --depth=0
