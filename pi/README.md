@@ -324,9 +324,7 @@ bundled-роли `pi-subagents`:
   (`ds|codex|agy`), `/i`, build-команды, model/thinking routing,
   `workflow_status` tool и live workflow phase в footer;
 - `agents/*.md` — пользовательские определения ролей `pi-subagents`;
-- `prompts/*.md` — короткие slash workflow templates;
-- `npm/package.json` и `npm/package-lock.json` — воспроизводимый список
-  npm-зависимостей.
+- `prompts/*.md` — короткие slash workflow templates.
 
 `auth.json`, `models-store.json`, `sessions/`, `pi-subagents/`,
 `extensions/*/state`, `.agents/hooks.json` и `npm/node_modules/` остаются локальными и не должны
