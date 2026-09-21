@@ -76,6 +76,37 @@ Do not call workflow_status for every tool invocation. One call per meaningful
 phase transition is enough.
 `.trim();
 
+const HUMAN_REPORT_PROTOCOL = `
+The final response is a two-layer report for the project owner, not a raw
+engineering log. Preserve access to technical depth, but do not make the owner
+decode internal vocabulary just to understand what happened.
+
+Layer 1 — human summary:
+- write in the user's language;
+- start with the practical result: what changed, why it matters, and what the
+  system/project does differently now;
+- use plain domain language and concrete behavior, not class names, table names,
+  internal statuses, pipeline jargon, or implementation vocabulary;
+- if an internal term is unavoidable, explain the meaning first and put the
+  exact term in parentheses afterwards;
+- include concise verification/reviewer outcome and current/next queue state
+  when relevant;
+- for a blocked run, explain the practical blocker first, then its technical
+  cause.
+
+Layer 2 — technical details:
+- keep a separate "Technical details" / "Технические детали" section after the
+  human summary;
+- include the important internal terms, affected components/files, verification,
+  reviewer findings/fixes, constraints, and implementation details needed to
+  inspect the work more deeply;
+- stay concise by default, but do not hide relevant complexity. The user can ask
+  to expand any item further.
+
+Never use shorthand such as "negative episode" as if it were self-explanatory:
+describe the observed result or absence signal instead.
+`.trim();
+
 const NEXT_TASK_PROMPT = `
 Execute exactly one next queued GitHub issue for this repository end-to-end.
 
@@ -134,9 +165,11 @@ ${WORKFLOW_STATUS_PROTOCOL}
      project explicitly requires that;
    - never invent new queue labels or silently reorder unrelated backlog items.
 
-8. Finish with a compact report: selected issue, what changed, verification,
-   reviewer result/fixes, and the new current/next state (or why the issue could
-   not be completed).
+8. Finish using the two-layer owner report below. Include the selected issue,
+   practical result, verification, reviewer result/fixes, and the new
+   current/next state (or why the issue could not be completed).
+
+${HUMAN_REPORT_PROTOCOL}
 `.trim();
 
 const issueTaskPrompt = (issueNumber: number) => `
@@ -190,9 +223,11 @@ ${WORKFLOW_STATUS_PROTOCOL}
    - never invent new queue labels, silently reorder unrelated backlog items, or
      advance unrelated work.
 
-7. Finish with a compact report: issue #${issueNumber}, what changed,
-   verification, reviewer result/fixes, and any queue/handoff update performed
-   (or why the issue could not be completed).
+7. Finish using the two-layer owner report below. Include issue
+   #${issueNumber}, practical result, verification, reviewer result/fixes, and
+   any queue/handoff update performed (or why the issue could not be completed).
+
+${HUMAN_REPORT_PROTOCOL}
 `.trim();
 
 export default function workflowCommands(pi: ExtensionAPI) {
