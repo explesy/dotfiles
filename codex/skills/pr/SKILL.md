@@ -1,6 +1,6 @@
 ---
 name: pr
-description: Run exactly one GPT-5.6 Terra High pre-implementation review of the current plan before coding.
+description: Run exactly one GPT-6 Sol High pre-implementation review of the current plan before coding.
 ---
 
 Run exactly one independent pre-implementation plan review using the custom `plan-reviewer` agent. Do not independently perform the same review first, and do not begin implementation afterward.
