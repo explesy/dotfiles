@@ -2,18 +2,16 @@
 set -euo pipefail
 
 export PI_CODING_AGENT_DIR="${PI_CODING_AGENT_DIR:-$HOME/.config/pi}"
-# The bridge's workspace-level approval hook also intercepts standalone
-# Antigravity sessions in the same repository. Keep the bridge itself, but
-# disable only that optional gate until upstream isolates its session scope.
-export AGY_APPROVALS="off"
 
 readonly PI_BIN="/opt/homebrew/bin/pi"
 readonly EXTENSION_ROOT="$PI_CODING_AGENT_DIR/npm/node_modules"
+# pi-subagents 0.70.x publishes compiled JavaScript as its extension entry;
+# the old TypeScript path is no longer present in the npm artifact.
 
 exec "$PI_BIN" \
   --no-extensions \
   --extension "$EXTENSION_ROOT/@gotgenes/pi-permission-system/src/index.ts" \
-  --extension "$EXTENSION_ROOT/pi-subagents/index.ts" \
+  --extension "$EXTENSION_ROOT/pi-subagents/index.js" \
   --extension "$EXTENSION_ROOT/@estebanforge/pi-antigravity-bridge/extensions/index.ts" \
   --extension "$EXTENSION_ROOT/@zhcsyncer/pi-recap/extensions/recap.ts" \
   --extension "$PI_CODING_AGENT_DIR/extensions/workflow.ts" \

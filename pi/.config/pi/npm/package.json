@@ -2,10 +2,16 @@
   "name": "pi-extensions",
   "private": true,
   "dependencies": {
-    "@estebanforge/pi-antigravity-bridge": "https://github.com/explesy/pi-antigravity-bridge/archive/970716cc0ce293daf6c8389da17d6a806dd4f0d7.tar.gz",
+    "@estebanforge/pi-antigravity-bridge": "1.6.4",
     "@gotgenes/pi-permission-system": "^33.0.5",
     "@zhcsyncer/pi-recap": "^0.4.3",
     "pi-subagents": "0.70.1"
   },
-  "scripts": {}
+  "scripts": {},
+  "devDependencies": {
+    "@earendil-works/pi-agent-core": "0.87.0",
+    "@earendil-works/pi-ai": "0.87.0",
+    "@earendil-works/pi-coding-agent": "0.87.0",
+    "@earendil-works/pi-tui": "0.87.0"
+  }
 }

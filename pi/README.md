@@ -10,7 +10,7 @@ Source of truth для конфигурации Pi — этот GitHub-репо�
 
 ## Установка
 
-Текущий compatibility target этой конфигурации — **Pi 0.86.1**. Pi установлен
+Текущий compatibility target этой конфигурации — **Pi 0.87.0**. Pi установлен
 глобально через npm, поэтому на уже настроенной машине сначала обновите сам Pi,
 затем зависимости конфигурации:
 
@@ -41,7 +41,7 @@ fnm и обновить другой global-prefix.
 Если в будущем Pi будет зарегистрирован как Homebrew-формула
 `pi-coding-agent`, `pi-update` автоматически использует `brew upgrade
 pi-coding-agent`. Локальные расширения всё равно обновляются отдельным
-`npm install`, потому что bridge закреплён на проверенном fork commit и
+`npm install`, потому что bridge закреплён на проверенной версии и
 управляется этим репозиторием.
 
 Для новой установки из корня репозитория:
@@ -52,21 +52,17 @@ stow pi
 cd "$HOME/.config/pi/npm" && npm install
 ```
 
-### Managed bridge fork
+### Managed bridge
 
-Pi использует закреплённый Git commit нашего форка
-[`explesy/pi-antigravity-bridge`](https://github.com/explesy/pi-antigravity-bridge),
-а не патчит опубликованный npm-пакет после установки. Первый fork-патч
-сохраняет полный approval-ответ `{ decision, reason }`: иначе Antigravity
-получает только строку `"deny"` и аварийно завершает hook с protobuf/parser
-error.
+Pi использует точную версию опубликованного
+[`@estebanforge/pi-antigravity-bridge`](https://github.com/EstebanForge/pi-antigravity-bridge),
+а не патчит `node_modules` после установки. Версия **1.6.4** уже содержит
+полный approval-ответ `{ decision, reason }` и изолирует hooks в приватном
+каталоге конкретной Pi-сессии, поэтому standalone Antigravity в том же
+workspace больше не получает чужой approval gate.
 
-Commit закреплён в `npm/package.json` и `npm/package-lock.json`, поэтому
-`npm install` воспроизводимо берёт именно проверенный исходник. Текущий
-fork-pin основан на upstream bridge **1.6.2**: он включает совместимость с
-нормализованным `TranscriptContext` в Pi 0.86.x и сохраняет наш локальный fix
-полного approval payload `{ decision, reason }`. Обновление bridge выполняется
-отдельным изменением commit SHA в dotfiles после проверки в форке; локальные
+Версия закреплена в `npm/package.json` и `npm/package-lock.json`, поэтому
+`npm install` воспроизводимо берёт именно проверенный пакет. Локальные
 изменения `node_modules` не являются источником истины.
 
 Herdr больше не участвует в оркестрации Pi. Его можно использовать отдельно как
@@ -188,15 +184,11 @@ N · DeepSeek V4.1 Flash · low · #42 · fixing · Detect player languages
 
 ### Approval gate
 
-Launcher явно задаёт `AGY_APPROVALS=off`. Это отключает только optional
-approval gate bridge и не позволяет ему создавать workspace-level
-`.agents/hooks.json`, который перехватывает standalone Antigravity в той же
-папке. Модели Antigravity внутри Pi, MCP bridge и обычный Pi permission system
-остаются включены; нативные действия `agy` больше не проходят через отдельный
-Pi approval gate.
-
-Когда upstream исправит изоляцию в [issue #5](https://github.com/EstebanForge/pi-antigravity-bridge/issues/5),
-уберите эту переменную из launcher и верните `approvals.gateMode` в `auto`.
+Bridge `1.6.4` оставляет `approvals.gateMode` в `auto`: при наличии Pi
+permission extension нативные mutating-действия `agy` проходят через Pi-side
+approval, а hooks лежат в приватном каталоге конкретной сессии. Поэтому
+standalone Antigravity в том же workspace не видит чужой gate; модели
+Antigravity, MCP bridge и обычная Pi permission policy остаются включены.
 
 ## Antigravity через `agy`
 
@@ -336,9 +328,10 @@ bundled-роли `pi-subagents`:
 
 - `settings.json` — тема, модель по умолчанию, безопасный startup
   `defaultThinkingLevel: low` и список пакетов;
-- `npm/package.json` / `package-lock.json` — сейчас фиксируют bridge на
-  upstream-compatible 1.6.2 patch commit, `pi-subagents 0.70.1` и
-  `@gotgenes/pi-permission-system 33.0.5`;
+- `npm/package.json` / `package-lock.json` — фиксируют bridge `1.6.4`,
+  `pi-subagents 0.70.1`,
+  `@gotgenes/pi-permission-system 33.0.5`, `@zhcsyncer/pi-recap 0.4.3` и
+  Pi SDK peer-пакеты `0.87.0` для воспроизводимой совместимости расширений;
 - `extension-data/pi-recap/config.json` — настройки recap;
 - `extensions/pi-permission-system/config.json` — глобальная политика доступа Pi;
 - `extensions/workflow.ts` — локальные workflow-команды, требующие поведения
