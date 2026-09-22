@@ -1,6 +1,6 @@
 name = "hard-review"
-description = "Manual-only GPT-5.6 Terra High escalation reviewer for genuinely ambiguous, high-risk, or stubborn coding problems."
-model = "gpt-5.6-terra"
+description = "Manual-only GPT-6 Astra High escalation reviewer for genuinely ambiguous, high-risk, or stubborn coding problems."
+model = "gpt-6-astra"
 model_reasoning_effort = "high"
 model_verbosity = "low"
 sandbox_mode = "read-only"
