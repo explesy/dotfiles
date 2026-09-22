@@ -1,6 +1,6 @@
 name = "plan-reviewer"
-description = "Manual-only GPT-5.6 Terra High pre-implementation plan reviewer. Challenges exactly one supplied current plan before coding."
-model = "gpt-5.6-terra"
+description = "Manual-only GPT-6 Sol High pre-implementation plan reviewer. Challenges exactly one supplied current plan before coding."
+model = "gpt-6-sol"
 model_reasoning_effort = "high"
 model_verbosity = "low"
 sandbox_mode = "read-only"
