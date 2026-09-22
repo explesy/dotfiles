@@ -1,6 +1,6 @@
 ---
 name: hard
-description: Escalate the current unresolved coding problem exactly once to GPT-6 Astra High for independent review.
+description: Escalate the current unresolved coding problem exactly once to GPT-6 Sol High for independent review.
 ---
 
 Run exactly one escalation using the custom `hard-review` agent. Do not perform an expensive duplicate review in the parent first.
