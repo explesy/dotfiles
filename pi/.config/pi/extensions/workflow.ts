@@ -26,8 +26,13 @@ const NEXT_MODEL_ROUTES = {
   },
   codex: {
     provider: "openai-codex",
-    model: "gpt-5.6-terra",
+    model: "gpt-6-sol",
     thinking: "medium",
+  },
+  luna: {
+    provider: "openai-codex",
+    model: "gpt-6-luna",
+    thinking: "high",
   },
   agy: {
     provider: "antigravity",
@@ -561,7 +566,7 @@ export default function workflowCommands(pi: ExtensionAPI) {
 
   pi.registerCommand("n", {
     description:
-      "Execute one next queued GitHub issue; optional model selector: ds, codex, agy",
+      "Execute one next queued GitHub issue; optional model selector: ds, codex, luna, agy",
     handler: runNext,
   });
 
