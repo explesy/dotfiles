@@ -258,8 +258,8 @@
 
 С 2026-08-12 источником для `~/.codex/config.toml` служит симлинк на
 `codex/config.toml` в этом репозитории. Таким же способом здесь хранятся
-глобальный `AGENTS.md`, custom agents и восемь личных workflow-skills: `c`,
-`do`, `ui`, `preflight`, `pr`, `hard`, `simplify`, `commit`.
+глобальный `AGENTS.md`, custom agents и девять личных workflow-skills: `c`,
+`do`, `ui`, `preflight`, `pr`, `prh`, `hard`, `simplify`, `commit`.
 
 > [!NOTE]
 > Часть путей в `config.toml` машинозависима и не раскрывает переменные окружения:
@@ -270,6 +270,14 @@
 `ui` — визуальная приёмка UI по правилам конкретного репозитория. `preflight`
 — read-only решение о готовности к релизу: он не делает push, deploy или
 изменения production.
+
+Цикл планирования остаётся явно трёхшаговым: Plan mode → `$pr` → `$do`.
+Plan mode добавляет короткий `REVIEW_HANDOFF` из уже собранных фактов.
+`$pr` запускает быстрый `GPT-6 Sol Medium` review и не повторяет широкий
+repository research без конкретного сомнения. Для миграций, security,
+concurrency/state, широких compatibility changes и других рискованных задач
+используется `$prh` → `GPT-6 Sol High`. Оба review-командных шага только
+исправляют/одобряют план и никогда автоматически не начинают реализацию.
 
 Custom Codex pets также хранятся в репозитории: `codex/pets/` подключён к
 `~/.codex/pets` симлинком. Каждый пакет содержит `pet.json` и
