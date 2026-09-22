@@ -94,8 +94,8 @@ Console Go не содержат несовместимые старые схе�
   исправить существенные замечания → закрыть/сдвинуть существующую очередь,
   если критерии действительно выполнены. Main worker выбирается коротким
   селектором: `ds` = DeepSeek V4.1 Flash / OpenCode Go (`low`),
-  `codex` = GPT-5.6 Terra / ChatGPT Codex (`medium`), `agy` =
-  Gemini 3.8 Flash / Antigravity (`low`). Без селектора используется `ds`.
+  `codex` = GPT-6 Sol / ChatGPT Codex (`medium`), `luna` = GPT-6 Luna /
+  ChatGPT Codex (`high`), `agy` = Gemini 3.8 Flash / Antigravity (`low`). Без селектора используется `ds`.
   Если первое слово не является известным селектором, весь текст считается
   обычной дополнительной инструкцией, поэтому старый синтаксис остаётся
   совместимым.
@@ -126,6 +126,7 @@ Build-команды переключают текущую Pi-сессию на
 /n
 /n ds
 /n codex
+/n luna
 /n agy сначала внимательно проверь frontend
 /n сначала проверь, что текущая issue не gated
 /i 37
@@ -271,7 +272,7 @@ gated, blocked зависимостью или иным образом сейч�
 
 Такой режим особенно полезен для репозиториев вроде SakuSaku/Roman AC 01, где
 GitHub Issues уже содержат порядок работы и acceptance criteria: повторный
-Luna → Terra planning на каждую заранее разобранную issue только зря тратил бы
+Luna → Sol planning на каждую заранее разобранную issue только зря тратил бы
 контекст и дорогой review.
 
 ## Model routing
@@ -283,17 +284,18 @@ Luna → Terra planning на каждую заранее разобранную 
   startup thinking — `low`;
 - `/n` — selectable main worker: default `ds` →
   `opencode-go/deepseek-v4.1-flash` / low; `codex` →
-  `openai-codex/gpt-5.6-terra` / medium; `agy` →
+  `openai-codex/gpt-6-sol` / medium; `luna` →
+  `openai-codex/gpt-6-luna` / high; `agy` →
   `antigravity/gemini-3-8-flash` / low;
 - `/i`, `/b`, `/build`, `/bh` —
   `opencode-go/deepseek-v4.1-flash`;
 - `scout` — `opencode-go/mimo-v2.5`, low thinking;
 - `reviewer` — `opencode-go/mimo-v2.5`, medium thinking;
 - `planner` — `opencode-go/gpt-5.6-luna`, high thinking;
-- `plan-reviewer` — `openai-codex/gpt-5.6-terra`, high thinking.
+- `plan-reviewer` — `openai-codex/gpt-6-sol`, high thinking.
 
-`plan-reviewer` использует отдельный OpenAI Codex/ChatGPT provider ради
-независимого plan review. Если он ещё не авторизован в Pi, выполните login для
+`/n codex`, `/n luna` и `plan-reviewer` используют отдельный OpenAI
+Codex/ChatGPT provider. Если он ещё не авторизован в Pi, выполните login для
 `openai-codex`; остальные роли используют существующий OpenCode Go provider.
 
 ## Автоматический planning workflow
@@ -342,7 +344,7 @@ bundled-роли `pi-subagents`:
   проверкой итоговых версий;
 - `extensions/subagent/config.json` — компактное описание subagent tool и depth=1;
 - `extensions/workflow.ts` — `/n` с коротким worker selector
-  (`ds|codex|agy`), `/i`, build-команды, model/thinking routing,
+  (`ds|codex|luna|agy`), `/i`, build-команды, model/thinking routing,
   `workflow_status` tool и live workflow phase в footer;
 - `agents/*.md` — пользовательские определения ролей `pi-subagents`;
 - `prompts/*.md` — короткие slash workflow templates.
