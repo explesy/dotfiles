@@ -1,7 +1,7 @@
 ---
 name: plan-reviewer
-description: Independent pre-implementation plan reviewer using GPT-5.6 Terra.
-model: openai-codex/gpt-5.6-terra
+description: Independent pre-implementation plan reviewer using GPT-6 Sol.
+model: openai-codex/gpt-6-sol
 thinking: high
 tools:
   - read
