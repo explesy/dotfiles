@@ -1,7 +1,7 @@
 ---
 name: scout
 description: Fast cheap read-only codebase reconnaissance for focused questions and handoff.
-model: opencode-go/mimo-v2.5
+model: opencode-go/mimo-v2.6-flash
 thinking: low
 tools:
   - read

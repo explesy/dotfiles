@@ -1,7 +1,7 @@
 ---
 name: reviewer
 description: Independent cheap first-pass implementation reviewer focused on concrete bugs, regressions, and unnecessary complexity.
-model: opencode-go/mimo-v2.5
+model: opencode-go/mimo-v2.6-pro
 thinking: medium
 tools:
   - read
