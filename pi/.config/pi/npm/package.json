@@ -2,16 +2,16 @@
   "name": "pi-extensions",
   "private": true,
   "dependencies": {
-    "@estebanforge/pi-antigravity-bridge": "1.6.4",
-    "@gotgenes/pi-permission-system": "^33.0.5",
+    "@estebanforge/pi-antigravity-bridge": "1.7.5",
+    "@gotgenes/pi-permission-system": "^35.0.1",
     "@zhcsyncer/pi-recap": "^0.4.3",
-    "pi-subagents": "0.70.1"
+    "pi-subagents": "0.73.1"
   },
   "scripts": {},
   "devDependencies": {
-    "@earendil-works/pi-agent-core": "0.87.0",
-    "@earendil-works/pi-ai": "0.87.0",
-    "@earendil-works/pi-coding-agent": "0.87.0",
-    "@earendil-works/pi-tui": "0.87.0"
+    "@earendil-works/pi-agent-core": "0.87.1",
+    "@earendil-works/pi-ai": "0.87.1",
+    "@earendil-works/pi-coding-agent": "0.87.1",
+    "@earendil-works/pi-tui": "0.87.1"
   }
 }

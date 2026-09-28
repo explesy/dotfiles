@@ -56,7 +56,7 @@ cd "$HOME/.config/pi/npm" && npm install
 
 Pi использует точную версию опубликованного
 [`@estebanforge/pi-antigravity-bridge`](https://github.com/EstebanForge/pi-antigravity-bridge),
-а не патчит `node_modules` после установки. Версия **1.6.4** уже содержит
+а не патчит `node_modules` после установки. Версия **1.7.5** уже содержит
 полный approval-ответ `{ decision, reason }` и изолирует hooks в приватном
 каталоге конкретной Pi-сессии, поэтому standalone Antigravity в том же
 workspace больше не получает чужой approval gate.
@@ -330,10 +330,10 @@ bundled-роли `pi-subagents`:
 
 - `settings.json` — тема, модель по умолчанию, безопасный startup
   `defaultThinkingLevel: low` и список пакетов;
-- `npm/package.json` / `package-lock.json` — фиксируют bridge `1.6.4`,
-  `pi-subagents 0.70.1`,
-  `@gotgenes/pi-permission-system 33.0.5`, `@zhcsyncer/pi-recap 0.4.3` и
-  Pi SDK peer-пакеты `0.87.0` для воспроизводимой совместимости расширений;
+- `npm/package.json` / `package-lock.json` — фиксируют bridge `1.7.5`,
+  `pi-subagents 0.73.1`,
+  `@gotgenes/pi-permission-system 35.0.1`, `@zhcsyncer/pi-recap 0.4.3` и
+  Pi SDK peer-пакеты `0.87.1` для воспроизводимой совместимости расширений;
 - `extension-data/pi-recap/config.json` — настройки recap;
 - `extensions/pi-permission-system/config.json` — глобальная политика доступа Pi;
 - `extensions/workflow.ts` — локальные workflow-команды, требующие поведения
