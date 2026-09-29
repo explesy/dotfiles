@@ -67,6 +67,7 @@
 | | [pi](./pi) | Глобальные настройки Pi, Pi Recap и npm-зависимости расширений | `~/.config/pi/` |
 | | [antigravity](./antigravity) | Antigravity & agy CLI (автоподтверждение, MCP, глобальные правила) | `~/.gemini/` |
 | **Медиа & Разное** | [iina](./iina) | Конфигурация ввода IINA для macOS | `~/Library/Application Support/...` |
+| | [tuios](./tuios) | Настройки TUIOS и навигация Colemak | `~/Library/Application Support/tuios/` |
 | | [mpv](./mpv) | Минималистичный видеоплеер | `~/.config/mpv/` |
 | | [docker](./docker) | Памятка по первоначальной настройке Docker | *Справочник* |
 | | [userscripts](./userscripts) | Пользовательские скрипты (MeTube интеграция для YouTube) | *Браузерные расширения* |
