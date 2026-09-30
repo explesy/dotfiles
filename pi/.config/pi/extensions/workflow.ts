@@ -26,7 +26,7 @@ const NEXT_MODEL_ROUTES = {
   },
   codex: {
     provider: "openai-codex",
-    model: "gpt-6-sol",
+    model: "gpt-6.1-sol",
     thinking: "medium",
   },
   luna: {

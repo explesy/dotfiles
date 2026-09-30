@@ -94,7 +94,7 @@ Console Go не содержат несовместимые старые схе�
   исправить существенные замечания → закрыть/сдвинуть существующую очередь,
   если критерии действительно выполнены. Main worker выбирается коротким
   селектором: `ds` = DeepSeek V4.1 Flash / OpenCode Go (`low`),
-  `codex` = GPT-6 Sol / ChatGPT Codex (`medium`), `luna` = GPT-6 Luna /
+  `codex` = GPT-6.1 Sol / ChatGPT Codex (`medium`), `luna` = GPT-6 Luna /
   ChatGPT Codex (`high`), `agy` = Gemini 3.8 Flash / Antigravity (`low`). Без селектора используется `ds`.
   Если первое слово не является известным селектором, весь текст считается
   обычной дополнительной инструкцией, поэтому старый синтаксис остаётся
@@ -284,7 +284,7 @@ Luna → Sol planning на каждую заранее разобранную is
   startup thinking — `low`;
 - `/n` — selectable main worker: default `ds` →
   `opencode-go/deepseek-v4.1-flash` / low; `codex` →
-  `openai-codex/gpt-6-sol` / medium; `luna` →
+  `openai-codex/gpt-6.1-sol` / medium; `luna` →
   `openai-codex/gpt-6-luna` / high; `agy` →
   `antigravity/gemini-3-8-flash` / low;
 - `/i`, `/b`, `/build`, `/bh` —
@@ -292,7 +292,7 @@ Luna → Sol planning на каждую заранее разобранную is
 - `scout` — `opencode-go/mimo-v2.6-flash`, low thinking;
 - `reviewer` — `opencode-go/mimo-v2.6-pro`, medium thinking;
 - `planner` — `opencode-go/gpt-5.6-luna`, high thinking;
-- `plan-reviewer` — `openai-codex/gpt-6-sol`, high thinking.
+- `plan-reviewer` — `openai-codex/gpt-6.1-sol`, high thinking.
 
 `/n codex`, `/n luna` и `plan-reviewer` используют отдельный OpenAI
 Codex/ChatGPT provider. Если он ещё не авторизован в Pi, выполните login для
