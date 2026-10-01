@@ -5,6 +5,47 @@ readonly PI_PACKAGE="@earendil-works/pi-coding-agent"
 readonly PI_CONFIG_DIR="${PI_CODING_AGENT_DIR:-$HOME/.config/pi}"
 readonly PI_NPM_DIR="$PI_CONFIG_DIR/npm"
 readonly HOMEBREW_NPM="/opt/homebrew/bin/npm"
+readonly HOMEBREW_NODE="/opt/homebrew/bin/node"
+
+verify_pi() {
+  local pi_version
+  pi_version="$(pi --version)"
+  print "Pi: $pi_version"
+  "$HOMEBREW_NODE" - "$PI_NPM_DIR" "$pi_version" <<'NODE'
+const fs = require("node:fs");
+const path = require("node:path");
+const [root, cliVersion] = process.argv.slice(2);
+try {
+  const manifest = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
+  const names = ["pi-agent-core", "pi-ai", "pi-coding-agent", "pi-tui"];
+  const errors = [];
+  for (const name of names) {
+    const fullName = `@earendil-works/${name}`;
+    const pinned = manifest.devDependencies?.[fullName];
+    if (!/^\d+\.\d+\.\d+$/.test(pinned ?? "")) {
+      errors.push(`${fullName}: expected an exact SDK version in devDependencies`);
+      continue;
+    }
+    const installed = JSON.parse(fs.readFileSync(path.join(root, "node_modules", fullName, "package.json"), "utf8")).version;
+    if (pinned !== cliVersion || installed !== pinned) {
+      errors.push(`${fullName}: manifest=${pinned}, installed=${installed}, CLI=${cliVersion}`);
+    }
+  }
+  if (errors.length) {
+    console.error("Pi compatibility check failed:\n" + errors.join("\n"));
+    console.error("Align the managed SDK pins with Pi, then install dependencies in " + root + ".");
+    process.exitCode = 1;
+  } else {
+    console.log("Pi CLI and all four managed SDK versions agree.");
+  }
+} catch (error) {
+  console.error("Pi compatibility check failed: " + error.message);
+  process.exitCode = 1;
+}
+NODE
+  cd "$PI_NPM_DIR"
+  "$HOMEBREW_NPM" ls --depth=0
+}
 
 if [[ "${1:-}" == "--check" ]]; then
   if (( $# > 1 )); then
@@ -12,9 +53,7 @@ if [[ "${1:-}" == "--check" ]]; then
     exit 2
   fi
 
-  print "Pi: $(pi --version)"
-  cd "$PI_NPM_DIR"
-  npm ls --depth=0
+  verify_pi
   exit 0
 elif (( $# > 0 )); then
   print -u2 "Usage: pi-update [--check]"
@@ -48,9 +87,8 @@ fi
 
 print "== Updating Pi extensions =="
 cd "$PI_NPM_DIR"
-npm install
+"$HOMEBREW_NPM" install --ignore-scripts
 
 print "== Verification =="
 rehash
-print "Pi: $(pi --version)"
-npm ls --depth=0
+verify_pi

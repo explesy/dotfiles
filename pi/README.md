@@ -33,7 +33,11 @@ pi-update --check
 ```
 
 Команда обновляет сам Pi и затем зависимости расширений, после чего проверяет
-версию Pi и состояние локального `npm`-дерева. На текущей установке глобальный
+совпадение глобального Pi, четырёх SDK-пакетов и их точных pins в manifest,
+а также состояние локального `npm`-дерева. `pi-update --check` выполняет те же
+проверки без установки. При расхождении команда завершается с ошибкой и
+показывает версии manifest / installed / CLI; SDK pins нужно согласовать
+в репозитории и установить зависимости в runtime-каталоге. На текущей установке глобальный
 Pi находится в Homebrew-prefix, но установлен через npm, поэтому скрипт явно
 использует `/opt/homebrew/bin/npm`. Это важно: обычный `npm` может быть npm из
 fnm и обновить другой global-prefix.
@@ -80,8 +84,9 @@ launcher автоматически. Pi запускается в доверен
 Явные запреты (`deny`) сохраняются — в частности, для `.env`, ключей и
 credentials.
 
-Launcher запускает permission system, `pi-subagents`, Antigravity bridge, recap
-и локальный workflow extension. Herdsman не загружается, поэтому запросы к
+Launcher явно загружает встроенные MCP, codemode и tool search, permission
+system, `pi-subagents`, Antigravity bridge, recap, Context7 и локальный workflow
+extension. Herdsman не загружается, поэтому запросы к
 Console Go не содержат несовместимые старые схемы `agent`, `chief` и `staff`.
 Для делегирования используется плоский инструмент `subagent`, а глубина
 вложенной делегации ограничена одним уровнем.
@@ -328,18 +333,21 @@ bundled-роли `pi-subagents`:
 
 ## Что хранится в Git
 
-- `settings.json` — тема, модель по умолчанию, безопасный startup
-  `defaultThinkingLevel: low` и список пакетов;
+- `settings.json` — тема, модель по умолчанию, startup
+  `defaultThinkingLevel: low`, список пакетов, добавленные `codemode` /
+  `tool_search` и уведомления о значимых cache misses;
 - `npm/package.json` / `package-lock.json` — фиксируют bridge `1.7.8`,
   `pi-subagents 0.74.0`,
   `@gotgenes/pi-permission-system 36.2.1`, `@zhcsyncer/pi-recap 0.4.3` и
-  Pi SDK peer-пакеты `0.99.2` для воспроизводимой совместимости расширений;
+  Context7 `0.1.2`, а также Pi SDK peer-пакеты `0.99.2` для
+  воспроизводимой совместимости расширений;
 - `extension-data/pi-recap/config.json` — настройки recap;
 - `extensions/pi-permission-system/config.json` — глобальная политика доступа Pi;
 - `extensions/workflow.ts` — локальные workflow-команды, требующие поведения
   сложнее обычного prompt template;
 - `.local/bin/pi` — launcher Pi с permission system,
-  `pi-subagents`, Antigravity bridge, recap и workflow;
+  `pi-subagents`, Antigravity bridge, recap, Context7, workflow и три
+  встроенных расширения;
 - `.local/bin/pi-update` — единая команда обновления Pi и его расширений с
   проверкой итоговых версий;
 - `extensions/subagent/config.json` — компактное описание subagent tool и depth=1;
@@ -412,3 +420,51 @@ workflow с mock-результатами, без запуска дочерни�
 при специально составленных brace patterns. Исправленная версия `5.0.12`
 опубликована, но требуется обновление зависимости в upstream artifact Pi;
 локальный patch `node_modules` не применяется.
+
+## Встроенные инструменты и документация
+
+Launcher сохраняет `--no-extensions` для контролируемого списка расширений,
+но явно включает `builtin:mcp`, `builtin:codemode` и `builtin:tool-search`.
+В `settings.json` стоят `defaultTools: ["+codemode", "+tool_search"]` и
+`codemode.mode: "on"`: обычные read/bash/edit/write доступны рядом с
+JavaScript-оркестрацией инструментов. `--tools` и `--no-tools` по-прежнему
+переопределяют startup selection. Ничего в настройках subagents не сокращено.
+
+Codemode полезен для параллельных независимых чтений и обработки результатов
+до передачи их модели. Вложенные вызовы проходят permission system: проверка
+чтения синтетического `.env` через `tools.read` вернула deny без содержимого.
+
+MCP готов к подключению серверов через глобальный `mcp.json` в agent directory
+или доверенный project `.pi/mcp.json`. Проверка использовала временный локальный
+stdio-сервер: `tool_search` нашёл deferred echo tool и вызов вернул marker.
+Постоянные внешние серверы этим изменением не добавляются.
+
+Официальный `@upstash/context7-pi@0.1.2` предоставляет `resolve-library-id`,
+`query-docs`, skill `context7-docs` и команду:
+
+```text
+/c7-docs next.js Cache Components
+```
+
+Проверен реальный resolve + query для Next.js. Отдельный MCP-сервер и API-ключ
+для первоначальной работы не нужны; без ключа действуют лимиты по IP.
+Для более высокой квоты можно передать `CONTEXT7_API_KEY` через окружение,
+не записывая его в Git. В Context7 отправляется текст query: не передавайте
+credentials, личные данные или закрытый исходный код.
+
+Веб-поиск для любой основной модели включён в launcher через default
+`AGY_WEB_TOOLS=1`. `agy_web_search` и `agy_read_url` выполняются через
+авторизованный `agy` и расходуют Antigravity quota. Для отключения в конкретном
+запуске:
+
+```sh
+AGY_WEB_TOOLS=0 pi
+```
+
+Этот env override имеет приоритет над runtime-настройкой `/agy web on|off`;
+переключение через неё не изменяет default launcher. Управляемое значение
+хранится в dotfiles, остальные настройки bridge не перезаписываются.
+
+`showCacheMissNotices: true` показывает значимые cache misses. Политика
+`cacheWarming` не менялась: действует стандартный `streaming`, без включения
+прогрева между задачами (`idle`).

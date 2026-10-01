@@ -2,6 +2,8 @@
 set -euo pipefail
 
 export PI_CODING_AGENT_DIR="${PI_CODING_AGENT_DIR:-$HOME/.config/pi}"
+# Expose bridge web search to every provider; AGY_WEB_TOOLS=0 opts out per run.
+export AGY_WEB_TOOLS="${AGY_WEB_TOOLS:-1}"
 
 readonly PI_BIN="/opt/homebrew/bin/pi"
 readonly EXTENSION_ROOT="$PI_CODING_AGENT_DIR/npm/node_modules"
@@ -10,9 +12,13 @@ readonly EXTENSION_ROOT="$PI_CODING_AGENT_DIR/npm/node_modules"
 
 exec "$PI_BIN" \
   --no-extensions \
+  --extension builtin:mcp \
+  --extension builtin:codemode \
+  --extension builtin:tool-search \
   --extension "$EXTENSION_ROOT/@gotgenes/pi-permission-system/src/index.ts" \
   --extension "$EXTENSION_ROOT/pi-subagents/index.js" \
   --extension "$EXTENSION_ROOT/@estebanforge/pi-antigravity-bridge/extensions/index.ts" \
   --extension "$EXTENSION_ROOT/@zhcsyncer/pi-recap/extensions/recap.ts" \
+  --extension "$EXTENSION_ROOT/@upstash/context7-pi/extensions/context7.ts" \
   --extension "$PI_CODING_AGENT_DIR/extensions/workflow.ts" \
   "$@"
