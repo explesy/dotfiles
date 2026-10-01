@@ -1,7 +1,7 @@
 ---
 name: planner
-description: Read-only repository-aware implementation planner using GPT-5.6 Luna.
-model: opencode-go/gpt-5.6-luna
+description: Read-only repository-aware implementation planner using GPT-6 Luna.
+model: opencode-go/gpt-6-luna
 thinking: high
 tools:
   - read

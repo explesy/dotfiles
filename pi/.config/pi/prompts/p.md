@@ -7,25 +7,20 @@ Create a reviewed implementation plan for this task:
 
 ${ARGUMENTS:-Use the concrete current task from this conversation.}
 
-Do not implement or edit files. Do not write the plan yourself in the parent
-session. Use exactly one foreground `subagent` call with `async: false`,
-`clarify: false`, and a `workflowScript` that performs this sequence:
+Do not implement or edit files. Do not write the plan or workflow script yourself.
+Resolve the existing global script to an absolute path:
+`$PI_CODING_AGENT_DIR/workflows/plan-review.js`, defaulting to
+`~/.config/pi/workflows/plan-review.js` when the variable is unset.
 
-1. Run `planner` to inspect the repository and produce a self-contained
-   implementation plan for the task.
-2. Run `plan-reviewer` with a self-contained brief containing
-   `RUN_PLAN_REVIEW: true`, the same current task, and the planner output as
-   `PROPOSED PLAN`.
-3. If the reviewer returns `PLAN_VERDICT: approve`, return the original plan
-   as the final plan.
-4. If the reviewer returns `PLAN_VERDICT: revise`, run a fresh `planner`
-   pass that receives the current task, the original plan, and the full review.
-   It must produce a corrected final plan that addresses blocking and important
-   findings without blindly accepting weak suggestions.
-5. If the reviewer returns `PLAN_VERDICT: insufficient-context`, stop the
-   workflow and return the missing-context report instead of inventing details.
+Make exactly one foreground `subagent` call with `workflow` set to that absolute
+file path, `args: { task: "<the concrete current task>" }`, and `async: false`.
+Omit `clarify`: the new public workflow API rejects it even when false. Keep the request cwd as the current project, not the script's
+directory. Do not use `workflowScript`, `workflowScriptPath`, or `workflow: true`.
 
-Use stable workflow keys `plan-draft`, `plan-review`, and `plan-revise`.
-Keep all child runs read-only. The final response to me should contain the
-final plan first and a short note with the review verdict. Do not require any
-manual review command between stages.
+The saved workflow runs read-only planner → independent plan-reviewer → one
+planner revision when needed, using stable keys plan-draft, plan-review, and
+plan-revise. It stops on failed children, missing/ambiguous verdicts, or
+insufficient context. It never starts implementation or a second review pass.
+
+Return the workflow's final plan first and its review verdict briefly below it.
+If the workflow fails, report that failure instead of inventing a final plan.

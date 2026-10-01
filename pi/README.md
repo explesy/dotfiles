@@ -10,7 +10,7 @@ Source of truth для конфигурации Pi — этот GitHub-репо�
 
 ## Установка
 
-Текущий compatibility target этой конфигурации — **Pi 0.87.1**. Pi установлен
+Текущий compatibility target этой конфигурации — **Pi 0.99.2**. Pi установлен
 глобально через npm, поэтому на уже настроенной машине сначала обновите сам Pi,
 затем зависимости конфигурации:
 
@@ -40,15 +40,15 @@ fnm и обновить другой global-prefix.
 
 Если в будущем Pi будет зарегистрирован как Homebrew-формула
 `pi-coding-agent`, `pi-update` автоматически использует `brew upgrade
-pi-coding-agent`. Локальные расширения всё равно обновляются отдельным
-`npm install`, потому что bridge закреплён на проверенной версии и
-управляется этим репозиторием.
+pi-coding-agent`. Локальные расширения устанавливаются отдельно по
+manifest/lockfile. Точные версии bridge, subagents и Pi SDK меняются в репозитории после проверки
+совместимости; один `pi-update` не снимает эти pins автоматически.
 
 Для новой установки из корня репозитория:
 
 ```sh
 mkdir -p "$HOME/.config/pi" "$HOME/.config/pi/npm"
-stow pi
+stow --ignore=node_modules pi
 cd "$HOME/.config/pi/npm" && npm install
 ```
 
@@ -56,7 +56,7 @@ cd "$HOME/.config/pi/npm" && npm install
 
 Pi использует точную версию опубликованного
 [`@estebanforge/pi-antigravity-bridge`](https://github.com/EstebanForge/pi-antigravity-bridge),
-а не патчит `node_modules` после установки. Версия **1.7.5** уже содержит
+а не патчит `node_modules` после установки. Версия **1.7.8** уже содержит
 полный approval-ответ `{ decision, reason }` и изолирует hooks в приватном
 каталоге конкретной Pi-сессии, поэтому standalone Antigravity в том же
 workspace больше не получает чужой approval gate.
@@ -185,7 +185,7 @@ N · DeepSeek V4.1 Flash · low · #42 · fixing · Detect player languages
 
 ### Approval gate
 
-Bridge `1.6.4` оставляет `approvals.gateMode` в `auto`: при наличии Pi
+Bridge `1.7.8` оставляет `approvals.gateMode` в `auto`: при наличии Pi
 permission extension нативные mutating-действия `agy` проходят через Pi-side
 approval, а hooks лежат в приватном каталоге конкретной сессии. Поэтому
 standalone Antigravity в том же workspace не видит чужой gate; модели
@@ -280,7 +280,7 @@ Luna → Sol planning на каждую заранее разобранную is
 Текущая схема специально разделяет дешёвые механические роли, planning,
 независимый review и реализацию:
 
-- основной default Pi — `opencode-go/deepseek-v4-flash` (тестовый default),
+- основной default Pi — `opencode-go/deepseek-v4.1-flash`,
   startup thinking — `low`;
 - `/n` — selectable main worker: default `ds` →
   `opencode-go/deepseek-v4.1-flash` / low; `codex` →
@@ -291,7 +291,7 @@ Luna → Sol planning на каждую заранее разобранную is
   `opencode-go/deepseek-v4.1-flash`;
 - `scout` — `opencode-go/mimo-v2.6-flash`, low thinking;
 - `reviewer` — `opencode-go/mimo-v2.6-pro`, medium thinking;
-- `planner` — `opencode-go/gpt-5.6-luna`, high thinking;
+- `planner` — `opencode-go/gpt-6-luna`, high thinking;
 - `plan-reviewer` — `openai-codex/gpt-6.1-sol`, high thinking.
 
 `/n codex`, `/n luna` и `plan-reviewer` используют отдельный OpenAI
@@ -302,7 +302,7 @@ Codex/ChatGPT provider. Если он ещё не авторизован в Pi, 
 
 `/p <task>` делает весь pre-implementation цикл одной пользовательской
 командой. Parent Pi запускает один foreground `pi-subagents`
-`workflowScript`:
+`workflow` с абсолютным путём к сохранённому `workflows/plan-review.js`:
 
 1. `planner` изучает релевантный код и формирует implementation plan;
 2. `plan-reviewer` получает исходную задачу и полный план и независимо его
@@ -330,10 +330,10 @@ bundled-роли `pi-subagents`:
 
 - `settings.json` — тема, модель по умолчанию, безопасный startup
   `defaultThinkingLevel: low` и список пакетов;
-- `npm/package.json` / `package-lock.json` — фиксируют bridge `1.7.5`,
-  `pi-subagents 0.73.1`,
-  `@gotgenes/pi-permission-system 35.0.1`, `@zhcsyncer/pi-recap 0.4.3` и
-  Pi SDK peer-пакеты `0.87.1` для воспроизводимой совместимости расширений;
+- `npm/package.json` / `package-lock.json` — фиксируют bridge `1.7.8`,
+  `pi-subagents 0.74.0`,
+  `@gotgenes/pi-permission-system 36.2.1`, `@zhcsyncer/pi-recap 0.4.3` и
+  Pi SDK peer-пакеты `0.99.2` для воспроизводимой совместимости расширений;
 - `extension-data/pi-recap/config.json` — настройки recap;
 - `extensions/pi-permission-system/config.json` — глобальная политика доступа Pi;
 - `extensions/workflow.ts` — локальные workflow-команды, требующие поведения
@@ -347,7 +347,8 @@ bundled-роли `pi-subagents`:
   (`ds|codex|luna|agy`), `/i`, build-команды, model/thinking routing,
   `workflow_status` tool и live workflow phase в footer;
 - `agents/*.md` — пользовательские определения ролей `pi-subagents`;
-- `prompts/*.md` — короткие slash workflow templates.
+- `prompts/*.md` — короткие slash workflow templates;
+- `workflows/plan-review.js` — фиксированный read-only planning/review pipeline.
 
 `auth.json`, `models-store.json`, `sessions/`, `pi-subagents/`,
 `extensions/*/state`, `.agents/hooks.json` и `npm/node_modules/` остаются локальными и не должны
@@ -364,3 +365,50 @@ Pi работает в доверенном режиме (`yoloMode: true`): р�
 `.env`, ключи, SSH-файлы, npm/netrc credentials и Pi auth остаются
 заблокированными. Это режим полного доверия к агенту в локальной среде — он
 может выполнять в том числе `rm`, `git push` и сетевые операции.
+
+## Проверка обновления 2026-10-01
+
+Pi и четыре SDK-пакета обновлены до `0.99.2`, bridge — до `1.7.8`,
+permission system — до `36.2.1`, subagents — до `0.74.0`. Recap `0.4.3`
+остаётся последней опубликованной версией. Рабочие зависимости установлены
+в `~/.config/pi/npm`, а manifest и lockfile сохраняются в Stow-источнике.
+
+Шаблон `/p` использует новый file-backed формат subagents: `workflow` содержит
+абсолютный путь к `workflows/plan-review.js`, а `args.task` — текущую задачу.
+Фиксированный скрипт сохраняет pipeline planner → review → одна revision и
+останавливается при ошибке дочернего запуска или неоднозначном verdict.
+Inline `workflow: true` тоже поддерживается upstream, но в smoke-тесте DeepSeek
+повторно вызывал инструмент без блока кода в том же сообщении и исправлялся
+лишь после ошибок. Сохранённый скрипт устраняет эту зависимость от формата
+ответа модели. Старые `workflowScript` и `workflowScriptPath` удалены upstream; `clarify`
+для public workflow тоже нужно опускать, даже значение `false` отклоняется.
+
+Planner переведён с `opencode-go/gpt-5.6-luna` на `opencode-go/gpt-6-luna`
+с прежним `high` thinking. Обе модели отвечают через существующий OpenCode Go;
+в текущем каталоге Pi у новой Luna ниже номинальная стоимость входа/выхода
+(`0.1/0.5` против `0.2/1.2` за миллион токенов) при тех же лимитах контекста
+и ответа. Это metadata каталога, а не измерение расходов подписки или
+сравнительный benchmark качества planning.
+
+Default/build остаются DeepSeek V4.1 Flash, scout/reviewer — MiMo V2.6,
+plan-reviewer — GPT-6.1 Sol. В Pi 0.99 OpenAI Codex обозначен legacy,
+но существующая OAuth-авторизация и запросы работают. Новый `/login openai`
+потребует отдельного входа; автоматического переноса credentials нет.
+
+Проверены загрузка пяти extensions, регистрация команд, `/b` и `/bh`,
+каталоги моделей и реальные короткие ответы всех используемых моделей,
+включая `antigravity/gemini-3-8-flash`. Проверены read/bash через DeepSeek и
+Sol, read через Antigravity, явный deny `.env`, а также ветки сохранённого
+workflow с mock-результатами, без запуска дочерних агентов. Для Antigravity
+при фильтрации tools необходимо оставлять служебный tool `antigravity`.
+Это smoke-проверка доступности,
+а не полный прогон рабочих задач и дочерних planning/review workflows.
+После обновления уже открытый Pi нужно перезапустить или выполнить `/reload`.
+
+Известное ограничение: `npm audit` сообщает одну high-уязвимость
+`brace-expansion@5.0.9`, закреплённой опубликованным shrinkwrap Pi `0.99.2`.
+`npm audit fix`, целевой `npm update` и root override не обновили эту копию;
+неэффективный override не сохранён. Проблема относится к отказу в обслуживании
+при специально составленных brace patterns. Исправленная версия `5.0.12`
+опубликована, но требуется обновление зависимости в upstream artifact Pi;
+локальный patch `node_modules` не применяется.
