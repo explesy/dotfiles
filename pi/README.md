@@ -10,7 +10,7 @@ Source of truth для конфигурации Pi — этот GitHub-репо�
 
 ## Установка
 
-Текущий compatibility target этой конфигурации — **Pi 0.99.2**. Pi установлен
+Текущий compatibility target этой конфигурации — **Pi 1.0.0**. Pi установлен
 глобально через npm, поэтому на уже настроенной машине сначала обновите сам Pi,
 затем зависимости конфигурации:
 
@@ -338,8 +338,8 @@ bundled-роли `pi-subagents`:
   `tool_search` и уведомления о значимых cache misses;
 - `npm/package.json` / `package-lock.json` — фиксируют bridge `1.7.8`,
   `pi-subagents 0.74.0`,
-  `@gotgenes/pi-permission-system 36.2.1`, `@zhcsyncer/pi-recap 0.4.3` и
-  Context7 `0.1.2`, а также Pi SDK peer-пакеты `0.99.2` для
+  `@gotgenes/pi-permission-system 37.0.0`, `@zhcsyncer/pi-recap 0.4.3` и
+  Context7 `0.1.2`, а также Pi SDK peer-пакеты `1.0.0` для
   воспроизводимой совместимости расширений;
 - `extension-data/pi-recap/config.json` — настройки recap;
 - `extensions/pi-permission-system/config.json` — глобальная политика доступа Pi;
@@ -350,7 +350,8 @@ bundled-роли `pi-subagents`:
   встроенных расширения;
 - `.local/bin/pi-update` — единая команда обновления Pi и его расширений с
   проверкой итоговых версий;
-- `extensions/subagent/config.json` — компактное описание subagent tool и depth=1;
+- `extensions/subagent/config.json` — компактное описание subagent tool,
+  depth=1 и `asyncByDefault: false` для foreground-режима на Pi 1.0;
 - `extensions/workflow.ts` — `/n` с коротким worker selector
   (`ds|codex|luna|agy`), `/i`, build-команды, model/thinking routing,
   `workflow_status` tool и live workflow phase в footer;
@@ -374,12 +375,84 @@ Pi работает в доверенном режиме (`yoloMode: true`): р�
 заблокированными. Это режим полного доверия к агенту в локальной среде — он
 может выполнять в том числе `rm`, `git push` и сетевые операции.
 
-## Проверка обновления 2026-10-01
+## Проверка обновления 2026-10-02 (Pi 1.0)
 
-Pi и четыре SDK-пакета обновлены до `0.99.2`, bridge — до `1.7.8`,
-permission system — до `36.2.1`, subagents — до `0.74.0`. Recap `0.4.3`
-остаётся последней опубликованной версией. Рабочие зависимости установлены
+Pi и четыре SDK-пакета обновлены до `1.0.0`, permission system — до `37.0.0`
+(первая версия с требованием Pi ≥ 1.0), bridge `1.7.8`, subagents `0.74.0`,
+recap `0.4.3` и Context7 `0.1.2` остаются последними опубликованными версиями
+и совместимы с 1.0 (entrypoints проверены). Рабочие зависимости установлены
 в `~/.config/pi/npm`, а manifest и lockfile сохраняются в Stow-источнике.
+
+Что из Pi 1.0 принято:
+
+- SDK и lockfile синхронизированы с CLI `1.0.0`; `pi-update` и
+  `pi-update --check` проверяют, что manifest, `node_modules` и CLI дают одну
+  и ту же версию всех четырёх SDK-пакетов.
+- `permission-system 37.0.0` — единственное расширение, обновлённое ради 1.0
+  (breaking-требование Pi ≥ 1.0.0).
+- Codemode 1.0 использует меньше prompt-токенов. Launcher по-прежнему
+  загружает `builtin:codemode` и `builtin:tool-search` через `-e`, а
+  `defaultTools` включает сами инструменты: это не дублирование, потому что
+  `--no-extensions` отключает built-in extensions, а `-e builtin:*` возвращает
+  их.
+- Image generation в codemode (`models.generateImages()`) доступна, отдельная
+  настройка не нужна.
+
+TUI/fullscreen: Pi 1.0 по умолчанию запускает fullscreen TUI. Оба режима
+проверены в PTY с этим launcher — footer, model label, версия `v1.0.0` и
+список extensions отображаются одинаково, `workflow_status` использует тот же
+`ctx.ui.setStatus`. Оставлен новый default (fullscreen), override в
+`settings.json` не добавлен: конфиг проще, а fullscreen даёт встроенный
+transcript для длинных сессий. Regular доступен через `--tui-mode regular` или
+`"tuiMode": "regular"`.
+
+Virtual models: API `pi.registerVirtualModel()` в 1.0 есть, но routing на него
+не переведён. Селекторы `/n ds|codex|luna|agy`, отдельные agents с явными
+`model`/`thinking` и видимый в footer route уже решают задачу; virtual model
+добавил бы indirection, не убрав routing и не улучшив audibility. Решение:
+пока не внедрять.
+
+Pi Durable: `@earendil-works/pi-durable@1.0.0` — отдельный experimental
+harness/SDK, а не расширение CLI; ему нужны собственные storage
+(SQLite/JSONL), registry и execution environment. Текущие pain points —
+возобновление работы и очередь задач — закрываются GitHub Issues и сессиями
+Pi. Отдельный harness ради экспериментальной durability не добавляется.
+Решение: wait; stable workflow не заменяется.
+
+Radius: `/login` в 1.0 умеет Sign in with Radius, но Radius здесь не
+подключён и не становится default paid provider; маршруты остаются явными.
+Изменений не требуется.
+
+Subagents на Pi 1.0: pi-subagents `0.74.0` (последняя версия) для detached
+background children требует export `@earendil-works/pi-agent-core/node`,
+который pi-agent-core `1.0.0` удалил. Одиночные foreground-запуски работают и
+проверены; background/async падает с ошибкой про missing export. Поэтому в
+`extensions/subagent/config.json` добавлен `"asyncByDefault": false`: обычные
+subagent-вызовы идут foreground, и workflow остаётся рабочим. Явный
+`async: true`, background workflow children и scheduled runs по-прежнему не
+работают до совместимого релиза pi-subagents. `/p` всегда передаёт
+`async: false`; escalation в `/n` и `/i` теперь тоже требует его явно.
+
+Smoke-тесты на Pi 1.0.0:
+
+- launcher и `pi --version` → `1.0.0`;
+- `pi-update --check` → CLI и четыре SDK согласованы;
+- managed `npm ls --depth=0` → 1.0.0, permission 37.0.0;
+- print-mode ответ DeepSeek V4.1 Flash;
+- startup-баннер подтверждает загрузку всех extensions: `workflow.ts`,
+  `pi-subagents`, Antigravity bridge, permission system, recap, Context7;
+- доступные tools включают `codemode`, `tool_search`, `subagent`,
+  `workflow_status`, `resolve-library-id`, `query-docs` и Antigravity tools;
+- codemode вернул `42`; `tool_search` отработал;
+- permission deny на `.env` через bash без утечки содержимого;
+- `/b` и `/bh` переключают модель и thinking level; `/i` без аргумента даёт
+  usage-warning; `/agy status` показывает bridge, `web tools: on` и привязку
+  сессий;
+- foreground subagent (`scout`) вернул marker; `/p`-workflow planner →
+  plan-reviewer в safe temp repo завершился verdict `approve`; background/async
+  subagents недоступны (см. Subagents выше);
+- fullscreen и regular TUI стартуют, footer и extensions на месте;
+- prompt templates `/c`, `/pl`, `/rv`, `/sc`, `/p` загружены.
 
 Шаблон `/p` использует новый file-backed формат subagents: `workflow` содержит
 абсолютный путь к `workflows/plan-review.js`, а `args.task` — текущую задачу.
@@ -399,27 +472,22 @@ Planner переведён с `opencode-go/gpt-5.6-luna` на `opencode-go/gpt-6
 сравнительный benchmark качества planning.
 
 Default/build остаются DeepSeek V4.1 Flash, scout/reviewer — MiMo V2.6,
-plan-reviewer — GPT-6.1 Sol. В Pi 0.99 OpenAI Codex обозначен legacy,
+plan-reviewer — GPT-6.1 Sol. В Pi 1.0 OpenAI Codex обозначен legacy,
 но существующая OAuth-авторизация и запросы работают. Новый `/login openai`
 потребует отдельного входа; автоматического переноса credentials нет.
 
-Проверены загрузка пяти extensions, регистрация команд, `/b` и `/bh`,
-каталоги моделей и реальные короткие ответы всех используемых моделей,
-включая `antigravity/gemini-3-8-flash`. Проверены read/bash через DeepSeek и
-Sol, read через Antigravity, явный deny `.env`, а также ветки сохранённого
-workflow с mock-результатами, без запуска дочерних агентов. Для Antigravity
-при фильтрации tools необходимо оставлять служебный tool `antigravity`.
-Это smoke-проверка доступности,
-а не полный прогон рабочих задач и дочерних planning/review workflows.
-После обновления уже открытый Pi нужно перезапустить или выполнить `/reload`.
+Для Antigravity при фильтрации tools необходимо оставлять служебный tool
+`antigravity`. После обновления уже открытый Pi нужно перезапустить или
+выполнить `/reload`. Это smoke-проверка доступности, а не полный прогон
+рабочих задач и дочерних planning/review workflows.
 
 Известное ограничение: `npm audit` сообщает одну high-уязвимость
-`brace-expansion@5.0.9`, закреплённой опубликованным shrinkwrap Pi `0.99.2`.
-`npm audit fix`, целевой `npm update` и root override не обновили эту копию;
-неэффективный override не сохранён. Проблема относится к отказу в обслуживании
-при специально составленных brace patterns. Исправленная версия `5.0.12`
-опубликована, но требуется обновление зависимости в upstream artifact Pi;
-локальный patch `node_modules` не применяется.
+`brace-expansion@5.0.9`, закреплённой опубликованным shrinkwrap Pi `1.0.0`
+(три advisory: quadratic-time expansion и два stack-exhaustion DoS).
+`npm audit fix`, целевой `npm update` и root override не обновляют эту
+вложенную копию; неэффективный override не сохранён. Исправленная версия
+`5.0.12` опубликована, но требуется обновление зависимости в upstream
+artifact Pi; локальный patch `node_modules` не применяется.
 
 ## Встроенные инструменты и документация
 
@@ -428,7 +496,9 @@ Launcher сохраняет `--no-extensions` для контролируемо�
 В `settings.json` стоят `defaultTools: ["+codemode", "+tool_search"]` и
 `codemode.mode: "on"`: обычные read/bash/edit/write доступны рядом с
 JavaScript-оркестрацией инструментов. `--tools` и `--no-tools` по-прежнему
-переопределяют startup selection. Ничего в настройках subagents не сокращено.
+переопределяют startup selection. Набор tools/agents subagents не сокращён,
+но default execution переведён в foreground из-за несовместимости Pi 1.0 с
+background children (см. выше).
 
 Codemode полезен для параллельных независимых чтений и обработки результатов
 до передачи их модели. Вложенные вызовы проходят permission system: проверка

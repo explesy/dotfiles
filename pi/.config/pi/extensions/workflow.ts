@@ -147,7 +147,9 @@ ${WORKFLOW_STATUS_PROTOCOL}
    - Escalate to the planner -> plan-reviewer workflow only when the task lacks
      an actionable plan and the missing design is materially risky
      (schema/data migration, security, concurrency/state, broad compatibility,
-     or similarly cross-cutting work).
+     or similarly cross-cutting work). Run the saved plan-review.js workflow
+     through the subagent tool with async: false; background children are
+     unavailable on Pi 1.0 with pi-subagents 0.74.0.
 
 4. Implement the selected issue completely. Stay within its scope and do not
    begin a second issue during this command.
@@ -206,7 +208,9 @@ ${WORKFLOW_STATUS_PROTOCOL}
    - Escalate to planner -> plan-reviewer only when the task lacks an actionable
      plan and the missing design is materially risky (schema/data migration,
      security, concurrency/state, broad compatibility, or similarly
-     cross-cutting work).
+     cross-cutting work). Run the saved plan-review.js workflow through the
+     subagent tool with async: false; background children are unavailable on
+     Pi 1.0 with pi-subagents 0.74.0.
 
 3. Implement issue #${issueNumber} completely and stay within its scope.
 

@@ -1,4 +1,5 @@
 {
   "toolDescriptionMode": "compact",
+  "asyncByDefault": false,
   "maxSubagentDepth": 1
 }
