@@ -538,3 +538,61 @@ AGY_WEB_TOOLS=0 pi
 `showCacheMissNotices: true` показывает значимые cache misses. Политика
 `cacheWarming` не менялась: действует стандартный `streaming`, без включения
 прогрева между задачами (`idle`).
+
+
+## Local stealth browser
+
+Для browser-задач, где обычный Chromium часто упирается в anti-bot
+verification, Pi может использовать второй локальный backend: Invisible
+Playwright с patched Firefox. На Apple Silicon он запускается в Linux ARM64
+Docker-контейнере; нативный macOS build для основного upstream не требуется.
+
+Конфигурация состоит из:
+
+- `~/.config/pi/mcp.json` — MCP server `stealth` с exposure `codemode`;
+- `~/.config/pi/stealth/compose.yml` — локальный ARM64 container;
+- `~/.local/bin/pi-stealth` — lifecycle helper;
+- `/stealth [task]` — browser workflow command.
+
+Первый запуск после `git pull && stow --restow pi`:
+
+```sh
+pi-stealth up
+pi mcp list
+```
+
+Первый build скачивает Docker image, Python packages и patched Firefox engine.
+Runtime-состояние, профиль и fingerprint сохраняются вне dotfiles:
+
+```text
+~/.local/share/pi-stealth/
+  cache/
+  mcp/
+  profile/
+```
+
+Управление:
+
+```sh
+pi-stealth status
+pi-stealth logs
+pi-stealth restart
+pi-stealth down
+pi-stealth rebuild
+```
+
+После изменения MCP config в уже открытой Pi-сессии используйте `/reload`.
+Проверочный запрос:
+
+```text
+/stealth открой https://example.com и скажи title и URL
+```
+
+Браузер работает внутри контейнера. Поэтому локальный dev server на Mac
+`http://localhost:3000` для stealth backend доступен как
+`http://host.docker.internal:3000`; prompt `/stealth` содержит это правило.
+
+Обычный `/web` остаётся основным backend для локальной разработки,
+существующих пользовательских browser sessions и human takeover.
+`/stealth` используется явно для bounded browser-задач, где требуется
+отдельная persistent identity или обычный Chromium получает verification.
