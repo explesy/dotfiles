@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "stealth": {
+      "url": "http://127.0.0.1:8766/mcp",
+      "exposure": "codemode",
+      "description": "Local Invisible Playwright stealth Firefox running in the Pi Docker backend. Use for browser tasks where ordinary Chromium is likely to hit anti-bot verification."
+    }
+  }
+}
