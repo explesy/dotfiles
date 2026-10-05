@@ -3,16 +3,16 @@
   "private": true,
   "dependencies": {
     "@estebanforge/pi-antigravity-bridge": "1.7.8",
-    "@gotgenes/pi-permission-system": "^37.0.0",
-    "@zhcsyncer/pi-recap": "^0.4.3",
+    "@gotgenes/pi-permission-system": "^39.0.4",
     "@upstash/context7-pi": "0.1.2",
-    "pi-subagents": "0.74.0"
+    "@zhcsyncer/pi-recap": "^0.4.3",
+    "pi-subagents": "0.76.0"
   },
   "scripts": {},
   "devDependencies": {
-    "@earendil-works/pi-agent-core": "1.0.0",
-    "@earendil-works/pi-ai": "1.0.0",
-    "@earendil-works/pi-coding-agent": "1.0.0",
-    "@earendil-works/pi-tui": "1.0.0"
+    "@earendil-works/pi-agent-core": "1.0.3",
+    "@earendil-works/pi-ai": "1.0.3",
+    "@earendil-works/pi-coding-agent": "1.0.3",
+    "@earendil-works/pi-tui": "1.0.3"
   }
 }
