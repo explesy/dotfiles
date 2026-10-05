@@ -1,0 +1,21 @@
+services:
+  stealth:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    platform: linux/arm64
+    init: true
+    ipc: host
+    environment:
+      XDG_CACHE_HOME: /data/cache
+      INVISIBLE_MCP_HOME: /data/mcp
+      STEALTHFOX_PROFILE_DIR: /data/profile
+      STEALTHFOX_MCP_TRANSPORT: http
+      STEALTHFOX_MCP_HOST: 0.0.0.0
+      STEALTHFOX_MCP_PORT: "8766"
+      STEALTHFOX_HEADLESS: "1"
+    volumes:
+      - ${HOME}/.local/share/pi-stealth:/data
+    ports:
+      - "127.0.0.1:8766:8766"
+    restart: unless-stopped
