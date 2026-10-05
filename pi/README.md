@@ -5,7 +5,8 @@ Source of truth для конфигурации Pi — этот GitHub-репо�
 больше не используется и не должен считаться актуальным источником настроек.
 
 Глобальная конфигурация Pi хранится в `.config/pi/` и подключается через
-`stow pi`. В shell экспортируется `PI_CODING_AGENT_DIR=$HOME/.config/pi`,
+`stow --ignore=node_modules pi`: локальный runtime-каталог `npm/node_modules`
+не должен участвовать в Stow. В shell экспортируется `PI_CODING_AGENT_DIR=$HOME/.config/pi`,
 поэтому Pi использует XDG-путь вместо `~/.pi/agent`.
 
 ## Установка
@@ -554,7 +555,7 @@ Docker-контейнере; нативный macOS build для основно�
 - `~/.local/bin/pi-stealth` — lifecycle helper;
 - `/stealth [task]` — browser workflow command.
 
-Первый запуск после `git pull && stow --restow pi`:
+Первый запуск после `git pull && stow --restow --ignore=node_modules pi`:
 
 ```sh
 pi-stealth up
