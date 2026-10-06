@@ -114,7 +114,7 @@
 # ============================================================================
 
 [appearance]
-border_style = 'rounded'
+border_style = 'normal'
 zen_mode = 'disabled'
 links = 'all'
 hide_window_buttons = false
@@ -189,7 +189,7 @@ enabled = true
 position = 'left'
 width = 20
 workspaces = ''
-sections = 'sessions:25,terminals,files:25,agents:34'
+sections = 'sessions:25,terminals,agents:34'
 folder_click = 'navigate'
 file_delete = 'trash'
 background = ''
