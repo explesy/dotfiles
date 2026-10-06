@@ -148,8 +148,8 @@ ${WORKFLOW_STATUS_PROTOCOL}
      an actionable plan and the missing design is materially risky
      (schema/data migration, security, concurrency/state, broad compatibility,
      or similarly cross-cutting work). Run the saved plan-review.js workflow
-     through the subagent tool with async: false; background children are
-     unavailable on Pi 1.0 with pi-subagents 0.74.0.
+     through the subagent tool with async: false so each review step finishes
+     in the foreground before the workflow continues.
 
 4. Implement the selected issue completely. Stay within its scope and do not
    begin a second issue during this command.
@@ -209,8 +209,8 @@ ${WORKFLOW_STATUS_PROTOCOL}
      plan and the missing design is materially risky (schema/data migration,
      security, concurrency/state, broad compatibility, or similarly
      cross-cutting work). Run the saved plan-review.js workflow through the
-     subagent tool with async: false; background children are unavailable on
-     Pi 1.0 with pi-subagents 0.74.0.
+     subagent tool with async: false so each review step finishes in the
+     foreground before the workflow continues.
 
 3. Implement issue #${issueNumber} completely and stay within its scope.
 

@@ -11,7 +11,7 @@ Source of truth для конфигурации Pi — этот GitHub-репо�
 
 ## Установка
 
-Текущий compatibility target этой конфигурации — **Pi 1.0.0**. Pi установлен
+Текущий compatibility target этой конфигурации — **Pi 1.0.4**. Pi установлен
 глобально через npm, поэтому на уже настроенной машине сначала обновите сам Pi,
 затем зависимости конфигурации:
 
@@ -61,10 +61,12 @@ cd "$HOME/.config/pi/npm" && npm install
 
 Pi использует точную версию опубликованного
 [`@estebanforge/pi-antigravity-bridge`](https://github.com/EstebanForge/pi-antigravity-bridge),
-а не патчит `node_modules` после установки. Версия **1.7.8** уже содержит
+а не патчит `node_modules` после установки. Версия **1.7.9** сохраняет
 полный approval-ответ `{ decision, reason }` и изолирует hooks в приватном
 каталоге конкретной Pi-сессии, поэтому standalone Antigravity в том же
-workspace больше не получает чужой approval gate.
+workspace больше не получает чужой approval gate. В ней также обновлён
+каталог моделей: Claude 4.6 и GPT OSS удалены upstream, их актуальные
+замены — Claude 5.5 с уровнями thinking.
 
 Версия закреплена в `npm/package.json` и `npm/package-lock.json`, поэтому
 `npm install` воспроизводимо берёт именно проверенный пакет. Локальные
@@ -191,7 +193,7 @@ N · DeepSeek V4.1 Flash · low · #42 · fixing · Detect player languages
 
 ### Approval gate
 
-Bridge `1.7.8` оставляет `approvals.gateMode` в `auto`: при наличии Pi
+Bridge `1.7.9` оставляет `approvals.gateMode` в `auto`: при наличии Pi
 permission extension нативные mutating-действия `agy` проходят через Pi-side
 approval, а hooks лежат в приватном каталоге конкретной сессии. Поэтому
 standalone Antigravity в том же workspace не видит чужой gate; модели
@@ -208,9 +210,8 @@ OAuth-токен внутри Pi. После перезапуска доступ
 - `antigravity/gemini-3-7-flash`;
 - `antigravity/gemini-3-6-flash`;
 - `antigravity/gemini-3-1-pro`;
-- `antigravity/claude-sonnet-4-6`;
-- `antigravity/claude-opus-4-6-thinking`;
-- `antigravity/gpt-oss-120b-medium`.
+- `antigravity/claude-sonnet-5-5`;
+- `antigravity/claude-opus-5-5`.
 
 Выбор модели:
 
@@ -218,8 +219,8 @@ OAuth-токен внутри Pi. После перезапуска доступ
 /model antigravity/gemini-3-8-flash
 ```
 
-Диагностика bridge выполняется командами `/agy status` и `/agy doctor`. После
-обновления каталога моделей через `agy update` используйте `/reload` или
+Диагностика bridge выполняется командой `/agy doctor` (`/agy status` удалена).
+После обновления каталога моделей через `agy update` используйте `/reload` или
 перезапустите Pi. Bridge по умолчанию запускает собственный закрытый tool loop
 `agy`; его изменения файлов не проходят через обычный inline diff Pi. Команды
 `agy` выполняются без отдельного подтверждения, поэтому не выбирайте
@@ -337,10 +338,10 @@ bundled-роли `pi-subagents`:
 - `settings.json` — тема, модель по умолчанию, startup
   `defaultThinkingLevel: low`, список пакетов, добавленные `codemode` /
   `tool_search` и уведомления о значимых cache misses;
-- `npm/package.json` / `package-lock.json` — фиксируют bridge `1.7.8`,
-  `pi-subagents 0.74.0`,
-  `@gotgenes/pi-permission-system 37.0.0`, `@zhcsyncer/pi-recap 0.4.3` и
-  Context7 `0.1.2`, а также Pi SDK peer-пакеты `1.0.0` для
+- `npm/package.json` / `package-lock.json` — фиксируют bridge `1.7.9`,
+  `pi-subagents 0.76.1`,
+  `@gotgenes/pi-permission-system 40.0.1`, `@zhcsyncer/pi-recap 0.4.3` и
+  Context7 `0.1.2`, а также Pi SDK peer-пакеты `1.0.4` для
   воспроизводимой совместимости расширений;
 - `extension-data/pi-recap/config.json` — настройки recap;
 - `extensions/pi-permission-system/config.json` — глобальная политика доступа Pi;
@@ -376,21 +377,25 @@ Pi работает в доверенном режиме (`yoloMode: true`): р�
 заблокированными. Это режим полного доверия к агенту в локальной среде — он
 может выполнять в том числе `rm`, `git push` и сетевые операции.
 
-## Проверка обновления 2026-10-02 (Pi 1.0)
+## Проверка обновления 2026-10-06 (Pi 1.0.4)
 
-Pi и четыре SDK-пакета обновлены до `1.0.0`, permission system — до `37.0.0`
-(первая версия с требованием Pi ≥ 1.0), bridge `1.7.8`, subagents `0.74.0`,
-recap `0.4.3` и Context7 `0.1.2` остаются последними опубликованными версиями
-и совместимы с 1.0 (entrypoints проверены). Рабочие зависимости установлены
-в `~/.config/pi/npm`, а manifest и lockfile сохраняются в Stow-источнике.
+Pi и четыре SDK-пакета синхронизированы на `1.0.4`; bridge `1.7.9`,
+permission system `40.0.1` и subagents `0.76.1` обновлены по release notes.
+Recap `0.4.3` и Context7 `0.1.2` остаются на проверенных версиях. Новое
+сопоставление абсолютных и относительных Bash путей появилось в permission
+system 40.0.0; действующая политика по-прежнему задаёт Bash `ask` и явные
+запреты чувствительных файлов. Устаревшие Claude 4.6 и GPT OSS модели убраны
+из списка bridge. Рабочие зависимости установлены в
+`~/.config/pi/npm`, а manifest и lockfile сохраняются в Stow-источнике.
 
 Что из Pi 1.0 принято:
 
-- SDK и lockfile синхронизированы с CLI `1.0.0`; `pi-update` и
+- SDK и lockfile синхронизированы с CLI `1.0.4`; `pi-update` и
   `pi-update --check` проверяют, что manifest, `node_modules` и CLI дают одну
   и ту же версию всех четырёх SDK-пакетов.
-- `permission-system 37.0.0` — единственное расширение, обновлённое ради 1.0
-  (breaking-требование Pi ≥ 1.0.0).
+- `permission-system 40.0.1` включает текущую политику Pi 1.0 и исправления
+  сопоставления команд; существующая конфигурация остаётся с Bash `ask` и
+  явными запретами на чувствительные файлы.
 - Codemode 1.0 использует меньше prompt-токенов. Launcher по-прежнему
   загружает `builtin:codemode` и `builtin:tool-search` через `-e`, а
   `defaultTools` включает сами инструменты: это не дублирование, потому что
@@ -424,17 +429,16 @@ Radius: `/login` в 1.0 умеет Sign in with Radius, но Radius здесь �
 подключён и не становится default paid provider; маршруты остаются явными.
 Изменений не требуется.
 
-Subagents на Pi 1.0: pi-subagents `0.74.0` (последняя версия) для detached
-background children требует export `@earendil-works/pi-agent-core/node`,
-который pi-agent-core `1.0.0` удалил. Одиночные foreground-запуски работают и
-проверены; background/async падает с ошибкой про missing export. Поэтому в
-`extensions/subagent/config.json` добавлен `"asyncByDefault": false`: обычные
-subagent-вызовы идут foreground, и workflow остаётся рабочим. Явный
-`async: true`, background workflow children и scheduled runs по-прежнему не
-работают до совместимого релиза pi-subagents. `/p` всегда передаёт
-`async: false`; escalation в `/n` и `/i` теперь тоже требует его явно.
+Subagents на Pi 1.0: начиная с `pi-subagents 0.75.0`, detached background
+children снова поддерживаются после удаления Pi 1.0 старого SDK export.
+Установленная `0.76.1` содержит последующие исправления надёжности. В
+`extensions/subagent/config.json` сохранён `"asyncByDefault": false`, чтобы
+обычные workflow оставались последовательными и видимыми; `/p`, `/n` и `/i`
+могут явно выбирать foreground-режим. Background и scheduled сценарии теперь
+совместимы по release notes, но требуют отдельного запуска с авторизацией и
+не проверялись в этой smoke-проверке.
 
-Smoke-тесты на Pi 1.0.0:
+Исторические smoke-тесты на Pi 1.0.0:
 
 - launcher и `pi --version` → `1.0.0`;
 - `pi-update --check` → CLI и четыре SDK согласованы;
@@ -447,8 +451,8 @@ Smoke-тесты на Pi 1.0.0:
 - codemode вернул `42`; `tool_search` отработал;
 - permission deny на `.env` через bash без утечки содержимого;
 - `/b` и `/bh` переключают модель и thinking level; `/i` без аргумента даёт
-  usage-warning; `/agy status` показывает bridge, `web tools: on` и привязку
-  сессий;
+  usage-warning; исторический smoke-run вызывал `/agy status`, теперь для
+  диагностики используется `/agy doctor`;
 - foreground subagent (`scout`) вернул marker; `/p`-workflow planner →
   plan-reviewer в safe temp repo завершился verdict `approve`; background/async
   subagents недоступны (см. Subagents выше);
