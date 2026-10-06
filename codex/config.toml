@@ -19,10 +19,6 @@ multi_agent = true
 shell_snapshot = true
 unified_exec = true
 memories = true
-
-[tools]
-view_image = true
-
 [mcp_servers]
 
 [mcp_servers.github]
