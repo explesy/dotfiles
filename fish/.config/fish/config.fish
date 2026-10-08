@@ -1,3 +1,7 @@
+# The following lines were added by Docker Desktop to add commands to your PATH.
+export PATH="$PATH:/Users/doc/.docker/bin"
+# End of Docker Desktop section.
+
 # Pi: keep global config and extension state under XDG config in both
 # interactive and non-interactive Fish sessions.
 set -gx PI_CODING_AGENT_DIR "$HOME/.config/pi"
