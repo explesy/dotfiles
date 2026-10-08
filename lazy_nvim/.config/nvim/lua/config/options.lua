@@ -2,6 +2,21 @@
 -- Default options that are always set: https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/options.lua
 -- Add any additional options here
 
+-- Select backends explicitly; keep install_version as installation history.
+vim.g.lazyvim_picker = "snacks"
+vim.g.lazyvim_explorer = "neo-tree"
+
+-- Neovim recognizes docker-compose.yml, but some runtimes classify compose.yml
+-- as plain YAML. The Compose LSP only attaches to yaml.docker-compose.
+vim.filetype.add({
+  filename = {
+    ["compose.yml"] = "yaml.docker-compose",
+    ["compose.yaml"] = "yaml.docker-compose",
+    ["docker-compose.yml"] = "yaml.docker-compose",
+    ["docker-compose.yaml"] = "yaml.docker-compose",
+  },
+})
+
 local opt = vim.opt
 
 -- Disable remote providers we don't use. Missing host packages make provider

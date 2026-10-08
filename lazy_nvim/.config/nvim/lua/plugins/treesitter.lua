@@ -17,13 +17,12 @@ local function disable_lang(opts, section, langs)
 end
 
 return {
-  -- Workaround: this setup is unstable for some parsers/queries, so keep them
-  -- disabled consistently across all Tree-sitter features.
+  -- Restore Lua highlighting first; retain separate indent/fold/textobject
+  -- mitigations until longer interactive use confirms stability.
   { "nvim-treesitter/nvim-treesitter-textobjects", enabled = false },
   {
     "nvim-treesitter/nvim-treesitter",
     opts = function(_, opts)
-      disable_lang(opts, "highlight", { "lua" })
       disable_lang(opts, "indent", { "lua" })
       disable_lang(opts, "folds", { "lua" })
     end,

@@ -9,10 +9,6 @@ vim.api.nvim_create_autocmd("FileType", {
   pattern = { "markdown" },
   callback = function(event)
     vim.opt_local.spell = false
-    if vim.diagnostic.disable then
-      vim.diagnostic.disable(event.buf)
-    else
-      vim.diagnostic.enable(false, { bufnr = event.buf })
-    end
+    vim.diagnostic.enable(false, { bufnr = event.buf })
   end,
 })
