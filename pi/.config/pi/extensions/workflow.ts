@@ -520,10 +520,24 @@ export default function workflowCommands(pi: ExtensionAPI) {
 
   const runIssue = async (args: string, ctx: ExtensionCommandContext) => {
     const input = args.trim();
-    const match = input.match(/^#?(\d+)(?:\s+([\s\S]*))?$/);
+    const firstSpace = input.search(/\s/);
+    const firstToken = firstSpace === -1 ? input : input.slice(0, firstSpace);
+    const explicitRoute = firstToken
+      ? NEXT_MODEL_ROUTES[
+          firstToken.toLowerCase() as keyof typeof NEXT_MODEL_ROUTES
+        ]
+      : undefined;
+    const route = explicitRoute ?? NEXT_MODEL_ROUTES[DEFAULT_NEXT_MODEL];
+    const issueInput = explicitRoute
+      ? input.slice(firstToken.length).trim()
+      : input;
+    const match = issueInput.match(/^#?(\d+)(?:\s+([\s\S]*))?$/);
 
     if (!match) {
-      ctx.ui.notify("Usage: /i <issue-number> [instruction]", "warning");
+      ctx.ui.notify(
+        "Usage: /i [ds|codex|luna|agy] <issue-number> [instruction]",
+        "warning",
+      );
       return;
     }
 
@@ -533,7 +547,7 @@ export default function workflowCommands(pi: ExtensionAPI) {
       return;
     }
 
-    const ok = await switchToBuildModel(ctx, "low");
+    const ok = await switchToModel(ctx, route);
     if (!ok) {
       return;
     }
@@ -544,7 +558,7 @@ export default function workflowCommands(pi: ExtensionAPI) {
       ? `${basePrompt}\n\nAdditional instruction from me:\n${extra}`
       : basePrompt;
 
-    startWorkflowStatus(ctx, "I", "low", {
+    startWorkflowStatus(ctx, "I", route.thinking, {
       issueNumber,
       phase: "selecting",
     });
@@ -576,7 +590,7 @@ export default function workflowCommands(pi: ExtensionAPI) {
 
   pi.registerCommand("i", {
     description:
-      "Execute one specific GitHub issue through implementation, verification, review, and normal repository completion",
+      "Execute one specific GitHub issue; optional model selector: ds, codex, luna, agy",
     handler: runIssue,
   });
 }
