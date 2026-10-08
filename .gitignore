@@ -14,6 +14,7 @@ yazi/.config/yazi/*.toml-*
 karabiner/.config/karabiner/automatic_backups/*.json
 
 # Runtime & local state
+.playwright-cli/
 fish/.config/fish/fish_variables
 herdr/.config/herdr/*.bak
 herdr/.config/herdr/*.log
