@@ -73,3 +73,24 @@ Validation run (2026-03-11):
 
 Result:
 - Warm behavior remains in expected range for this setup (same order of magnitude as baseline after cleanup).
+
+## Validation 2026-10-08
+
+Active Stow configuration: Neovim 0.12.5, LazyVim 16.0.1, Snacks Picker,
+Neo-tree, YAML/Docker extras, Yanky, CLI-only Sidekick.
+
+Three serial TUI runs with `-i NONE --startuptime <fresh-log>` and
+`+lua vim.defer_fn(function() vim.cmd("qa!") end, 300)`:
+
+- Run 1: 69.287 ms
+- Run 2: 37.615 ms
+- Run 3: 34.438 ms
+- Mean: 47.113 ms; last two mean: 36.027 ms
+
+Neovim 0.12 logs both launcher and editor startup; use the last `NVIM STARTED`
+line from each file. This is a local startup observation, not a controlled A/B
+benchmark or a measurement of picker/LSP latency. The first run varied substantially;
+the last two remain in the historical warm range. Aggregate startup remains dominated
+by `config.lazy`; the theme and Snacks are still visible contributors.
+
+See [VALIDATION.md](VALIDATION.md) for functional checks and limitations.

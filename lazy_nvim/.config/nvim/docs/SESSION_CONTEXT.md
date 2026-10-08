@@ -1,5 +1,8 @@
 # Neovim Session Context (2026-03-11)
 
+Historical incident snapshot. For the current 2026-10-08 configuration and checks,
+see [README](../README.md) and [validation](VALIDATION.md).
+
 ## Why this file exists
 This is a recovery/context snapshot to quickly resume debugging and configuration work after interruptions.
 

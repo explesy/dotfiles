@@ -1,5 +1,16 @@
 # Neovim Config Changelog
 
+## 2026-10-08
+
+- Updated and pinned LazyVim 16.0.1; Neovim was already 0.12.5.
+- Explicit Snacks Picker / Neo-tree selection; removed accidental Telescope spec and inactive picker locks.
+- Added Colemak picker list navigation; retained terminal, save and Neo-tree bindings.
+- Restored only Lua highlighting; retained Lua indent/fold, textobjects, render-markdown and autotag mitigations.
+- Enabled YAML/Docker and Yanky extras. Added Compose filename detection so its language service attaches.
+- Added Sidekick CLI-only on `Space A…`, using built-in Pi/Codex/OpenCode support, without NES/Tab/save conflicts.
+- Docker tooling uses an existing hadolint before requesting another copy from Mason.
+- Simplified Markdown diagnostic toggle to the supported API; corrected stale docs and startup extraction command.
+
 ## 2026-03-11
 
 ### Plugin workflow audit (no dependency changes)

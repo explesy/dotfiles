@@ -13,7 +13,8 @@ Confirmed cause:
 
 Current mitigations:
 - `nvim-treesitter-textobjects` disabled in `lua/plugins/treesitter.lua`.
-- Tree-sitter `highlight/indent/folds` disabled for `lua`, `markdown`, `markdown_inline` in `lua/plugins/treesitter.lua`.
+- Lua Tree-sitter indent/folds remain disabled; Lua highlighting was restored on 2026-10-08.
+- Markdown highlighting is enabled; Snacks quickfile still excludes Markdown to avoid its early highlighting path.
 - `render-markdown.nvim` disabled in `lua/plugins/render-markdown.lua`.
 
 Why kept disabled:
@@ -38,21 +39,15 @@ Symptom:
 Confirmed cause:
 - `yamlls` + remote schema handling (`SchemaStore`) increased overhead in this environment.
 
-Current mitigations:
-- `yamlls` disabled in `lua/plugins/yaml.lua`.
-- `SchemaStore.nvim` disabled in `lua/plugins/yaml.lua`.
+Current configuration (2026-10-08):
+- Official `lang.yaml` and `lang.docker` extras enabled; old YAML disable spec removed.
+- Built-in remote SchemaStore catalog disabled by the YAML extra; SchemaStore.nvim supplies the catalog locally.
+- Schema documents can still be downloaded from their URLs. This is not a fully offline schema setup.
+- Explicit Compose filename detection ensures the Compose language service attaches.
 
-Why kept disabled:
-- Better responsiveness and fewer freeze-like pauses in compose files.
-
-How to re-enable safely:
-1. Re-enable `yamlls` first, keep SchemaStore disabled.
-2. Test real compose files.
-3. Re-enable SchemaStore only if step 2 is stable.
-
-What to verify after each step:
-- Open/save/edit `docker-compose.yml` without stalls.
-- CPU stays normal when entering/exiting insert mode.
+If lag returns, disable `yamlls` alone first and repeat the compose editing check.
+Keep evidence of the affected file, server logs and delay before changing another component.
+Previous freeze attribution is historical; it does not establish the cause of a new delay.
 
 ## 3) High CPU / freeze after insert-mode transitions
 
@@ -114,17 +109,30 @@ Current behavior:
 - Missing plugins are not installed during startup.
 
 What to do:
-1. Run `:Lazy sync` after plugin-spec changes.
+1. Run `:Lazy install` for new plugins or `:Lazy restore` for locked versions.
 2. Restart Neovim.
 
 What to verify:
 - Plugin appears in `:Lazy`.
 - Feature/keymaps from that plugin are active.
 
-## Safe Re-enable Order (One by One)
+## Safe Re-enable Order (Remaining Mitigations)
 
-1. `yamlls`
-2. `SchemaStore.nvim`
-3. Tree-sitter language features (smallest scope first)
-4. `render-markdown.nvim`
-5. `nvim-ts-autotag` (last)
+YAML/SchemaStore and Lua highlighting were restored on 2026-10-08.
+After longer interactive use, evaluate one remaining component at a time:
+
+1. Lua Tree-sitter indent/folds (separately)
+2. `nvim-treesitter-textobjects`
+3. `render-markdown.nvim`
+4. `nvim-ts-autotag` (last)
+
+## 6) Docker tools and CLI-only health warnings
+
+On this Mac hadolint is installed with `brew install hadolint` because the GitHub
+release-asset download used by Mason stalled. The Docker override skips Mason's
+hadolint download when a working executable is on PATH. Other Docker/YAML servers
+remain managed by Mason. Verify actual diagnostics, not just package directories.
+
+Sidekick's health checker reports missing Copilot LSP even with `nes.enabled = false`.
+This is expected for this CLI-only configuration; do not enable Copilot just to clear it.
+AI CLI authentication/model requests must be checked separately from terminal startup.

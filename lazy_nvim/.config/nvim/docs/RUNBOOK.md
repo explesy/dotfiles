@@ -4,7 +4,8 @@ Operational checklist after any config change.
 
 Note:
 - Auto-install of missing plugins on startup is disabled.
-- After adding/changing plugin specs, run `:Lazy sync` once before smoke tests.
+- Install new plugins with `:Lazy install`; restore locked versions with `:Lazy restore`.
+- `:Lazy sync` also updates and cleans plugins; it is not a read-only check.
 
 ## 1) Smoke Check
 
@@ -30,14 +31,21 @@ Note:
    - return via buffers: `Space fb` (or `Space ,`)
    - tree reveal sanity: `:Neotree reveal`
 
+7. Verify Snacks normal-mode `n/e`, list `i` (preview), `t` (input), grep `Space sg` and projects `Space fp`.
+8. Yank two different lines, paste, cycle `[y` / `]y`, then open history with `Space p`.
+9. Verify `Space a` remains quick save and `Space /` remains terminal after Sidekick loads.
+10. Open the desired AI CLI with `Space Ac/Ai/Ao`. Check the terminal before explicitly sending context.
+
 ## 2) Anti-Freeze Check
 
 1. Open a compose file (`docker-compose.yml`).
 2. Open a markdown file (`*.md`).
 3. Open a lua file (`*.lua`).
 4. Enter/exit insert mode several times in each file.
-5. Run `:checkhealth`.
-6. Review `:messages` for repeating callback errors.
+5. Verify attached LSP clients for YAML, Compose and Dockerfile with `:checkhealth vim.lsp`.
+6. Introduce invalid YAML / Compose image type in a scratch copy and confirm diagnostics; check a Dockerfile hadolint warning.
+7. Run `:checkhealth`.
+8. Review `:messages` for repeating callback errors.
 
 Pass criteria:
 - No hard crash/fallback.
@@ -49,7 +57,7 @@ Pass criteria:
 If regressions appear, revert the most recent risky change first:
 
 1. YAML stack:
-   - `lua/plugins/yaml.lua`
+   - disable `lang.yaml` / `lang.docker` in `lazyvim.json`, or temporarily set `yamlls.enabled = false` in a local spec
 2. Tree-sitter/markdown stack:
    - `lua/plugins/treesitter.lua`
    - `lua/plugins/render-markdown.lua`
@@ -70,10 +78,17 @@ After rollback:
 Policy:
 - After any significant keymap or plugin/config change, always run 3 `--startuptime` measurements.
 
-1. Run startup measurements (3 runs):
-   - `nvim --startuptime /tmp/nvim-startup-1.log -u init.lua -i NONE +qa`
-   - `nvim --startuptime /tmp/nvim-startup-2.log -u init.lua -i NONE +qa`
-   - `nvim --startuptime /tmp/nvim-startup-3.log -u init.lua -i NONE +qa`
-2. Extract totals with:
-   - `awk '/NVIM STARTED/{line=$0} END{print line}' /tmp/nvim-startup-*.log`
+1. Run three serial measurements with the active Stow configuration, using a fresh log path each time:
+   - `nvim --startuptime /tmp/nvim-startup-1.log -i NONE '+lua vim.defer_fn(function() vim.cmd("qa!") end, 300)'`
+   - repeat with `startup-2.log` and `startup-3.log`.
+2. Read the last `NVIM STARTED` line from each file individually. Neovim 0.12 may log both launcher and editor processes:
+   - `for log in /tmp/nvim-startup-*.log; do awk '/NVIM STARTED/{line=$0} END{print FILENAME, line}' "$log"; done`
 3. Update `docs/PERFORMANCE_BASELINE.md` with the new numbers and main hotspots.
+
+## 5) Picker rollback
+
+Set `vim.g.lazyvim_picker = "fzf"` in `lua/config/options.lua`, then `:Lazy install`
+and restart. Keep `leader_slash.lua` scoped to Snacks; restore the optional fzf
+`<leader>/` disable spec if testing shows it overrides the terminal key.
+Neo-tree stays selected independently through `vim.g.lazyvim_explorer`.
+Do not change `install_version` to switch backends.
