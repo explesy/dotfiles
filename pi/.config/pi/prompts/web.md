@@ -28,6 +28,10 @@ Browser routing:
   external action, stop before the final action and ask the user.
 - Prefer `find`/targeted reads over full snapshots when sufficient. Reuse the
   same session rather than repeatedly opening browsers.
+- Always finish cleanly: close the browser when the task is done
+  (`playwright-cli close`, or `playwright-cli close-all` if you opened several
+  sessions). Never leave a browser running: an abandoned Playwright browser
+  keeps spinning a CPU core and overheats the machine.
 - If a site presents an anti-bot or CAPTCHA challenge, report it and preserve
   the session for human takeover. Do not add CAPTCHA-solving or evasion
   services.

@@ -1,0 +1,187 @@
+#!/bin/bash
+#
+# reap-stale-browsers — reap abandoned automation browsers and stale
+# Playwright CLI daemons left behind when an agent/session dies mid-run.
+#
+#   reap-stale-browsers [--dry-run | --check <argv>]
+#
+# It kills a process only when it is BOTH
+#   (1) an automation browser or a Playwright CLI driver, AND
+#   (2) provably abandoned:
+#         * orphaned (PPID 1) for longer than REAP_GRACE_SECS, or
+#         * a Playwright CLI daemon idle for longer than REAP_DAEMON_MAX_SECS.
+# A normal user browser carries no automation flags, so it is never matched.
+#
+# Tunables (environment):
+#   REAP_GRACE_SECS       5400   min age of an orphaned browser before reaping (90m)
+#   REAP_DAEMON_MAX_SECS 43200   idle age after which a PW daemon is stale (12h)
+#   REAP_LOG                     log file (default ~/Library/Logs/reap-stale-browsers.log)
+
+set -u
+
+GRACE_SECS="${REAP_GRACE_SECS:-5400}"
+DAEMON_MAX_SECS="${REAP_DAEMON_MAX_SECS:-43200}"
+LOG="${REAP_LOG:-$HOME/Library/Logs/reap-stale-browsers.log}"
+DRY=0
+CHECK=""
+
+while [ $# -gt 0 ]; do
+	case "$1" in
+	-n | --dry-run) DRY=1 ;;
+	--check)
+		shift
+		CHECK="${1:-}"
+		;;
+	-h | --help)
+		sed -n '3,22p' "$0"
+		exit 0
+		;;
+	*)
+		echo "unknown option: $1" >&2
+		exit 2
+		;;
+	esac
+	shift
+done
+
+short() {
+	local a="$1"
+	printf '%s' "${a:0:120}"
+}
+
+is_automation_browser() {
+	local a="$1"
+	# Any Playwright-launched browser carries "playwright" in its argv (cache
+	# path or temp profile), or one of the automation switches below.
+	case "$a" in
+	*[Pp]laywright*) return 0 ;;
+	esac
+	case "$a" in
+	*-juggler-pipe* | *--remote-debugging-pipe* | *--remote-debugging-port*) return 0 ;;
+	esac
+	case "$a" in
+	*headless*)
+		case "$a" in
+		*firefox* | *[Cc]hromium* | *chrome* | *headless_shell*) return 0 ;;
+		esac
+		;;
+	esac
+	return 1
+}
+
+is_playwright_daemon() {
+	case "$1" in
+	*cliDaemon.js* | *playwright-core*cliDaemon*) return 0 ;;
+	esac
+	return 1
+}
+
+dec() { # decimal integer, tolerant of leading zeros / junk
+	local v="${1:-0}"
+	v="${v//[!0-9]/}"
+	echo $((10#${v:-0}))
+}
+
+secs_from_etime() { # macOS etime: [[dd-]hh:]mm:ss
+	local e="$1" d=0 h=0 m=0 s=0
+	case "$e" in
+	*-*)
+		d="${e%%-*}"
+		e="${e#*-}"
+		;;
+	esac
+	local IFS=:
+	# shellcheck disable=SC2086
+	set -- $e
+	case $# in
+	2)
+		m=$(dec "$1")
+		s=$(dec "$2")
+		;;
+	3)
+		h=$(dec "$1")
+		m=$(dec "$2")
+		s=$(dec "$3")
+		;;
+	esac
+	echo $(((d * 86400) + (h * 3600) + (m * 60) + s))
+}
+
+# --check: classify an argv string without touching anything (debugging aid)
+if [ -n "$CHECK" ]; then
+	label="neither"
+	if is_playwright_daemon "$CHECK"; then
+		label="playwright-daemon"
+	elif is_automation_browser "$CHECK"; then
+		label="automation-browser"
+	fi
+	echo "class=$label"
+	exit 0
+fi
+
+note() {
+	local msg
+	msg="$(date '+%F %T') $*"
+	printf '%s\n' "$msg"
+	[ "$DRY" = 1 ] || printf '%s\n' "$msg" >>"$LOG"
+}
+
+reap_tree() { # $1=pid : TERM the whole subtree, then KILL if it lingers
+	local p="$1" c
+	if [ "$DRY" = 1 ]; then
+		echo "[dry-run] would reap tree of pid=$p"
+		return 0
+	fi
+	for c in $(pgrep -P "$p" 2>/dev/null); do
+		reap_tree "$c"
+	done
+	kill -TERM "$p" 2>/dev/null
+	local i=0
+	while [ "$i" -lt 10 ]; do
+		kill -0 "$p" 2>/dev/null || return 0
+		sleep 0.3
+		i=$((i + 1))
+	done
+	note "    pid=$p ignored SIGTERM, sending SIGKILL"
+	kill -KILL "$p" 2>/dev/null
+}
+
+[ "$DRY" = 1 ] || mkdir -p "$(dirname "$LOG")"
+reaped=0
+
+# 1) automation browsers orphaned past the grace period
+while read -r pid ppid etime args; do
+	[ -n "${pid:-}" ] || continue
+	[ "$pid" = "$$" ] && continue
+	[ "$ppid" = "1" ] || continue
+	is_automation_browser "$args" || continue
+	age=$(secs_from_etime "$etime")
+	[ "$age" -ge "$GRACE_SECS" ] || continue
+	note "reap orphaned browser pid=$pid age=${age}s ppid=1 :: $(short "$args")"
+	reap_tree "$pid"
+	reaped=$((reaped + 1))
+done <<EOF
+$(ps -ww -Ao pid=,ppid=,etime=,args= 2>/dev/null)
+EOF
+
+# 2) Playwright CLI daemons idle past the hard age limit
+while read -r pid ppid etime pcpu args; do
+	[ -n "${pid:-}" ] || continue
+	[ "$pid" = "$$" ] && continue
+	is_playwright_daemon "$args" || continue
+	age=$(secs_from_etime "$etime")
+	[ "$age" -ge "$DAEMON_MAX_SECS" ] || continue
+	[ "$(dec "${pcpu%%.*}")" -le 1 ] || continue
+	note "reap stale daemon pid=$pid age=${age}s cpu=${pcpu}% :: $(short "$args")"
+	reap_tree "$pid"
+	reaped=$((reaped + 1))
+done <<EOF
+$(ps -ww -Ao pid=,ppid=,etime=,pcpu=,args= 2>/dev/null)
+EOF
+
+if [ "$reaped" -gt 0 ]; then
+	note "done: reaped $reaped stale process tree(s)"
+elif [ "$DRY" = 1 ]; then
+	echo "[dry-run] nothing stale to reap"
+fi
+exit 0
