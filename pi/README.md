@@ -300,7 +300,7 @@ Luna → Sol planning на каждую заранее разобранную is
   `antigravity/gemini-3-8-flash` / low;
 - `/i`, `/b`, `/build`, `/bh` —
   `opencode-go/deepseek-v4.1-flash`;
-- `scout` — `opencode-go/mimo-v2.6-flash`, low thinking;
+- `scout` — `opencode-go/claude-haiku-5-5`, low thinking;
 - `reviewer` — `opencode-go/claude-haiku-5-5`, medium thinking;
 - `planner` — `opencode-go/gpt-6-luna`, high thinking;
 - `plan-reviewer` — `openai-codex/gpt-6.1-sol`, high thinking.
@@ -480,8 +480,8 @@ Planner переведён с `opencode-go/gpt-5.6-luna` на `opencode-go/gpt-6
 и ответа. Это metadata каталога, а не измерение расходов подписки или
 сравнительный benchmark качества planning.
 
-Default/build остаются DeepSeek V4.1 Flash, scout — MiMo V2.6 Flash,
-reviewer — Claude Haiku 5.5, plan-reviewer — GPT-6.1 Sol. В Pi 1.0 OpenAI Codex обозначен legacy,
+Default/build остаются DeepSeek V4.1 Flash, scout и reviewer — Claude Haiku 5.5
+(`low` и `medium` соответственно), plan-reviewer — GPT-6.1 Sol. В Pi 1.0 OpenAI Codex обозначен legacy,
 но существующая OAuth-авторизация и запросы работают. Новый `/login openai`
 потребует отдельного входа; автоматического переноса credentials нет.
 
