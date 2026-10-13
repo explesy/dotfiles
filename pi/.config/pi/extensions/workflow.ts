@@ -103,9 +103,16 @@ GitHub issue plan/checklist is input, not proof that the plan is complete.
    before implementation. Record assumptions and unresolved risks.
 2. Classify risk before relying on any reviewer verdict. Escalate to Luna
    planning followed by GPT-6.1 Sol / plan-reviewer at high thinking for schema
-   or data migrations, security boundaries, concurrency or shared state, broad
-   API or compatibility changes, or similarly cross-cutting work. Existing
-   plans in the issue do not waive this escalation. Invoke planner through the
+   or data migrations, security boundaries, changes to concurrency or shared
+   state behavior (update ordering, synchronization, ownership, idempotency,
+   or failure recovery), broad API or compatibility changes, or similarly
+   cross-cutting work. Classify the proposed changes, not task keywords or the
+   mere presence of a cache. Observation-only work may use the ordinary route
+   only after code evidence shows it preserves those behaviors; new mutable
+   counters or other shared state still require that assessment. Record the
+   affected invariant and evidence for the route. Material uncertainty uses
+   the risky route. Existing plans in the issue do not waive this escalation.
+   Invoke planner through the
    subagent tool with async: false, passing the issue requirements, relevant
    code evidence, and any existing plan. Then invoke plan-reviewer with
    async: false and a self-contained brief containing RUN_PLAN_REVIEW: true,
@@ -141,9 +148,51 @@ the implementation introduces those risks, delegate one independent read-only
 pass to reviewer-sol (GPT-6.1 Sol, high). Otherwise use reviewer (Haiku 5.5,
 medium). Invoke the selected agent through the subagent tool with async: false;
 include the task, accepted plan, relevant diff/code, and verification results.
+Ask the reviewer to check acceptance criteria first, including contract-valid
+exceptional paths, required input fields, and preserved behavior. A confirmed
+requirement violation is at least important even if rarely triggered.
 Confirm blocking/important findings using the evidence policy before changing
 code, fix confirmed findings, then rerun affected checks. Do not create an
 endless review loop or spend time on cosmetic nits.
+`.trim();
+
+const ISSUE_VERIFICATION_POLICY = `
+Select checks from the actual behavior changed, contracts, call sites and
+consumers, not only changed filenames or diff size. For isolated changes with
+known boundaries, run the relevant module/consumer and success/error-path
+checks plus applicable build/lint; do not default to the full suite. Explain
+what is covered and what is not. Missing coverage is a gap, not a passing test.
+Use broader/full checks for releases, broad refactors, shared interfaces/data
+formats, dependencies, test/runtime infrastructure, shared-state/concurrency
+or security invariants, uncertain impact, or evidence of a wider regression.
+Repository/user-required checks remain mandatory. Run focused checks and
+applicable build/lint before review. If a full suite is needed, run it after
+review fixes on the ready implementation. Reuse earlier check evidence only
+where later changes do not affect the checked behavior. After a test-only
+addition/correction run that test or file; after a local code fix rerun affected
+checks and applicable build/lint. Repeat the full suite only for a new impact
+reason above or an explicit requirement, and state that reason.
+Capture the actual exit status of each check. When piping output through tail
+or tee, use pipefail in a shell that supports it, or capture the check's status
+before displaying its log; the last pipeline command is not test evidence.
+For a previously confirmed baseline failure, record the failed check and its
+existing evidence. Repeat baseline diagnosis only if symptoms, relevant code,
+or environment changed, or that evidence is unavailable. Never call a failing
+full suite green or skip a required check because its failure is known.
+Before finishing, after review fixes, make a compact acceptance map: each
+requirement -> implementation location -> concrete verification/result ->
+status: verified, verification-gap, contract-exception, or not-implemented.
+verified means implemented and checked; verification-gap means the code exists
+but checking is incomplete; contract-exception means the implementation is
+narrower or different. Explicitly list every exception to the original task.
+Documentation, tests of an exception, and reviewer approval do not authorize
+changing a requirement. Routine implementation choices within the contract
+remain yours; fix material mismatches or report incomplete work. If a referenced
+standard was not checked, record that verification gap rather than full support.
+Include required fields, contract-valid failure paths, and preserved behavior
+where relevant. A reviewer verdict or total test count does not replace this
+map. For a coverage gap, run the smallest meaningful check; if verification
+cannot be completed, report the gap rather than claiming full completion.
 `.trim();
 
 const HUMAN_REPORT_PROTOCOL = `
@@ -213,6 +262,7 @@ ${WORKFLOW_STATUS_PROTOCOL}
 
 5. Run the smallest meaningful verification set: focused tests/checks first,
    then broader checks only when the change warrants them.
+   ${ISSUE_VERIFICATION_POLICY.split("\n").join("\n   ")}
 
 6. ${ISSUE_CODE_REVIEW_POLICY.split("\n").join("\n   ")}
 
@@ -262,6 +312,7 @@ ${WORKFLOW_STATUS_PROTOCOL}
 
 4. Run the smallest meaningful verification set: focused tests/checks first,
    then broader checks only when the change warrants them.
+   ${ISSUE_VERIFICATION_POLICY.split("\n").join("\n   ")}
 
 5. ${ISSUE_CODE_REVIEW_POLICY.split("\n").join("\n   ")}
 
