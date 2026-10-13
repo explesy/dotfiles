@@ -98,17 +98,20 @@ Console Go не содержат несовместимые старые схе�
 
 - `/n [model] [instruction]` — выполнить ровно одну следующую задачу из уже
   существующей GitHub execution queue: выбрать незаблокированную issue →
-  реализовать → проверить → независимый cheap review для нетривиального diff →
-  исправить существенные замечания → закрыть/сдвинуть существующую очередь,
-  если критерии действительно выполнены. Main worker выбирается коротким
-  селектором: `ds` = DeepSeek V4.1 Flash / OpenCode Go (`low`),
+  проверить план по требованиям и коду → при необходимости дополнить его и
+  независимо проверить → реализовать → проверить → выполнить независимый
+  review нетривиального diff → исправить существенные замечания →
+  закрыть/сдвинуть существующую очередь, если критерии действительно выполнены.
+  Main worker выбирается коротким
+  селектором: `ds` = DeepSeek V4.1 Flash / OpenCode Go (`high`),
   `codex` = GPT-6.1 Sol / ChatGPT Codex (`medium`), `luna` = GPT-6 Luna /
   ChatGPT Codex (`high`), `agy` = Gemini 3.8 Flash / Antigravity (`low`). Без селектора используется `ds`.
   Если первое слово не является известным селектором, весь текст считается
   обычной дополнительной инструкцией, поэтому старый синтаксис остаётся
   совместимым.
 - `/i [model] <issue> [instruction]` — выполнить одну конкретную GitHub issue
-  тем же execution pipeline, не выбирая другую задачу. Принимает `/i 37`,
+  тем же execution pipeline, не выбирая другую задачу. План в issue сначала
+  сверяется с требованиями и текущим кодом. Принимает `/i 37`,
   `/i #37` и селекторы как у `/n`: `ds`, `codex`, `luna`, `agy`; без селектора
   используется `ds`. Например, `/i agy 37` запустит issue #37 через
   Antigravity. Gated/blocked/closed issue не обходятся автоматически.
@@ -160,12 +163,12 @@ Execution-команды показывают короткий live status в fo
 показывает не просто запущенную команду, а текущую issue и фазу:
 
 ```text
-N · DeepSeek V4.1 Flash · low · selecting
-N · DeepSeek V4.1 Flash · low · #42 · selected · Detect player languages
-N · DeepSeek V4.1 Flash · low · #42 · implementing · Detect player languages
-N · DeepSeek V4.1 Flash · low · #42 · testing · Detect player languages
-N · DeepSeek V4.1 Flash · low · #42 · reviewing · Detect player languages
-N · DeepSeek V4.1 Flash · low · #42 · fixing · Detect player languages
+N · DeepSeek V4.1 Flash · high · selecting
+N · DeepSeek V4.1 Flash · high · #42 · selected · Detect player languages
+N · DeepSeek V4.1 Flash · high · #42 · implementing · Detect player languages
+N · DeepSeek V4.1 Flash · high · #42 · testing · Detect player languages
+N · DeepSeek V4.1 Flash · high · #42 · reviewing · Detect player languages
+N · DeepSeek V4.1 Flash · high · #42 · fixing · Detect player languages
 ```
 
 Поддерживаемые фазы: `selecting`, `selected`, `investigating`, `planning`,
@@ -248,15 +251,32 @@ gated, blocked зависимостью или иным образом сейч�
    `next` или первый незавершённый незаблокированный пункт явной очереди;
 3. уважает `gated`, blocked/research/date/dependency условия и останавливается,
    если next нельзя определить однозначно;
-4. считает существующий issue body/checklist текущим планом и не запускает
-   дорогой planning заново без необходимости;
-5. для отсутствующей и реально рискованной архитектуры может эскалировать в
-   `planner → plan-reviewer`;
-6. реализует только одну issue за invocation, запускает нужные проверки и для
-   нетривиального diff делает один независимый pass через `reviewer`;
-7. исправляет валидные blocking/important findings, повторяет затронутые
-   проверки и только после этого завершает GitHub workflow;
-8. если в проекте уже есть `current/next` queue, обновляет её существующим
+4. проверяет существующий план по issue, acceptance criteria и текущему коду;
+   отсутствие плана или пробелы в нём исправляет до реализации, а сам факт,
+   что план уже есть в issue, не считается его одобрением;
+5. для обычной нетривиальной работы основной worker (DeepSeek, high по умолчанию)
+   составляет или исправляет план, затем `plan-reviewer-haiku` независимо
+   проверяет его с `medium` thinking; важные замечания исправляются до начала
+   реализации;
+6. ещё до reviewer verdict оценивается риск. Миграции данных/схемы, безопасность,
+   конкуренция процессов или общее состояние, широкие изменения API и
+   совместимости направляются к `planner` (Luna, high) и `plan-reviewer`
+   (Sol, high), даже если готовый план уже есть. Это отдельные foreground-вызовы,
+   чтобы main worker получил полный review до исправления плана. Если Haiku
+   обнаружит такой риск, workflow тоже эскалирует;
+7. для механических локальных правок без влияния на поведение отдельный review
+   плана пропускается. После одобрения плана workflow реализует только одну
+   issue за invocation, запускает нужные проверки и для
+   нетривиального diff делает один независимый pass: `reviewer` (Haiku, medium)
+   для обычной работы, `reviewer-sol` (Sol, high) для рискованной. Риск повторно
+   оценивается по фактическому diff; исходно рискованная задача сохраняет Sol;
+8. прежде чем менять план или код из-за blocking/important finding, main worker
+   подтверждает замечание по текущему коду, контракту, требованиям Issue или
+   целевой проверке, указывая источник и конкретный сценарий ошибки. Уже
+   выполненное требование не считается пробелом. Неподтверждённое замечание
+   отклоняется с объяснением либо остаётся явным blocker при нехватке данных.
+   После исправления подтверждённых проблем повторяет затронутые проверки;
+9. если в проекте уже есть `current/next` queue, обновляет её существующим
    способом, не создавая новые labels и не переприоритизируя остальной backlog.
 
 При `/i` шаг выбора задачи пропускается. Existing queue обновляется только если
@@ -293,19 +313,29 @@ Luna → Sol planning на каждую заранее разобранную is
 
 - основной default Pi — `opencode-go/deepseek-v4.1-flash`,
   startup thinking — `low`;
-- `/n` — selectable main worker: default `ds` →
-  `opencode-go/deepseek-v4.1-flash` / low; `codex` →
+- `/n`, `/i` — selectable main worker: default `ds` →
+  `opencode-go/deepseek-v4.1-flash` / high; `codex` →
   `openai-codex/gpt-6.1-sol` / medium; `luna` →
   `openai-codex/gpt-6-luna` / high; `agy` →
   `antigravity/gemini-3-8-flash` / low;
-- `/i`, `/b`, `/build`, `/bh` —
-  `opencode-go/deepseek-v4.1-flash`;
+- `/b`, `/build` — `opencode-go/deepseek-v4.1-flash` / low для механической
+  реализации; `/bh` — та же модель / high;
 - `scout` — `opencode-go/mimo-v2.6-flash`, low thinking;
 - `reviewer` — `opencode-go/claude-haiku-5-5`, medium thinking;
+- `reviewer-sol` — `openai-codex/gpt-6.1-sol`, high thinking для проверки
+  рискованной реализации;
+- `plan-reviewer-haiku` — `opencode-go/claude-haiku-5-5`, medium thinking для
+  проверки планов обычного риска в `/n` и `/i`;
 - `planner` — `opencode-go/gpt-6-luna`, high thinking;
-- `plan-reviewer` — `openai-codex/gpt-6.1-sol`, high thinking.
+- `plan-reviewer` — `openai-codex/gpt-6.1-sol`, high thinking для рискованных
+  планов и неизменённого workflow `/p`.
 
-`/n codex`, `/n luna` и `plan-reviewer` используют отдельный OpenAI
+В `/n` и `/i` уровень `high` для DeepSeek действует на весь запуск, включая
+проверку требований и плана. Обычный старт Pi и `/b` сохраняют `low`. В текущем
+каталоге Pi у DeepSeek доступны `low`, `high`, `max`; `medium` преобразуется в
+`high`.
+
+`/n codex`, `/n luna`, `plan-reviewer` и `reviewer-sol` используют отдельный OpenAI
 Codex/ChatGPT provider. Если он ещё не авторизован в Pi, выполните login для
 `openai-codex`; остальные роли используют существующий OpenCode Go provider.
 
@@ -334,8 +364,12 @@ bundled-роли `pi-subagents`:
 
 - `scout` — дешёвая read-only разведка;
 - `reviewer` — дешёвый независимый first-pass code review;
+- `reviewer-sol` — независимый review рискованной реализации;
 - `planner` — подробный repo-aware implementation planning;
-- `plan-reviewer` — дорогой независимый pre-implementation review.
+- `plan-reviewer-haiku` — независимая проверка плана обычного риска для `/n` и
+  `/i`;
+- `plan-reviewer` — независимая углублённая проверка сложного плана и reviewer
+  для `/p`.
 
 ## Что хранится в Git
 

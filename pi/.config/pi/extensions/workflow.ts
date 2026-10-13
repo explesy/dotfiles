@@ -22,7 +22,7 @@ const NEXT_MODEL_ROUTES = {
   ds: {
     provider: "opencode-go",
     model: "deepseek-v4.1-flash",
-    thinking: "low",
+    thinking: "high",
   },
   codex: {
     provider: "openai-codex",
@@ -68,7 +68,7 @@ work.
 - after the issue is known, call phase "selected" with its number and short
   title;
 - use "investigating" for narrow code/repository investigation after selection;
-- use "planning" only if the task genuinely escalates to planner/plan-reviewer;
+- use "planning" while assessing a non-trivial issue plan or escalating it;
 - call "implementing" immediately before the main implementation work;
 - call "testing" immediately before verification;
 - call "reviewing" immediately before the independent reviewer pass;
@@ -79,6 +79,71 @@ work.
 
 Do not call workflow_status for every tool invocation. One call per meaningful
 phase transition is enough.
+`.trim();
+
+const REVIEW_FINDING_POLICY = `
+Before changing the plan or implementation for a blocking/important finding,
+the main worker must confirm it against the current code, contracts, issue
+requirements, or a focused reproduction/check. Record the source location and
+concrete failure mode. Check whether the requirement is already satisfied;
+reviewer severity and verdict alone are not evidence. Reject unsupported or
+contradicted findings with a short explanation. If the evidence is unavailable
+and the concern remains material, report the unresolved blocker.
+`.trim();
+
+const ISSUE_PLAN_POLICY = `
+Before implementation, establish that the plan is actionable; an existing
+GitHub issue plan/checklist is input, not proof that the plan is complete.
+
+1. Main worker (DeepSeek by default) compares the issue and relevant comments,
+   acceptance criteria, repository instructions, and focused code evidence.
+   Check that each requirement maps to concrete changes and verification, and
+   that file names, symbols, contracts, dependencies, and edge cases match the
+   current repository. If the plan is absent or incomplete, draft or repair it
+   before implementation. Record assumptions and unresolved risks.
+2. Classify risk before relying on any reviewer verdict. Escalate to Luna
+   planning followed by GPT-6.1 Sol / plan-reviewer at high thinking for schema
+   or data migrations, security boundaries, concurrency or shared state, broad
+   API or compatibility changes, or similarly cross-cutting work. Existing
+   plans in the issue do not waive this escalation. Invoke planner through the
+   subagent tool with async: false, passing the issue requirements, relevant
+   code evidence, and any existing plan. Then invoke plan-reviewer with
+   async: false and a self-contained brief containing RUN_PLAN_REVIEW: true,
+   CURRENT TASK, and PROPOSED PLAN. Keep the full review available to the main
+   worker for evidence validation before requesting any plan corrections.
+3. For a non-trivial ordinary task, send the task, requirements, corrected plan,
+   and relevant code evidence to plan-reviewer-haiku for an independent review
+   at medium thinking using the subagent tool with async: false. If Haiku
+   surfaces a risk from the escalation list, check its evidence and switch to
+   Luna planning and Sol review when the risk is confirmed or remains material
+   and unresolved.
+4. For a genuinely mechanical, narrowly scoped change (such as a typo or
+   local wording/config value with no behavior or contract impact), skip the
+   separate plan review and verify the change directly.
+5. If required context is unavailable or material concerns remain unresolved,
+   stop and report the blocker rather than treating a reviewer approval as
+   proof. After an approved plan, implement, verify, then run the independent
+   code review described below.
+
+${REVIEW_FINDING_POLICY}
+
+For either review route, correct the plan only after the main worker validates
+material findings. Use the main worker for ordinary plan corrections and
+planner for risky ones. If the plan changes materially, request at most one
+focused follow-up review before implementation; stop if material concerns
+remain unresolved.
+`.trim();
+
+const ISSUE_CODE_REVIEW_POLICY = `
+For a non-trivial diff, reassess risk using the actual changes and the same
+risk criteria used before planning. If the task was classified as risky, or
+the implementation introduces those risks, delegate one independent read-only
+pass to reviewer-sol (GPT-6.1 Sol, high). Otherwise use reviewer (Haiku 5.5,
+medium). Invoke the selected agent through the subagent tool with async: false;
+include the task, accepted plan, relevant diff/code, and verification results.
+Confirm blocking/important findings using the evidence policy before changing
+code, fix confirmed findings, then rerun affected checks. Do not create an
+endless review loop or spend time on cosmetic nits.
 `.trim();
 
 const HUMAN_REPORT_PROTOCOL = `
@@ -138,18 +203,10 @@ ${WORKFLOW_STATUS_PROTOCOL}
    - as soon as the task is selected, call workflow_status with phase
      "selected", issue number, and a short issue title.
 
-3. Read the selected issue, its acceptance criteria, relevant linked issues,
-   and only the code/docs needed to execute it. Existing issue plans/checklists
-   are the plan: do not redo broad planning merely for ceremony.
-   - For a clear, already-planned task, implement directly.
-   - If essential implementation details are genuinely missing, investigate
-     them narrowly (use scout when useful).
-   - Escalate to the planner -> plan-reviewer workflow only when the task lacks
-     an actionable plan and the missing design is materially risky
-     (schema/data migration, security, concurrency/state, broad compatibility,
-     or similarly cross-cutting work). Run the saved plan-review.js workflow
-     through the subagent tool with async: false so each review step finishes
-     in the foreground before the workflow continues.
+3. Read the selected issue, acceptance criteria, relevant comments/links, and
+   the focused code/docs needed to verify an actionable plan. Existing issue
+   plans are evidence to check, not automatic approval.
+   ${ISSUE_PLAN_POLICY.split("\n").join("\n   ")}
 
 4. Implement the selected issue completely. Stay within its scope and do not
    begin a second issue during this command.
@@ -157,9 +214,7 @@ ${WORKFLOW_STATUS_PROTOCOL}
 5. Run the smallest meaningful verification set: focused tests/checks first,
    then broader checks only when the change warrants them.
 
-6. For a non-trivial diff, delegate one independent read-only pass to reviewer.
-   Fix valid blocking and important findings, then rerun the affected checks.
-   Do not create an endless review loop and do not spend time on cosmetic nits.
+6. ${ISSUE_CODE_REVIEW_POLICY.split("\n").join("\n   ")}
 
 7. Finish the repository workflow honestly:
    - satisfy the issue acceptance criteria before marking it complete;
@@ -201,25 +256,14 @@ ${WORKFLOW_STATUS_PROTOCOL}
      unmet dependency, research-only, or otherwise not executable now, call
      workflow_status with phase "blocked", report that state, and stop instead
      of bypassing the project's process.
-   - Treat an existing implementation plan/checklist in the issue as the plan;
-     do not redo broad planning merely for ceremony.
-   - If essential implementation details are genuinely missing, investigate
-     them narrowly (use scout when useful).
-   - Escalate to planner -> plan-reviewer only when the task lacks an actionable
-     plan and the missing design is materially risky (schema/data migration,
-     security, concurrency/state, broad compatibility, or similarly
-     cross-cutting work). Run the saved plan-review.js workflow through the
-     subagent tool with async: false so each review step finishes in the
-     foreground before the workflow continues.
+   ${ISSUE_PLAN_POLICY.split("\n").join("\n   ")}
 
 3. Implement issue #${issueNumber} completely and stay within its scope.
 
 4. Run the smallest meaningful verification set: focused tests/checks first,
    then broader checks only when the change warrants them.
 
-5. For a non-trivial diff, delegate one independent read-only pass to reviewer.
-   Fix valid blocking and important findings, then rerun the affected checks.
-   Do not create an endless review loop and do not spend time on cosmetic nits.
+5. ${ISSUE_CODE_REVIEW_POLICY.split("\n").join("\n   ")}
 
 6. Finish the repository workflow honestly:
    - satisfy the issue acceptance criteria before marking it complete;

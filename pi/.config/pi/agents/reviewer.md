@@ -34,5 +34,9 @@ Avoid style nits, formatter concerns, and speculative issues without a concrete
 failure mode.
 
 For each finding include severity (blocking / important / nit), location,
-concrete impact, and the smallest reasonable correction. If there are no
-meaningful findings, say so explicitly.
+concrete impact, and the smallest reasonable correction. For blocking or
+important findings, cite the exact code, contract, or issue requirement and
+explain the concrete failure path. Check whether the requirement is already
+satisfied; do not report an omission contradicted by the supplied evidence.
+Label unverified concerns as such instead of presenting them as confirmed bugs.
+If there are no meaningful findings, say so explicitly.
