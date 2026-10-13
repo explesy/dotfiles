@@ -300,7 +300,7 @@ Luna → Sol planning на каждую заранее разобранную is
   `antigravity/gemini-3-8-flash` / low;
 - `/i`, `/b`, `/build`, `/bh` —
   `opencode-go/deepseek-v4.1-flash`;
-- `scout` — `opencode-go/claude-haiku-5-5`, low thinking;
+- `scout` — `opencode-go/mimo-v2.6-flash`, low thinking;
 - `reviewer` — `opencode-go/claude-haiku-5-5`, medium thinking;
 - `planner` — `opencode-go/gpt-6-luna`, high thinking;
 - `plan-reviewer` — `openai-codex/gpt-6.1-sol`, high thinking.
