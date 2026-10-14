@@ -5,6 +5,13 @@
       "exposure": "codemode",
       "description": "Local Invisible Playwright stealth Firefox running in the Pi Docker backend. Use for browser tasks where ordinary Chromium is likely to hit anti-bot verification.",
       "enabled": false
+    },
+    "scrapling": {
+      "command": "~/.local/bin/scrapling-mcp",
+      "exposure": "codemode",
+      "enabled": true,
+      "timeout": 180,
+      "description": "Web fetching and structured extraction with a no-Docker anti-bot fallback. Use stealthy_fetch (headless=false, solve_cloudflare=true) only for public pages the user is allowed to access, after a normal fetch is blocked by a challenge."
     }
   }
 }
