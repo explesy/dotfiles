@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Task Queue</title></head>
+<body>
+
+  <h1>Task Queue</h1>
+  <ul id="tasks">
+    <li>Task One</li>
+    <li>Task Two</li>
+  </ul>
+  <button id="more" type="button">Load more</button>
+  <script>
+    document.getElementById("more").addEventListener("click", function () {
+      setTimeout(function () {
+        var ul = document.getElementById("tasks");
+        ["Task Three", "Task Four"].forEach(function (t) {
+          var li = document.createElement("li");
+          li.textContent = t;
+          ul.appendChild(li);
+        });
+      }, 100);
+    });
+  </script>
+
+</body>
+</html>

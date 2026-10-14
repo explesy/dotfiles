@@ -1,0 +1,9 @@
+# Allowed hosts for the Scrapling MCP evaluation.
+# Fixtures (local):
+127.0.0.1
+localhost
+# Public, permission-friendly / stable:
+books.toscrape.com
+quotes.toscrape.com
+httpbin.org
+# Anything else is out of scope for this experiment.

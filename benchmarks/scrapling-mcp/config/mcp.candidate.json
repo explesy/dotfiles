@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "scrapling": {
+      "command": "scrapling-mcp",
+      "args": [],
+      "exposure": "codemode",
+      "enabled": true,
+      "timeout": 180,
+      "description": "Scrapling web fetching and structured extraction (HTTP, dynamic JS, stealth browser) over local fixtures. Evaluation build; fixture hosts only."
+    }
+  }
+}

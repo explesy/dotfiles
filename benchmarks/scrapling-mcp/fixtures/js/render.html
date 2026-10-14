@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Node Status</title></head>
+<body>
+
+  <h1>Node Status</h1>
+  <ul id="nodes"></ul>
+  <script>
+    setTimeout(function () {
+      var items = ["Alpha Node", "Beta Node", "Gamma Node"];
+      var ul = document.getElementById("nodes");
+      items.forEach(function (t) {
+        var li = document.createElement("li");
+        li.textContent = t;
+        ul.appendChild(li);
+      });
+    }, 50);
+  </script>
+
+</body>
+</html>
