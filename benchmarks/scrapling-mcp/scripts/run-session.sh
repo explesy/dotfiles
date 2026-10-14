@@ -7,6 +7,8 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 TASK="${1:?usage: run-session.sh <taskId> <A|B> <runNumber>}"
 VARIANT="${2:?variant required}"
 RUN="${3:?run number required}"
+# Keep both arms off the Antigravity quota and the same tool surface.
+export AGY_WEB_TOOLS=0
 MODEL="${BENCH_MODEL:-opencode-go/deepseek-v4.1-flash}"
 THINKING="${BENCH_THINKING:-high}"
 

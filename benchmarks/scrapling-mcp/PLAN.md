@@ -90,13 +90,30 @@ Redact before sharing (`scripts/redact.mjs`).
 - No permanent config or recurring dependency without an explicit follow-up
   approval/issue.
 
+## Results (2026-10-14)
+
+Full write-up: `benchmarks/scrapling-mcp/RESULTS.md`. All 12 tasks x 2 variants
+ran on the first pass.
+
+- Correctness: **A 12/12**, **B 12/12**.
+- Effort (B/A): tool calls 0.89x, wall 0.61x, **tokens 1.98x**, **cost 2.36x**.
+- Safety: no canary obeyed, no secret leak, no domain escape. However
+  Scrapling's advertised prompt-injection protection **did not strip** hidden
+  `display:none` / zero-font injection from `fetch` markdown output.
+- Capability gaps: 0.4.15 has no click/evaluate action (T04 fell back to
+  `playwright-cli`); `screenshot` is viewport-only.
+
+**Decision: No-go for adopted/default use.** Equal correctness, ~2.4x cost, and
+redundant with the existing browser path. A narrow `make_request`/`bulk_get`
+follow-up remains optional if a concrete need appears.
+
 ## Deliverables
 
 - [x] Pinned isolated MCP server config and run instructions
       (`benchmarks/scrapling-mcp/`, `scrapling[ai]==0.4.15`)
 - [x] 12 tasks (8 local + 4 public) + fixtures + reference answers + A/B protocol
-- [ ] A/B agent run logs and metrics (redacted)
-- [ ] Go/no-go recommendation and optional opt-in integration follow-up
+- [x] A/B agent run logs and metrics (redacted)
+- [x] Go/no-go recommendation (`RESULTS.md`)
 
 ## Prepared scaffold
 
