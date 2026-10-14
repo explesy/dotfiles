@@ -33,21 +33,22 @@ pi-update
 pi-update --check
 ```
 
-Команда обновляет сам Pi и затем зависимости расширений, после чего проверяет
-совпадение глобального Pi, четырёх SDK-пакетов и их точных pins в manifest,
-а также состояние локального `npm`-дерева. `pi-update --check` выполняет те же
-проверки без установки. При расхождении команда завершается с ошибкой и
-показывает версии manifest / installed / CLI; SDK pins нужно согласовать
-в репозитории и установить зависимости в runtime-каталоге. На текущей установке глобальный
-Pi находится в Homebrew-prefix, но установлен через npm, поэтому скрипт явно
-использует `/opt/homebrew/bin/npm`. Это важно: обычный `npm` может быть npm из
-fnm и обновить другой global-prefix.
+Команда обновляет сам Pi, затем запускает `pi update --extensions` (reconcile
+пакетов из `packages` в `settings.json` и их зависимостей), после чего
+проверяет совпадение глобального Pi с четырьмя SDK-пакетами и их pins в
+manifest, а также состояние локального `npm`-дерева. `pi-update --check`
+выполняет те же проверки без установки. При расхождении команда завершается
+с ошибкой и показывает версии manifest / installed / CLI; SDK pins нужно
+согласовать в репозитории. На текущей установке глобальный Pi находится в
+Homebrew-prefix, но установлен через npm, поэтому для установки самого Pi
+скрипт явно использует `/opt/homebrew/bin/npm`. Это важно: обычный `npm` может
+быть npm из fnm и обновить другой global-prefix.
 
 Если в будущем Pi будет зарегистрирован как Homebrew-формула
 `pi-coding-agent`, `pi-update` автоматически использует `brew upgrade
-pi-coding-agent`. Локальные расширения устанавливаются отдельно по
-manifest/lockfile. Точные версии bridge, subagents и Pi SDK меняются в репозитории после проверки
-совместимости; один `pi-update` не снимает эти pins автоматически.
+pi-coding-agent`. Версии расширений обновляются по semver-диапазонам в
+manifest; точные SDK pins согласуются в репозитории вручную после проверки
+совместимости.
 
 Для новой установки из корня репозитория:
 
@@ -80,17 +81,20 @@ Herdr больше не участвует в оркестрации Pi. Его 
 пишут туда сессии, модели, auth и runtime-состояние. Настройки из этого
 пакета линкуются в неё отдельными файлами.
 
-После `stow pi` в `~/.local/bin` появляется единственная команда `pi`. Каталог
-уже находится раньше Homebrew в `$PATH`, поэтому новые shell-сессии используют
-launcher автоматически. Pi запускается в доверенном режиме: permission system
-автоматически разрешает действия со статусом `ask`, не показывая диалогов.
-Явные запреты (`deny`) сохраняются — в частности, для `.env`, ключей и
-credentials.
+После `stow pi` в `~/.local/bin` появляются только helper-команды
+(`pi-update`, `pi-stealth`); сам `pi` запускается стоковым бинарником
+Homebrew. Pi подхватывает расширения нативно: пакеты из `packages` в
+`settings.json` плюс discovery каталога `~/.config/pi/extensions/` — это
+permission system, `pi-subagents`, Antigravity bridge, recap, Context7 и
+локальный workflow extension. Встроенные MCP, codemode и tool search
+загружаются по умолчанию; `llama.cpp` отключён явно
+(`-builtin:llama.cpp` в `settings.json`), потому что локальные GGUF-модели не
+используются. Проектные `.pi/`-ресурсы (extensions, skills, prompts, themes)
+загружаются только после доверия проекту, как и в стоковом Pi. Pi запускается
+в доверенном режиме: permission system автоматически разрешает действия со
+статусом `ask`, не показывая диалогов. Явные запреты (`deny`) сохраняются —
+в частности, для `.env`, ключей и credentials.
 
-Launcher явно загружает встроенные MCP, codemode и tool search, permission
-system, `pi-subagents`, Antigravity bridge, recap, Context7 и локальный workflow
-extension. Herdsman не загружается, поэтому запросы к
-Console Go не содержат несовместимые старые схемы `agent`, `chief` и `staff`.
 Для делегирования используется плоский инструмент `subagent`, а глубина
 вложенной делегации ограничена одним уровнем.
 
@@ -186,7 +190,7 @@ Antigravity, MCP bridge и обычная Pi permission policy остаются 
 
 ## Antigravity через `agy`
 
-В launcher добавлен `@estebanforge/pi-antigravity-bridge`. Он подключает модели
+В конфигурацию добавлен `@estebanforge/pi-antigravity-bridge`. Он подключает модели
 через установленный и авторизованный официальный CLI `agy`, а не через отдельный
 OAuth-токен внутри Pi. После перезапуска доступны модели провайдера
 `antigravity`:
@@ -322,9 +326,6 @@ bundled-роли `pi-subagents`:
 - `extensions/pi-permission-system/config.json` — глобальная политика доступа Pi;
 - `extensions/workflow.ts` — локальные workflow-команды, требующие поведения
   сложнее обычного prompt template;
-- `.local/bin/pi` — launcher Pi с permission system,
-  `pi-subagents`, Antigravity bridge, recap, Context7, workflow и три
-  встроенных расширения;
 - `.local/bin/pi-update` — единая команда обновления Pi и его расширений с
   проверкой итоговых версий;
 - `extensions/subagent/config.json` — компактное описание subagent tool,
@@ -371,16 +372,14 @@ system 40.0.0; действующая политика по-прежнему з�
 - `permission-system 40.0.1` включает текущую политику Pi 1.0 и исправления
   сопоставления команд; существующая конфигурация остаётся с Bash `ask` и
   явными запретами на чувствительные файлы.
-- Codemode 1.0 использует меньше prompt-токенов. Launcher по-прежнему
-  загружает `builtin:codemode` и `builtin:tool-search` через `-e`, а
-  `defaultTools` включает сами инструменты: это не дублирование, потому что
-  `--no-extensions` отключает built-in extensions, а `-e builtin:*` возвращает
-  их.
+- Codemode 1.0 использует меньше prompt-токенов. `builtin:codemode` и
+  `builtin:tool-search` загружаются как встроенные расширения по умолчанию, а
+  `defaultTools` включает сами инструменты.
 - Image generation в codemode (`models.generateImages()`) доступна, отдельная
   настройка не нужна.
 
 TUI/fullscreen: Pi 1.0 по умолчанию запускает fullscreen TUI. Оба режима
-проверены в PTY с этим launcher — footer, model label, версия `v1.0.0` и
+проверены в PTY с этой конфигурацией — footer, model label, версия `v1.0.0` и
 список extensions отображаются одинаково, `workflow_status` использует тот же
 `ctx.ui.setStatus`. Оставлен новый default (fullscreen), override в
 `settings.json` не добавлен: конфиг проще, а fullscreen даёт встроенный
@@ -415,7 +414,7 @@ children снова поддерживаются после удаления Pi 
 
 Исторические smoke-тесты на Pi 1.0.0:
 
-- launcher и `pi --version` → `1.0.0`;
+- `pi` и `pi --version` → `1.0.0`;
 - `pi-update --check` → CLI и четыре SDK согласованы;
 - managed `npm ls --depth=0` → 1.0.0, permission 37.0.0;
 - print-mode ответ DeepSeek V4.1 Flash;
@@ -471,11 +470,11 @@ artifact Pi; локальный patch `node_modules` не применяется
 
 ## Встроенные инструменты и документация
 
-Launcher сохраняет `--no-extensions` для контролируемого списка расширений,
-но явно включает `builtin:mcp`, `builtin:codemode` и `builtin:tool-search`.
-В `settings.json` стоят `defaultTools: ["+codemode", "+tool_search"]` и
-`codemode.mode: "on"`: обычные read/bash/edit/write доступны рядом с
-JavaScript-оркестрацией инструментов. `--tools` и `--no-tools` по-прежнему
+Работают нативные discovery и builtins. В `settings.json` стоят
+`defaultTools: ["+codemode", "+tool_search"]`, `codemode.mode: "on"` и
+`extensions: ["-builtin:llama.cpp"]`: обычные read/bash/edit/write доступны
+рядом с JavaScript-оркестрацией инструментов, а неиспользуемый локальный
+провайдер llama.cpp выключен точечно. `--tools` и `--no-tools` по-прежнему
 переопределяют startup selection. Набор tools/agents subagents не сокращён,
 но default execution переведён в foreground из-за несовместимости Pi 1.0 с
 background children (см. выше).
@@ -502,18 +501,20 @@ stdio-сервер: `tool_search` нашёл deferred echo tool и вызов в
 не записывая его в Git. В Context7 отправляется текст query: не передавайте
 credentials, личные данные или закрытый исходный код.
 
-Веб-поиск для любой основной модели включён в launcher через default
-`AGY_WEB_TOOLS=1`. `agy_web_search` и `agy_read_url` выполняются через
-авторизованный `agy` и расходуют Antigravity quota. Для отключения в конкретном
-запуске:
+Веб-поиск для любой основной модели включён значением `"webTools": true`
+в конфиге bridge (`~/.pi/agent/antigravity-bridge/config.json`).
+`agy_web_search` и `agy_read_url` выполняются через авторизованный `agy` и
+расходуют Antigravity quota. Env `AGY_WEB_TOOLS` имеет приоритет над файлом,
+поэтому для отключения в конкретном запуске:
 
 ```sh
 AGY_WEB_TOOLS=0 pi
 ```
 
-Этот env override имеет приоритет над runtime-настройкой `/agy web on|off`;
-переключение через неё не изменяет default launcher. Управляемое значение
-хранится в dotfiles, остальные настройки bridge не перезаписываются.
+`/agy web off` переключает файловое значение и выключает web-инструменты на
+следующем старте/reload — в отличие от прежнего launcher-дефолта, который
+перекрывал runtime-переключение. Конфиг bridge не управляется Stow/Git: при
+чистой установке его нужно создать один раз (или выполнить `/agy web on`).
 
 `showCacheMissNotices: true` показывает значимые cache misses. Политика
 `cacheWarming` не менялась: действует стандартный `streaming`, без включения

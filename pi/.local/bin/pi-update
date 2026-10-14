@@ -86,8 +86,11 @@ if [[ ! -f "$PI_NPM_DIR/package.json" ]]; then
 fi
 
 print "== Updating Pi extensions =="
-cd "$PI_NPM_DIR"
-"$HOMEBREW_NPM" install --ignore-scripts
+# Let Pi reconcile the packages declared in settings.json; this also installs
+# dependencies new packages bring. Uses the stock binary so the launcher's
+# extension flags (and their subcommand-order problems) never apply.
+export PI_CODING_AGENT_DIR="$PI_CONFIG_DIR"
+"/opt/homebrew/bin/pi" update --extensions
 
 print "== Verification =="
 rehash

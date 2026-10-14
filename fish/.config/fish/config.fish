@@ -31,7 +31,7 @@ if status is-interactive
 
     # Personal launchers must override Homebrew programs of the same name.
     # --move is required because fish otherwise keeps an inherited path where it
-    # already was; without it `pi` resolves to /opt/homebrew/bin/pi.
+    # already was.
     fish_add_path --move "$HOME/.local/bin"
 
     # Abbreviations

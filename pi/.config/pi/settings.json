@@ -12,6 +12,9 @@
     "npm:@gotgenes/pi-permission-system",
     "npm:@upstash/context7-pi"
   ],
+  "extensions": [
+    "-builtin:llama.cpp"
+  ],
   "defaultTools": [
     "+codemode",
     "+tool_search"
