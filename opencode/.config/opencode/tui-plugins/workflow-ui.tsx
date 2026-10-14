@@ -16,7 +16,7 @@ const WORKFLOW = [
   {
     title: "/do — Build",
     value: "do",
-    description: "DeepSeek V4 Flash · normal implementation after plan review",
+    description: "DeepSeek V4.1 Flash · normal implementation after plan review",
   },
   {
     title: "/ldo — Hard build",
@@ -67,7 +67,6 @@ const WORKFLOW = [
 
 const AGENTS: Record<string, string> = {
   build: "BUILD",
-  "build-v41": "BUILD 4.1",
   plan: "PLAN",
   quality: "QUALITY",
   "free-build": "FREE",
@@ -76,7 +75,6 @@ const AGENTS: Record<string, string> = {
 }
 
 const MODELS: Record<string, string> = {
-  "deepseek-v4-flash": "DeepSeek V4 Flash",
   "deepseek-v4.1-flash": "DeepSeek V4.1 Flash",
   "nemotron-3.5-lightning-free": "Nemotron 3.5 Lightning Free",
   "gpt-5.6-luna": "Luna",
