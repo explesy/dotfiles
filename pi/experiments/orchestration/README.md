@@ -56,3 +56,9 @@ Sources: https://pi.dev/docs/latest/prompt-templates and https://github.com/nico
 Shared `/n` and `/i`, plus `/ix` and `/ox`, now select checks from changed behavior, contracts and consumers. Isolated changes use focused tests and applicable build/lint; a small diff alone does not establish isolation. Full checks are reserved for releases, broad/shared changes, uncertain impact or evidence of a wider regression, while explicit repository/user requirements remain mandatory. When needed, the full suite follows review fixes. Test-only additions rerun the relevant test/file; a further full run needs a stated new reason. Reports identify coverage, gaps and actual results.
 
 The active SakuSaku `AGENTS.md` uses the same selection policy, retains build/lint for code, the full release gate and provider/snapshot/playback checks. Saved experiment clones and frozen inputs/results retain their original instructions. This is prompt policy; runtime loading can be verified locally, but adherence and time savings require another measured run.
+
+## Consolidation into `/i` (2026-10-14)
+
+`/i` is now the everyday entrypoint for free-text tasks, issue numbers and the agreed conversation task. `/i --next` explicitly selects from the existing project queue; `/n` is the compatibility entrypoint. Its short shared policy makes assistance/review conditional on actual need and project/user rules, preserves original requirements for reviewers and checks by impact. No mandatory ordinary plan review or fixed risky planner/reviewer chain remains. Models and role definitions are unchanged. `/ox` and `/ix` are retained as historical experimental policies, not daily alternatives to choose between.
+
+Earlier sections describe the saved experimental revisions. Fresh experiments must freeze the new `/i` policy separately; historical results do not establish the effectiveness of this consolidation. See [the main usage guide](../../README.md#основная-команда).

@@ -41,6 +41,13 @@ const NEXT_MODEL_ROUTES = {
   },
 } satisfies Record<string, ModelRoute>;
 
+const findModelRoute = (selector: string): ModelRoute | undefined => {
+  const key = selector.toLowerCase();
+  return Object.hasOwn(NEXT_MODEL_ROUTES, key)
+    ? NEXT_MODEL_ROUTES[key as keyof typeof NEXT_MODEL_ROUTES]
+    : undefined;
+};
+
 const WORKFLOW_STATUS_KEY = "workflow";
 /**
  * Phases that end the run: the footer is cleared immediately so a finished or
@@ -61,277 +68,85 @@ const STATUS_PHASES = new Set([
 ]);
 
 const WORKFLOW_STATUS_PROTOCOL = `
-Keep the Pi footer useful during this workflow by calling workflow_status only
-when the major phase changes. This tool is UI-only; it never replaces actual
-work.
-
-- after the issue is known, call phase "selected" with its number and short
-  title;
-- use "investigating" for narrow code/repository investigation after selection;
-- use "planning" while assessing a non-trivial issue plan or escalating it;
-- call "implementing" immediately before the main implementation work;
-- call "testing" immediately before verification;
-- call "reviewing" immediately before the independent reviewer pass;
-- if reviewer findings require changes, call "fixing" before those fixes;
-- call "finishing" before issue/queue/handoff completion;
-- if execution must stop because the issue is blocked or ambiguous, call
-  "blocked" before the final explanation.
-
-Do not call workflow_status for every tool invocation. One call per meaningful
-phase transition is enough.
+Use workflow_status only for meaningful phase changes, with a short task title
+and issue number when known. Skip phases that are unnecessary for this task.
+Finish with finishing, or blocked if required work cannot proceed.
 `.trim();
 
-const REVIEW_FINDING_POLICY = `
-Before changing the plan or implementation for a blocking/important finding,
-the main worker must confirm it against the current code, contracts, issue
-requirements, or a focused reproduction/check. Record the source location and
-concrete failure mode. Check whether the requirement is already satisfied;
-reviewer severity and verdict alone are not evidence. Reject unsupported or
-contradicted findings with a short explanation. If the evidence is unavailable
-and the concern remains material, report the unresolved blocker.
-`.trim();
+const EXECUTION_POLICY = `
+Complete the requested task within the user's authorization. Adapt the work to
+the task and project; code, research, documentation and other deliverables do
+not need the same ceremony. Do not select another task or add unrelated work.
 
-const ISSUE_PLAN_POLICY = `
-Before implementation, establish that the plan is actionable; an existing
-GitHub issue plan/checklist is input, not proof that the plan is complete.
+1. Establish the original requirements and applicable project instructions.
+   Inspect relevant state, preserve unrelated work, and search exact references
+   before reading the minimum useful context. Existing plans are inputs to
+   validate. Resolve routine choices yourself; ask only for missing decisions
+   that materially affect the result, continuing safe independent work.
+2. Make a short approach when useful, then do the work in the main session.
+   Respect a request for planning without implementation; independent plan
+   review needs an explicit instruction. Planning/scouting/review are not
+   mandatory stages. Use additional
+   read-only help only for a concrete uncertainty, meaningful regression risk,
+   explicit request or project requirement. Use one suitable review pass when
+   warranted: reviewer for ordinary work, reviewer-sol for material security,
+   migration, concurrency or compatibility risk. Avoid fixed agent chains and
+   repeated review loops. Follow stricter project/user rules.
+3. If delegating review, supply the verbatim original task and acceptance
+   requirements separately from your plan/summary, with the relevant source,
+   diff and check results. For an issue, preserve the current body and relevant
+   requirement comments as read. Preserve later user amendments separately;
+   do not replace requirements with your interpretation. Review the complete
+   affected behavior, including unchanged helpers and consumers. Confirm
+   important findings from source/contracts or a focused reproduction before
+   fixing them. Optional preferences and permitted behavior are not defects.
+4. Choose checks by affected behavior, contracts and consumers, not diff size
+   or filenames alone. For isolated changes use focused checks and applicable
+   build/lint; for wider or uncertain impact broaden them. Explicit project/user
+   checks remain mandatory. Run a needed full suite after review fixes; repeat
+   it only when new changes/risk or an explicit requirement justify it. After
+   test-only changes run the affected test/file. Capture real exit statuses
+   (pipefail or saved check status for piped logs). Record known baseline
+   failures; diagnose again only for new evidence or missing prior evidence.
+5. Check the final deliverable against the original requirements. Fix material
+   mismatches or explicitly report incomplete work and contract exceptions;
+   documentation or review approval cannot authorize weaker requirements.
+   Explain the practical result, why it helps, checks/coverage and remaining
+   limitations in the user's language; scale detail to the task.
 
-1. Main worker (DeepSeek by default) compares the issue and relevant comments,
-   acceptance criteria, repository instructions, and focused code evidence.
-   Check that each requirement maps to concrete changes and verification, and
-   that file names, symbols, contracts, dependencies, and edge cases match the
-   current repository. If the plan is absent or incomplete, draft or repair it
-   before implementation. Record assumptions and unresolved risks.
-2. Classify risk before relying on any reviewer verdict. Escalate to Luna
-   planning followed by GPT-6.1 Sol / plan-reviewer at high thinking for schema
-   or data migrations, security boundaries, changes to concurrency or shared
-   state behavior (update ordering, synchronization, ownership, idempotency,
-   or failure recovery), broad API or compatibility changes, or similarly
-   cross-cutting work. Classify the proposed changes, not task keywords or the
-   mere presence of a cache. Observation-only work may use the ordinary route
-   only after code evidence shows it preserves those behaviors; new mutable
-   counters or other shared state still require that assessment. Record the
-   affected invariant and evidence for the route. Material uncertainty uses
-   the risky route. Existing plans in the issue do not waive this escalation.
-   Invoke planner through the
-   subagent tool with async: false, passing the issue requirements, relevant
-   code evidence, and any existing plan. Then invoke plan-reviewer with
-   async: false and a self-contained brief containing RUN_PLAN_REVIEW: true,
-   CURRENT TASK, and PROPOSED PLAN. Keep the full review available to the main
-   worker for evidence validation before requesting any plan corrections.
-3. For a non-trivial ordinary task, send the task, requirements, corrected plan,
-   and relevant code evidence to plan-reviewer-haiku for an independent review
-   at medium thinking using the subagent tool with async: false. If Haiku
-   surfaces a risk from the escalation list, check its evidence and switch to
-   Luna planning and Sol review when the risk is confirmed or remains material
-   and unresolved.
-4. For a genuinely mechanical, narrowly scoped change (such as a typo or
-   local wording/config value with no behavior or contract impact), skip the
-   separate plan review and verify the change directly.
-5. If required context is unavailable or material concerns remain unresolved,
-   stop and report the blocker rather than treating a reviewer approval as
-   proof. After an approved plan, implement, verify, then run the independent
-   code review described below.
+Do not infer authorization for external writes, delivery, deployment, purchases
+or destructive actions from this command or repository conventions. Follow
+existing authorization and finish all safe authorized work. Update an existing
+issue/queue/handoff only when relevant and authorized; do not invent a backlog.
 
-${REVIEW_FINDING_POLICY}
-
-For either review route, correct the plan only after the main worker validates
-material findings. Use the main worker for ordinary plan corrections and
-planner for risky ones. If the plan changes materially, request at most one
-focused follow-up review before implementation; stop if material concerns
-remain unresolved.
-`.trim();
-
-const ISSUE_CODE_REVIEW_POLICY = `
-For a non-trivial diff, reassess risk using the actual changes and the same
-risk criteria used before planning. If the task was classified as risky, or
-the implementation introduces those risks, delegate one independent read-only
-pass to reviewer-sol (GPT-6.1 Sol, high). Otherwise use reviewer (Haiku 5.5,
-medium). Invoke the selected agent through the subagent tool with async: false;
-include the task, accepted plan, relevant diff/code, and verification results.
-Ask the reviewer to check acceptance criteria first, including contract-valid
-exceptional paths, required input fields, and preserved behavior. A confirmed
-requirement violation is at least important even if rarely triggered.
-Confirm blocking/important findings using the evidence policy before changing
-code, fix confirmed findings, then rerun affected checks. Do not create an
-endless review loop or spend time on cosmetic nits.
-`.trim();
-
-const ISSUE_VERIFICATION_POLICY = `
-Select checks from the actual behavior changed, contracts, call sites and
-consumers, not only changed filenames or diff size. For isolated changes with
-known boundaries, run the relevant module/consumer and success/error-path
-checks plus applicable build/lint; do not default to the full suite. Explain
-what is covered and what is not. Missing coverage is a gap, not a passing test.
-Use broader/full checks for releases, broad refactors, shared interfaces/data
-formats, dependencies, test/runtime infrastructure, shared-state/concurrency
-or security invariants, uncertain impact, or evidence of a wider regression.
-Repository/user-required checks remain mandatory. Run focused checks and
-applicable build/lint before review. If a full suite is needed, run it after
-review fixes on the ready implementation. Reuse earlier check evidence only
-where later changes do not affect the checked behavior. After a test-only
-addition/correction run that test or file; after a local code fix rerun affected
-checks and applicable build/lint. Repeat the full suite only for a new impact
-reason above or an explicit requirement, and state that reason.
-Capture the actual exit status of each check. When piping output through tail
-or tee, use pipefail in a shell that supports it, or capture the check's status
-before displaying its log; the last pipeline command is not test evidence.
-For a previously confirmed baseline failure, record the failed check and its
-existing evidence. Repeat baseline diagnosis only if symptoms, relevant code,
-or environment changed, or that evidence is unavailable. Never call a failing
-full suite green or skip a required check because its failure is known.
-Before finishing, after review fixes, make a compact acceptance map: each
-requirement -> implementation location -> concrete verification/result ->
-status: verified, verification-gap, contract-exception, or not-implemented.
-verified means implemented and checked; verification-gap means the code exists
-but checking is incomplete; contract-exception means the implementation is
-narrower or different. Explicitly list every exception to the original task.
-Documentation, tests of an exception, and reviewer approval do not authorize
-changing a requirement. Routine implementation choices within the contract
-remain yours; fix material mismatches or report incomplete work. If a referenced
-standard was not checked, record that verification gap rather than full support.
-Include required fields, contract-valid failure paths, and preserved behavior
-where relevant. A reviewer verdict or total test count does not replace this
-map. For a coverage gap, run the smallest meaningful check; if verification
-cannot be completed, report the gap rather than claiming full completion.
-`.trim();
-
-const HUMAN_REPORT_PROTOCOL = `
-The final response is a two-layer report for the project owner, not a raw
-engineering log. Preserve access to technical depth, but do not make the owner
-decode internal vocabulary just to understand what happened.
-
-Layer 1 — human summary:
-- write in the user's language;
-- start with the practical result: what changed, why it matters, and what the
-  system/project does differently now;
-- use plain domain language and concrete behavior, not class names, table names,
-  internal statuses, pipeline jargon, or implementation vocabulary;
-- if an internal term is unavoidable, explain the meaning first and put the
-  exact term in parentheses afterwards;
-- include concise verification/reviewer outcome and current/next queue state
-  when relevant;
-- for a blocked run, explain the practical blocker first, then its technical
-  cause.
-
-Layer 2 — technical details:
-- keep a separate "Technical details" / "Технические детали" section after the
-  human summary;
-- include the important internal terms, affected components/files, verification,
-  reviewer findings/fixes, constraints, and implementation details needed to
-  inspect the work more deeply;
-- stay concise by default, but do not hide relevant complexity. The user can ask
-  to expand any item further.
-
-Never use shorthand such as "negative episode" as if it were self-explanatory:
-describe the observed result or absence signal instead.
+${WORKFLOW_STATUS_PROTOCOL}
 `.trim();
 
 const NEXT_TASK_PROMPT = `
-Execute exactly one next queued GitHub issue for this repository end-to-end.
+Execute exactly one next task from this project's existing GitHub execution
+queue. Read the canonical queue/current issue and respect blockers and unmet
+dependencies; do not invent priorities. If no unambiguous executable next task
+exists, report that rather than guessing. Once selected, read the issue body,
+acceptance criteria and relevant comments as original requirements.
 
-Use the project's existing GitHub Issues, queue, labels, project fields, docs,
-and repository instructions as the source of truth. Do not invent a parallel
-backlog or silently reprioritize planned work.
-
-${WORKFLOW_STATUS_PROTOCOL}
-
-1. Ground the current state first:
-   - read the repository instructions that are directly relevant;
-   - inspect git status and preserve unrelated working-tree changes;
-   - identify the GitHub repository from the current checkout.
-
-2. Select the next task from the existing execution system:
-   - prefer an explicit canonical execution queue / START HERE issue when one
-     exists;
-   - otherwise prefer the issue marked current, then next, then the first
-     unfinished unblocked item in an explicitly ordered queue;
-   - respect gated, blocked, research-only, dated, and dependency conditions;
-   - if there is no unambiguous next task, or the apparent next task is blocked,
-     call workflow_status with phase "blocked", report the ambiguity/blocker,
-     and stop instead of guessing;
-   - as soon as the task is selected, call workflow_status with phase
-     "selected", issue number, and a short issue title.
-
-3. Read the selected issue, acceptance criteria, relevant comments/links, and
-   the focused code/docs needed to verify an actionable plan. Existing issue
-   plans are evidence to check, not automatic approval.
-   ${ISSUE_PLAN_POLICY.split("\n").join("\n   ")}
-
-4. Implement the selected issue completely. Stay within its scope and do not
-   begin a second issue during this command.
-
-5. Run the smallest meaningful verification set: focused tests/checks first,
-   then broader checks only when the change warrants them.
-   ${ISSUE_VERIFICATION_POLICY.split("\n").join("\n   ")}
-
-6. ${ISSUE_CODE_REVIEW_POLICY.split("\n").join("\n   ")}
-
-7. Finish the repository workflow honestly:
-   - satisfy the issue acceptance criteria before marking it complete;
-   - follow existing branch/commit/push/PR conventions instead of inventing a
-     new Git workflow;
-   - close the GitHub issue only when the completed code/docs are actually
-     delivered according to that repository's normal workflow;
-   - when the repository has a documented current/next queue, advance it using
-     that existing mechanism and update its handoff/current document when the
-     project explicitly requires that;
-   - never invent new queue labels or silently reorder unrelated backlog items.
-
-8. Finish using the two-layer owner report below. Include the selected issue,
-   practical result, verification, reviewer result/fixes, and the new
-   current/next state (or why the issue could not be completed).
-
-${HUMAN_REPORT_PROTOCOL}
+${EXECUTION_POLICY}
 `.trim();
 
 const issueTaskPrompt = (issueNumber: number) => `
-Execute GitHub issue #${issueNumber} for this repository end-to-end.
+Execute GitHub issue #${issueNumber} for the current project. Read its current
+body, acceptance criteria and relevant comments; do not select another issue.
+Respect closed/gated/blocked/research-only status and unmet dependencies rather
+than silently bypassing them. Identify the repository from the checkout.
 
-Use the issue, repository instructions, existing docs, and the project's
-established GitHub workflow as the source of truth. Do not select or begin a
-different issue during this command.
+${EXECUTION_POLICY}
+`.trim();
 
-${WORKFLOW_STATUS_PROTOCOL}
+const taskPrompt = (task: string) => `
+${task
+  ? `Execute this original user task:\n\n${task}`
+  : "Continue the concrete task already agreed in this conversation. Preserve its original requirements and later amendments. If no concrete task is agreed, ask what to do; do not choose a task or queue automatically."}
 
-1. Ground the current state first:
-   - read the repository instructions that are directly relevant;
-   - inspect git status and preserve unrelated working-tree changes;
-   - identify the GitHub repository from the current checkout.
-
-2. Read issue #${issueNumber}, its acceptance criteria, relevant comments and
-   linked issues, and only the code/docs needed to execute it.
-   - As soon as its title is known, call workflow_status with phase "selected",
-     issue ${issueNumber}, and the short issue title.
-   - If the issue is already closed, ambiguous, explicitly gated, blocked by an
-     unmet dependency, research-only, or otherwise not executable now, call
-     workflow_status with phase "blocked", report that state, and stop instead
-     of bypassing the project's process.
-   ${ISSUE_PLAN_POLICY.split("\n").join("\n   ")}
-
-3. Implement issue #${issueNumber} completely and stay within its scope.
-
-4. Run the smallest meaningful verification set: focused tests/checks first,
-   then broader checks only when the change warrants them.
-   ${ISSUE_VERIFICATION_POLICY.split("\n").join("\n   ")}
-
-5. ${ISSUE_CODE_REVIEW_POLICY.split("\n").join("\n   ")}
-
-6. Finish the repository workflow honestly:
-   - satisfy the issue acceptance criteria before marking it complete;
-   - follow existing branch/commit/push/PR conventions instead of inventing a
-     new Git workflow;
-   - close issue #${issueNumber} only when the completed code/docs are actually
-     delivered according to that repository's normal workflow;
-   - update an existing current/next queue only when issue #${issueNumber} is
-     represented there and the repository's documented workflow requires it;
-   - never invent new queue labels, silently reorder unrelated backlog items, or
-     advance unrelated work.
-
-7. Finish using the two-layer owner report below. Include issue
-   #${issueNumber}, practical result, verification, reviewer result/fixes, and
-   any queue/handoff update performed (or why the issue could not be completed).
-
-${HUMAN_REPORT_PROTOCOL}
+${EXECUTION_POLICY}
 `.trim();
 
 export default function workflowCommands(pi: ExtensionAPI) {
@@ -590,9 +405,7 @@ export default function workflowCommands(pi: ExtensionAPI) {
     const firstToken =
       firstSpace === -1 ? input : input.slice(0, firstSpace);
     const explicitRoute = firstToken
-      ? NEXT_MODEL_ROUTES[
-          firstToken.toLowerCase() as keyof typeof NEXT_MODEL_ROUTES
-        ]
+      ? findModelRoute(firstToken)
       : undefined;
 
     const route = explicitRoute ?? NEXT_MODEL_ROUTES[DEFAULT_NEXT_MODEL];
@@ -617,45 +430,42 @@ export default function workflowCommands(pi: ExtensionAPI) {
     const input = args.trim();
     const firstSpace = input.search(/\s/);
     const firstToken = firstSpace === -1 ? input : input.slice(0, firstSpace);
-    const explicitRoute = firstToken
-      ? NEXT_MODEL_ROUTES[
-          firstToken.toLowerCase() as keyof typeof NEXT_MODEL_ROUTES
-        ]
+    const remainder = input.slice(firstToken.length).trim();
+    // Preserve legacy model selectors before issue numbers/queue requests.
+    // A task starting with "codex", "luna", etc. is otherwise literal text.
+    const legacyRoute = /^#?\d+(?:\s|$)/.test(remainder) ||
+      /^--next(?:\s|$)/.test(remainder)
+      ? findModelRoute(firstToken)
       : undefined;
-    const route = explicitRoute ?? NEXT_MODEL_ROUTES[DEFAULT_NEXT_MODEL];
-    const issueInput = explicitRoute
-      ? input.slice(firstToken.length).trim()
-      : input;
-    const match = issueInput.match(/^#?(\d+)(?:\s+([\s\S]*))?$/);
+    const route = legacyRoute ?? NEXT_MODEL_ROUTES[DEFAULT_NEXT_MODEL];
+    const taskInput = legacyRoute ? remainder : input;
 
-    if (!match) {
-      ctx.ui.notify(
-        "Usage: /i [ds|codex|luna|agy] <issue-number> [instruction]",
-        "warning",
-      );
+    if (/^--next(?:\s|$)/.test(taskInput)) {
+      const extra = taskInput.slice("--next".length).trim();
+      await runNext(legacyRoute ? `${firstToken} ${extra}` : extra, ctx);
       return;
     }
 
-    const issueNumber = Number(match[1]);
-    if (!Number.isSafeInteger(issueNumber) || issueNumber <= 0) {
-      ctx.ui.notify("Issue number must be a positive integer", "warning");
+    const match = taskInput.match(/^#?(\d+)(?:\s+([\s\S]*))?$/);
+    const issueNumber = match ? Number(match[1]) : undefined;
+    if ((issueNumber !== undefined &&
+      (!Number.isSafeInteger(issueNumber) || issueNumber <= 0)) ||
+      (!match && /^#\S+/.test(taskInput))) {
+      ctx.ui.notify("Issue number must be a positive safe integer", "warning");
       return;
     }
 
     const ok = await switchToModel(ctx, route);
-    if (!ok) {
-      return;
-    }
+    if (!ok) return;
 
-    const extra = match[2]?.trim();
-    const basePrompt = issueTaskPrompt(issueNumber);
-    const prompt = extra
-      ? `${basePrompt}\n\nAdditional instruction from me:\n${extra}`
-      : basePrompt;
-
+    const extra = match?.[2]?.trim();
+    const prompt = issueNumber !== undefined
+      ? `${issueTaskPrompt(issueNumber)}${extra ? `\n\nAdditional user requirement:\n${extra}` : ""}`
+      : taskPrompt(taskInput);
     startWorkflowStatus(ctx, "I", route.thinking, {
       issueNumber,
-      phase: "selecting",
+      title: issueNumber === undefined && taskInput ? taskInput : undefined,
+      phase: issueNumber === undefined ? "investigating" : "selecting",
     });
     pi.sendUserMessage(prompt);
   };
@@ -679,13 +489,13 @@ export default function workflowCommands(pi: ExtensionAPI) {
 
   pi.registerCommand("n", {
     description:
-      "Execute one next queued GitHub issue; optional model selector: ds, codex, luna, agy",
+      "Compatibility alias for /i --next; execute one next queued GitHub issue",
     handler: runNext,
   });
 
   pi.registerCommand("i", {
     description:
-      "Execute one specific GitHub issue; optional model selector: ds, codex, luna, agy",
+      "Execute a task, #issue, or agreed conversation task; --next uses the project queue",
     handler: runIssue,
   });
 }
