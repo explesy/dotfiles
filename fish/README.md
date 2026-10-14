@@ -10,7 +10,7 @@
 
 ## Что настроено
 
-- **Окружение и пути:** `fish_greeting` отключено, `EDITOR=nvim`, `PATH` собирается через `fish_add_path` (`~/.local/bin`, `/opt/homebrew/bin`, `~/.docker/bin`, `~/.bun/bin`, `~/.antigravity/antigravity/bin`, `~/.cache/lm-studio/bin`) — пути заданы относительно `$HOME`, без хардкода пользователя. `~/.local/bin` принудительно перемещается вперёд, поэтому локальные launchers (`pi-update`, `pi-stealth` и др.) перекрывают одноимённые Homebrew-бинарники. Сам `pi` намеренно не перекрывается: используется стоковый бинарник Homebrew.
+- **Окружение и пути:** `fish_greeting` отключено, `EDITOR=nvim`, `PATH` собирается через `fish_add_path` (`~/.local/bin`, `/opt/homebrew/bin`, `~/.docker/bin`, `~/.bun/bin`, `~/.antigravity/antigravity/bin`, `~/.cache/lm-studio/bin`) — пути заданы относительно `$HOME`, без хардкода пользователя. `~/.local/bin` принудительно перемещается вперёд, поэтому локальные launchers (`pi-update` и др.) перекрывают одноимённые Homebrew-бинарники. Сам `pi` намеренно не перекрывается: используется стоковый бинарник Homebrew.
 - **Аббревиатуры CLI:**
   - `ls` -> `eza`, `ll` -> `eza -la --sort=type`
   - `lg` -> `lazygit`, `ld` -> `lazydocker`

@@ -55,21 +55,12 @@ version; the tool surface changes between releases.
 - Never pass credentials, personal-account cookies, or tokens.
 - Page content is untrusted input.
 
-## Relation to the Docker `/stealth` backend
+## Removed Docker `/stealth` backend
 
-The existing `stealth` MCP server (Invisible Playwright Firefox in Docker) stays
-available but disabled; it needs Docker running. This Scrapling path is the
-low-friction alternative: one `uv tool`, no container, no lifecycle helper.
-
-Trade-offs:
-
-| | Scrapling `stealthy_fetch` | `pi-stealth` (Docker) |
-| --- | --- | --- |
-| Setup | `uv tool` + patchright chromium | Docker image build + compose + helper |
-| Runtime | no daemon; one-shot opens/closes browser | persistent container |
-| Mode | must be **headed** for CF managed challenges | can run headless in container |
-| Lifecycle | one-shot closes itself | managed by `pi-stealth` |
-| Identity | fresh per call | persistent profile |
+The previous Docker-based stealth backend (Invisible Playwright Firefox, the
+`stealth` MCP server, the `/stealth` prompt and the `pi-stealth` lifecycle
+helper) has been removed. This Scrapling path replaces it: one `uv tool`, no
+container, no daemon, no lifecycle helper.
 
 Orphaned patchright processes are not covered by the dotfiles watchdog (which
 reaps Playwright browsers); one-shot `stealthy_fetch` avoids the issue, so avoid
