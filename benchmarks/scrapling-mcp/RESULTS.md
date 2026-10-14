@@ -58,6 +58,54 @@ codemode orchestration + MCP tool schemas + verbose tool output.
   T08 produced a viewport capture, not a tight crop.
 - Redundant with the existing browser path for all evaluated tasks.
 
+## Stealth / anti-bot capability (follow-up probe)
+
+Question: does Scrapling actually bypass anti-bot protections? Tested only on
+purpose-built public test endpoints (no third-party sites we lack permission for,
+no CAPTCHA-solving services, no logins). Raw logs: `stealth/*.jsonl`.
+
+In 0.4.15 `StealthyFetcher` is **`stealth_chrome`** (patchright), not Camoufox; it
+needs patchright's own Chromium build (`python -m patchright install chromium`,
+chromium-1243), which `scrapling install` did **not** install.
+
+### Cloudflare managed challenge (`scrapingcourse.com/cloudflare-challenge`)
+
+| Config | Result | Time |
+| --- | --- | --- |
+| `make_request` (HTTP) | fail, 403 challenge | 0.3s |
+| `fetch` (headless Chromium) | fail, 403 challenge | 62s |
+| `stealthy_fetch` headless + solve_cloudflare | fail, 403 challenge | 41s |
+| `stealthy_fetch` headless + solve + real_chrome | fail, 403 challenge | 52s |
+| `stealthy_fetch` **headed** + humanize (no solve) | fail, 403 | 2s |
+| `stealthy_fetch` **headed** plain | fail, 403 | 2s |
+| **`stealthy_fetch` headed + `solve_cloudflare=True`** | **PASS** — "You bypassed the Cloudflare challenge! :D" | **7–10s** |
+
+Conclusion: the bypass **works**, but requires **headed mode + solve_cloudflare**.
+`humanize` and `real_chrome` are not required; headless is detected and fails.
+
+### Cloudflare "under attack" test page (`nowsecure.nl`)
+
+Returns the real page (`NOWSECURE by nodriver`, 58 chars) in both headless and
+headed — i.e. this simpler configuration is passable even headless. So bypass is
+**site-dependent**, not uniform.
+
+### Practical implications and caveats
+
+- **Headed means a visible browser window and a real display.** It is incompatible
+  with headless/server use, and the Pi watchdog that reaps orphaned Playwright
+  browsers does not know about patchright processes.
+- **Overlaps with the existing local stealth backend** (`pi-stealth`, Invisible
+  Playwright Firefox). A head-to-head against `/stealth` was not run.
+- **Policy caveat:** `solve_cloudflare` automatically defeats an access-control
+  challenge. That is appropriate on purpose-built test endpoints or with explicit
+  permission, and **not** as a general scraping tool against arbitrary sites —
+  it can violate their terms. The existing Pi safety rules ("do not attempt to
+  defeat an explicit access-control challenge") still apply to normal use.
+
+This strengthens the earlier **No-go** for default use and makes Scrapling's main
+remaining value proposition its stealth bypass — which duplicates `/stealth` and
+carries the headed-mode and policy constraints above.
+
 ## Decision: No-go (for default/adopted use)
 
 Correctness is equal to the baseline, but B costs ~2.4x and duplicates the

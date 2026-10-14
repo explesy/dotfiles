@@ -102,6 +102,11 @@ ran on the first pass.
   `display:none` / zero-font injection from `fetch` markdown output.
 - Capability gaps: 0.4.15 has no click/evaluate action (T04 fell back to
   `playwright-cli`); `screenshot` is viewport-only.
+- Stealth probe (`scripts/probe-stealth.py`, `stealth/*.jsonl`): `stealthy_fetch`
+  **does bypass** a Cloudflare managed challenge on a purpose-built test page —
+  but only **headed + `solve_cloudflare=True`** (7–10s). Headless, `humanize` and
+  `real_chrome` alone fail. Overlaps with the existing `pi-stealth` backend and
+  raises a ToS/access-control caveat; headed mode needs a visible display.
 
 **Decision: No-go for adopted/default use.** Equal correctness, ~2.4x cost, and
 redundant with the existing browser path. A narrow `make_request`/`bulk_get`
