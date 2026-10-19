@@ -6,7 +6,6 @@
   "defaultModel": "deepseek-v4.1-flash",
   "defaultThinkingLevel": "low",
   "packages": [
-    "npm:@zhcsyncer/pi-recap",
     "npm:pi-subagents",
     "npm:@estebanforge/pi-antigravity-bridge",
     "npm:@gotgenes/pi-permission-system",

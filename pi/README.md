@@ -85,7 +85,7 @@ Herdr больше не участвует в оркестрации Pi. Его 
 `pi-update`; сам `pi` запускается стоковым бинарником
 Homebrew. Pi подхватывает расширения нативно: пакеты из `packages` в
 `settings.json` плюс discovery каталога `~/.config/pi/extensions/` — это
-permission system, `pi-subagents`, Antigravity bridge, recap, Context7 и
+permission system, `pi-subagents`, Antigravity bridge, Context7 и
 локальный workflow extension. Встроенные MCP, codemode и tool search
 загружаются по умолчанию; `llama.cpp` отключён явно
 (`-builtin:llama.cpp` в `settings.json`), потому что локальные GGUF-модели не
@@ -319,10 +319,9 @@ bundled-роли `pi-subagents`:
   `tool_search` и уведомления о значимых cache misses;
 - `npm/package.json` / `package-lock.json` — фиксируют bridge `1.7.9`,
   `pi-subagents 0.76.1`,
-  `@gotgenes/pi-permission-system 40.0.1`, `@zhcsyncer/pi-recap 0.4.3` и
+  `@gotgenes/pi-permission-system 40.0.1` и
   Context7 `0.1.2`, а также Pi SDK peer-пакеты `1.0.4` для
   воспроизводимой совместимости расширений;
-- `extension-data/pi-recap/config.json` — настройки recap;
 - `extensions/pi-permission-system/config.json` — глобальная политика доступа Pi;
 - `extensions/workflow.ts` — локальные workflow-команды, требующие поведения
   сложнее обычного prompt template;
@@ -340,6 +339,14 @@ bundled-роли `pi-subagents`:
 `auth.json`, `models-store.json`, `sessions/`, `pi-subagents/`,
 `extensions/*/state`, `.agents/hooks.json` и `npm/node_modules/` остаются локальными и не должны
 попадать в Git.
+
+> Удалённые расширения: `@zhcsyncer/pi-recap` убран из Pi (пакет, запись в
+> `settings.json` и `npm/package.json`/lockfile, конфиг
+> `extension-data/pi-recap/config.json`). Причина: auto-recap — это
+> дополнительный вызов модели после каждого хода (idle 3 мин), из-за чего он
+> заметно тормозил, а результат показывался только виджетом над полем ввода и
+> побочно переименовывал сессию и панель tmux/herdr. Для возврата:
+> `pi install npm:@zhcsyncer/pi-recap`.
 
 ## Политика разрешений
 
