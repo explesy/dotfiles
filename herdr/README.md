@@ -217,6 +217,32 @@ herdr integration install cursor
 - **Claude Code:** хук `~/.claude/hooks/herdr-agent-state.sh`.
 - **Cursor:** хук `~/.cursor/herdr-agent-state.sh`.
 - **Hermes:** плагин `~/.hermes/plugins/herdr-agent-state`.
+- **Antigravity CLI (`agy`):** хук `~/.gemini/config/hooks/herdr-agent-state.sh` (`herdr integration install antigravity-cli`); отдаёт только conversation id, состояние Herdr выводит с экрана.
+
+---
+
+## 📝 Область сводки активной панели под списком агентов (`herdr-agent-task-notes`)
+
+Статуса `working/idle/done` мало, когда открыто несколько панелей: при
+переключении на вкладку хочется сразу видеть, **над какой задачей** работает
+агент и **что он делает сейчас**, не раздувая сам список `agents`. Это делает
+отдельный плагин `herdr-agent-task-notes` (`~/notes/herdr-agent-task-notes`).
+
+Сами карточки в списке `agents` остаются компактными (по 2 строки) и в
+своём фиксированном порядке (не меняются местами при клике), а ниже списка
+агентов выводится область сводки в стиле Codex Task details для текущей активной
+вкладки с агентом (`▸ заголовок`, `model · effort`, `task: …` до 5 строк и
+`now: …` до 6 строк с автоматическим сжатием URL и ссылок; на вкладках без
+агента блок скрывается).
+
+```sh
+# Установка с GitHub:
+herdr plugin install explesy/herdr-agent-task-notes
+
+# Либо локальная линковка из ~/notes/herdr-agent-task-notes:
+herdr plugin link ~/notes/herdr-agent-task-notes
+node ~/notes/herdr-agent-task-notes/bin/daemon.mjs --start
+```
 
 ---
 

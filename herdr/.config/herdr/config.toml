@@ -29,6 +29,28 @@ pane_gaps = true
 [ui.toast]
 delivery = "herdr"
 
+# BEGIN plugin:explesy.agent-task-notes
+[ui.sidebar.agents]
+rows = [
+  ["state_icon", "machine", "workspace", "tab"],
+  ["agent"],
+  [{ token = "$b_sep", fg = "#45475a", dim = true }],
+  [{ token = "$b_top", fg = "#89b4fa", bold = true }],
+  [{ token = "$b_meta", fg = "#7f849c", dim = true }],
+  [{ token = "$b_t1", fg = "#cdd6f4" }],
+  [{ token = "$b_t2", fg = "#cdd6f4" }],
+  [{ token = "$b_t3", fg = "#cdd6f4" }],
+  [{ token = "$b_t4", fg = "#cdd6f4" }],
+  [{ token = "$b_t5", fg = "#cdd6f4" }],
+  [{ token = "$b_n1", fg = "#a6adc8", dim = true }],
+  [{ token = "$b_n2", fg = "#a6adc8", dim = true }],
+  [{ token = "$b_n3", fg = "#a6adc8", dim = true }],
+  [{ token = "$b_n4", fg = "#a6adc8", dim = true }],
+  [{ token = "$b_n5", fg = "#a6adc8", dim = true }],
+  [{ token = "$b_n6", fg = "#a6adc8", dim = true }],
+]
+# END plugin:explesy.agent-task-notes
+
 [keys]
 # Базовый префикс для команд Herdr (как в tmux)
 prefix = "ctrl+a"
