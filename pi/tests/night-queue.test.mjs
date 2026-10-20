@@ -5,9 +5,9 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
-import {parseHours,sortIssues,branchFor,evaluateRun} from '../.config/pi/extensions/night-queue.mjs';
+import {parseHours,sortIssues,branchFor,evaluateRun} from '../.config/pi/night/night-queue.mjs';
 
-const runner = fileURLToPath(new URL('../.config/pi/extensions/night-queue.mjs', import.meta.url));
+const runner = fileURLToPath(new URL('../.config/pi/night/night-queue.mjs', import.meta.url));
 const exec = (exe,args,cwd,env=process.env) => {
   const r=spawnSync(exe,args,{cwd,env,encoding:'utf8',timeout:15000});
   assert.equal(r.status,0,`${exe} ${args}: ${r.stderr}`);
