@@ -1,0 +1,36 @@
+name: Pi night queue
+
+on:
+  pull_request:
+    paths:
+      - "pi/.config/pi/night/**"
+      - "pi/.config/pi/extensions/night.ts"
+      - "pi/.local/bin/pi-night"
+      - "pi/tests/night-queue.test.mjs"
+      - ".github/workflows/pi-night.yml"
+  push:
+    branches: [main]
+    paths:
+      - "pi/.config/pi/night/**"
+      - "pi/.config/pi/extensions/night.ts"
+      - "pi/.local/bin/pi-night"
+      - "pi/tests/night-queue.test.mjs"
+      - ".github/workflows/pi-night.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Syntax checks
+        run: |
+          node --check pi/.config/pi/night/night-queue.mjs
+          sh -n pi/.local/bin/pi-night
+      - name: Mock GitHub / Pi integration
+        run: node --test pi/tests/night-queue.test.mjs
