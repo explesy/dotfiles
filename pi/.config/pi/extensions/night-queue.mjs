@@ -106,8 +106,8 @@ async function inspectJsonLog(path) {
 }
 async function executePi(c, worktree, issue, attempts, state) {
   const logdir = join(c.stateDir,'logs'); mkdirSync(logdir,{recursive:true,mode:0o700});
-  const stdoutFile = join(logdir,`${issue.number}-${attempts}.jsonl`);
-  const stderrFile = join(logdir,`${issue.number}-${attempts}.stderr.log`);
+  const stdoutFile = join(logdir,`${Date.parse(state.startedAt)}-${issue.number}-${attempts}.jsonl`);
+  const stderrFile = join(logdir,`${Date.parse(state.startedAt)}-${issue.number}-${attempts}.stderr.log`);
   const out = openSync(stdoutFile, 'w', 0o600), err = openSync(stderrFile, 'w', 0o600);
   const sessionDir = join(c.stateDir, 'sessions', String(issue.number));
   mkdirSync(sessionDir,{recursive:true,mode:0o700});
@@ -146,7 +146,13 @@ async function handleIssue(c, repo, base, issue, state) {
     if (existing.status===0) return {status:'skipped',reason:'Remote branch exists without a PR'};
     if (existing.status!==2) throw new Error('Cannot verify remote branch state');
     cmd('git',['worktree','add','-b',branch,dir,`origin/${base}`],c.root);
-  } else if (cmd('git',['branch','--show-current'],dir)!==branch) throw new Error(`Worktree mismatch: ${dir}`);
+  } else {
+    if (cmd('git',['branch','--show-current'],dir)!==branch ||
+        cmd('git',['rev-parse','--path-format=absolute','--git-common-dir'],dir) !==
+        cmd('git',['rev-parse','--path-format=absolute','--git-common-dir'],c.root)) {
+      throw new Error(`Worktree does not belong to this repository/branch: ${dir}`);
+    }
+  }
   const prev = state.issues[issue.number];
   const attempts = (prev?.attempts || 0) + 1;
   state.issues[issue.number] = {status:'running',attempts,branch,worktree:dir,startedAt:new Date().toISOString()}; save(c.stateFile,state);
@@ -179,11 +185,12 @@ async function run(c,hours) {
     owner = load(c.lock,null);
   }
   if (!owner?.pid || !alive(owner.pid)) throw new Error('No live owner lock');
-  const {repo,base} = verify(c);
   const deadline = Date.now() + hours*60*60*1000;
-  const state = {status:'running',startedAt:new Date().toISOString(),deadline:new Date(deadline).toISOString(),repo,base,issues:{}};
+  const state = {status:'running',startedAt:new Date().toISOString(),deadline:new Date(deadline).toISOString(),issues:{}};
   save(c.stateFile,state);
   try {
+    const {repo,base} = verify(c);
+    state.repo = repo; state.base = base; save(c.stateFile,state);
     cmd('git',['fetch','origin',base],c.root);
     const queue = sortIssues(jsonCmd('gh',['issue','list','-R',repo,'--state','open','--label',LABEL,'--json','number,title,labels,url','--limit',String(MAX_ISSUES)],c.root));
     log(c, `${queue.length} eligible labeled issues`);
