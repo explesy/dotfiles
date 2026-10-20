@@ -5,7 +5,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
-import {parseHours,sortIssues,branchFor,evaluateRun} from '../.config/pi/night/night-queue.mjs';
+import {parseHours,sortIssues,branchFor,evaluateRun,describeEvent} from '../.config/pi/night/night-queue.mjs';
 
 const runner = fileURLToPath(new URL('../.config/pi/night/night-queue.mjs', import.meta.url));
 const exec = (exe,args,cwd,env=process.env) => {
@@ -21,10 +21,13 @@ test('night queue input and failure gates',()=>{
  assert.equal(branchFor(8),'agent/night/issue-8');
  assert.deepEqual(sortIssues([{number:8,labels:[{name:'agent:blocked'}]},{number:9},{number:1},{number:2,pull_request:{}}]).map(x=>x.number),[1,9]);
  assert.equal(evaluateRun({settled:true,failed:false,blocked:false},0).ok,true);
+ assert.equal(evaluateRun({settled:false,failed:true},0).ok,false);
+ assert.match(describeEvent({type:'tool_execution_start',toolName:'bash',args:{command:'npm test'}}),/npm test/);
+ assert.equal(describeEvent({type:'agent_settled',aborted:true}),'Pi остановлен/прерван');
  for(const [events,exit] of [[{settled:false},0],[{settled:true,failed:true},0],[{settled:true,blocked:true},0],[{settled:true},1]]) assert.equal(evaluateRun(events,exit).ok,false);
 });
 
-test('detached queue invokes /i, creates isolated branch and draft PR', async()=>{
+test('foreground queue streams progress, invokes /i, creates isolated branch and draft PR',()=>{
  const temp=mkdtempSync(join(tmpdir(),'pi-night-test-'));
  const root=join(temp,'repo'), origin=join(temp,'remote.git'),bin=join(temp,'bin');mkdirSync(root);mkdirSync(bin);
  exec('git',['init','--bare',origin],temp);
@@ -53,18 +56,20 @@ if(a[0]==='--version') {console.log('pi 1.2.0');process.exit(0)}
 appendFileSync(process.env.MOCK_PI_RECORD,JSON.stringify(a)+'\\n');
 writeFileSync('work.txt','night output\\n');
 for(const xs of [['add','work.txt'],['commit','-m','implement issue 10']]) {const r=cp.spawnSync('git',xs,{encoding:'utf8'});if(r.status!==0){console.error(r.stderr);process.exit(1)}}
-console.log(JSON.stringify({type:'agent_settled'}));
+console.log(JSON.stringify({type:'tool_execution_start',toolName:'bash',args:{command:'npm test'}}));
+console.log(JSON.stringify({type:'agent_settled',aborted:false}));
 `;
  writeFileSync(join(bin,'gh'),fakeGh,{mode:0o755});writeFileSync(join(bin,'pi'),fakePi,{mode:0o755});
  const env={...process.env,PATH:`${bin}:${process.env.PATH}`,MOCK_RECORD:join(temp,'gh-prs.log'),MOCK_PI_RECORD:join(temp,'pi-prompts.log')};
- exec(process.execPath,[runner,'start','0.01'],root,env);
+ const out=exec(process.execPath,[runner,'foreground','0.01'],root,env);
+ assert.match(out,/\[night\] #10: инструмент bash — npm test/);
+ assert.match(out,/\[night\] #10: Pi завершил работу/);
  const stateFile=join(root,'.git','pi-night','state.json');
- let state;
- for(let i=0;i<100;i++){
-   await new Promise(r=>setTimeout(r,100));
-   if(existsSync(stateFile)) {state=JSON.parse(readFileSync(stateFile,'utf8'));if(state.finishedAt)break;}
- }
+ const state=JSON.parse(readFileSync(stateFile,'utf8'));
  assert.equal(state?.status,'finished',JSON.stringify(state));
+ const readback=JSON.parse(exec(process.execPath,[runner,'status'],root,env));
+ assert.equal(readback.running,false);
+ assert.equal(readback.status,'finished');
  assert.equal(state.issues['10'].status,'pr-created');
  assert.equal(state.issues['11'],undefined);
  const prompts=readFileSync(env.MOCK_PI_RECORD,'utf8');
