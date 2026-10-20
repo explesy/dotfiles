@@ -93,23 +93,6 @@ function readStatus(c) {
   const lock = load(c.lock, null);
   return {running: Boolean(lock && alive(lock.pid)), pid:lock?.pid || null, stopRequested:isStopped(c), ...load(c.stateFile,{status:'never-started',issues:{}})};
 }
-function launch(c, hours) {
-  verify(c);
-  acquire(c, hours);
-  try {
-    if (existsSync(c.stopFile)) unlinkSync(c.stopFile);
-    const script = resolve(process.argv[1]);
-    const childArgs = [script, 'run', String(hours), c.root];
-    const useCaffeinate = process.platform === 'darwin';
-    const child = spawn(useCaffeinate ? 'caffeinate' : process.execPath,
-      useCaffeinate ? ['-is', process.execPath, ...childArgs] : childArgs,
-      { cwd:c.root, detached:true, stdio:'ignore', env:process.env });
-    if (!child.pid) throw new Error('Cannot start background runner');
-    save(c.lock, {pid: child.pid, createdAt: Date.now(), hours});
-    child.unref();
-    log(c, `started PID ${child.pid}, ${hours}h; status: /night status`);
-  } catch(e) { if (existsSync(c.lock)) unlinkSync(c.lock); throw e; }
-}
 async function inspectJsonLog(path) {
   const flags = {settled:false, blocked:false, failed:false};
   const rl = createInterface({ input:createReadStream(path), crlfDelay:Infinity });
