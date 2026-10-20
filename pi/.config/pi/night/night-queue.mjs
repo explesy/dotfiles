@@ -1,11 +1,12 @@
 #!/usr/bin/env node
-// Pi night queue: intentionally delegates all implementation to the existing /i command.
+// Pi night queue: runs issues with isolated worktrees and shared execution policy.
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync, openSync, closeSync, unlinkSync, writeSync, createReadStream, readdirSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync, openSync, closeSync, unlinkSync, writeSync, createReadStream, readdirSync, realpathSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
 import { createInterface } from 'node:readline';
 import { StringDecoder } from 'node:string_decoder';
 import { fileURLToPath } from 'node:url';
+import { NEXT_MODEL_ROUTES, DEFAULT_NEXT_MODEL, issueTaskPrompt } from '../lib/workflow-policy.mjs';
 
 const LABEL = 'agent:night';
 const MAX_HOURS = 24;
@@ -32,7 +33,7 @@ export function evaluateRun(events, exitCode) {
 }
 
 export function describeEvent(event) {
-  if (event?.type === 'agent_start') return 'Pi начал выполнение /i';
+  if (event?.type === 'agent_start') return 'Pi начал выполнение задачи';
   if (event?.type === 'agent_settled') return event.aborted ? 'Pi остановлен/прерван' : 'Pi завершил работу';
   if (event?.type === 'tool_execution_start') {
     const name = event.toolName || 'tool';
@@ -42,7 +43,7 @@ export function describeEvent(event) {
   }
   if (event?.type === 'tool_execution_end' && event.toolName === 'workflow_status') {
     const phase = event.result?.details?.phase;
-    if (phase) return 'этап /i: ' + phase;
+    if (phase) return 'этап: ' + phase;
   }
   return null;
 }
@@ -112,12 +113,21 @@ async function executePi(c, worktree, issue, attempts, state) {
   const out = openSync(stdoutFile, 'w', 0o600), err = openSync(stderrFile, 'w', 0o600);
   const sessionDir = join(c.stateDir, 'sessions', String(issue.number));
   mkdirSync(sessionDir,{recursive:true,mode:0o700});
-  const args = ['--mode','json', '--session-dir',sessionDir];
-  // Same session and worktree on retries; the /i route still owns the task.
+  const route = NEXT_MODEL_ROUTES[DEFAULT_NEXT_MODEL];
+  const args = [
+    '--mode', 'json',
+    '--session-dir', sessionDir,
+    '--provider', route.provider,
+    '--model', route.model,
+    '--thinking', route.thinking,
+  ];
+  // Same session and worktree on retries
   if (attempts > 1 || readdirSync(sessionDir).some(x => x.endsWith('.jsonl'))) args.push('--continue');
-  args.push(`/i #${issue.number} ${EXTRA.replaceAll('issue-N',`issue-${issue.number}`)}`);
+  const extra = EXTRA.replaceAll('issue-N', `issue-${issue.number}`);
+  const prompt = `${issueTaskPrompt(issue.number)}\n\nAdditional user requirement:\n${extra}`;
+  args.push(prompt);
   let status;
-  log(c, `#${issue.number}: запуск /i в ${worktree} (попытка ${attempts})`);
+  log(c, `#${issue.number}: запуск задачи в ${worktree} (попытка ${attempts})`);
   try {
     status = await new Promise((done,reject) => {
       const child = spawn('pi',args,{cwd:worktree,stdio:['ignore','pipe','pipe']});
@@ -200,8 +210,8 @@ async function handleIssue(c, repo, base, issue, state) {
   const count = Number(cmd('git',['rev-list','--count',`origin/${base}..HEAD`],dir));
   if (!count) return {status:'blocked', reason:'No implementation commits to propose'};
   cmd('git',['diff','--check',`origin/${base}...HEAD`],dir);
-  // /i is permitted to create the draft PR itself; avoid duplicates.
-  if (prList(repo,branch,dir).length) return {status:'pr-created',reason:'PR created by /i'};
+  // The agent is permitted to create the draft PR itself; avoid duplicates.
+  if (prList(repo,branch,dir).length) return {status:'pr-created',reason:'PR created by agent'};
   cmd('git',['push','--set-upstream','origin',branch],dir);
   const title = `Agent night: #${issue.number} ${issue.title}`.slice(0,180);
   const body = `Draft implementation of #${issue.number} via existing Pi /i workflow.\n\nAutomated checks and remaining limitations: see commits and night session logs. Human review required; no auto-merge or deploy.\n\nCloses nothing automatically.`;
@@ -277,6 +287,14 @@ async function main() {
   if (action==='run') {await run(c,parseHours(arg));return;} // compatibility with already-running legacy jobs
   throw new Error('Usage: pi-night [hours] | pi-night status | pi-night stop');
 }
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+const isDirectExecution = () => {
+  if (!process.argv[1]) return false;
+  try {
+    return realpathSync(process.argv[1]) === fileURLToPath(import.meta.url);
+  } catch {
+    return resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+  }
+};
+if (isDirectExecution()) {
   main().catch(e=>{console.error(`[night] ${e.stack||e}`);process.exitCode=1;});
 }

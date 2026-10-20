@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, symlinkSync } from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {spawnSync} from 'node:child_process';
@@ -73,9 +73,24 @@ console.log(JSON.stringify({type:'agent_settled',aborted:false}));
  assert.equal(state.issues['10'].status,'pr-created');
  assert.equal(state.issues['11'],undefined);
  const prompts=readFileSync(env.MOCK_PI_RECORD,'utf8');
- assert.match(prompts,/\/i #10 Night queue authorization/);
- assert.doesNotMatch(prompts,/\/i #11/);
+ assert.match(prompts,/Execute GitHub issue #10/);
+ assert.match(prompts,/Night queue authorization/);
+ assert.match(prompts,/deepseek-v4.1-flash/);
+ assert.doesNotMatch(prompts,/issue #11/);
  const pr=readFileSync(env.MOCK_RECORD,'utf8');
  assert.match(pr,/--draft/);
  assert.match(exec('git',['branch','--list','agent/night/issue-10'],root),/issue-10/);
+});
+
+test('night queue executes directly when invoked via a symlinked path', () => {
+ const temp = mkdtempSync(join(tmpdir(), 'pi-night-symlink-'));
+ const linkPath = join(temp, 'symlinked-runner.mjs');
+ symlinkSync(runner, linkPath);
+ const root = join(temp, 'repo');
+ mkdirSync(root);
+ exec('git', ['init'], root);
+ const out = exec(process.execPath, [linkPath, 'status'], root);
+ const parsed = JSON.parse(out);
+ assert.equal(parsed.running, false);
+ assert.equal(parsed.status, 'never-started');
 });
