@@ -6,7 +6,7 @@ import { join, dirname } from 'node:path';
 import { promisify } from 'node:util';
 
 const exec = promisify(execFile);
-const runner = join(dirname(fileURLToPath(import.meta.url)), 'night-queue.mjs');
+const runner = join(dirname(fileURLToPath(import.meta.url)), '..', 'night', 'night-queue.mjs');
 
 export default function night(pi: ExtensionAPI) {
   pi.registerCommand('night', {
