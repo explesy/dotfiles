@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 // Pi night queue: intentionally delegates all implementation to the existing /i command.
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync, openSync, closeSync, unlinkSync, createReadStream, readdirSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync, openSync, closeSync, unlinkSync, writeSync, createReadStream, readdirSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
 import { createInterface } from 'node:readline';
+import { StringDecoder } from 'node:string_decoder';
 import { fileURLToPath } from 'node:url';
 
 const LABEL = 'agent:night';
@@ -24,11 +25,28 @@ export function sortIssues(issues) {
 }
 export function evaluateRun(events, exitCode) {
   if (exitCode !== 0) return { ok: false, reason: `Pi exited ${exitCode}` };
-  if (!events.settled) return { ok: false, reason: 'Pi did not report agent_settled' };
+  if (!events.settled) return { ok: false, reason: 'Pi did not report an un-aborted agent_settled' };
   if (events.failed) return { ok: false, reason: 'Pi reported a model/extension failure' };
   if (events.blocked) return { ok: false, reason: 'Agent reported blocked' };
   return { ok: true };
 }
+
+export function describeEvent(event) {
+  if (event?.type === 'agent_start') return 'Pi начал выполнение /i';
+  if (event?.type === 'agent_settled') return event.aborted ? 'Pi остановлен/прерван' : 'Pi завершил работу';
+  if (event?.type === 'tool_execution_start') {
+    const name = event.toolName || 'tool';
+    const raw = event.args?.command ?? event.args?.path ?? event.args?.file_path ?? event.args?.pattern;
+    const detail = typeof raw === 'string' ? ' — ' + raw.replace(/\s+/g,' ').slice(0,110) : '';
+    return 'инструмент ' + name + detail;
+  }
+  if (event?.type === 'tool_execution_end' && event.toolName === 'workflow_status') {
+    const phase = event.result?.details?.phase;
+    if (phase) return 'этап /i: ' + phase;
+  }
+  return null;
+}
+
 const cmd = (file, args, cwd, options={}) => {
   const result = spawnSync(file, args, { cwd, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024, ...options });
   if (result.error || result.status !== 0) throw new Error(`${file} ${args.slice(0,3).join(' ')}: ${(result.stderr || result.error?.message || `exit ${result.status}`).trim().slice(0,500)}`);
@@ -97,7 +115,7 @@ async function inspectJsonLog(path) {
   const rl = createInterface({ input:createReadStream(path), crlfDelay:Infinity });
   for await (const line of rl) {
     let e; try { e = JSON.parse(line); } catch { continue; }
-    if (e.type === 'agent_settled') flags.settled = true;
+    if (e.type === 'agent_settled') { flags.settled = !e.aborted; if (e.aborted) flags.failed = true; }
     if (e.type === 'extension_error') flags.failed = true;
     if (e.type === 'message_end' && e.message?.role === 'assistant' && ['error','aborted','length'].includes(e.message?.stopReason)) flags.failed = true;
     if (e.type === 'tool_execution_end' && e.toolName === 'workflow_status' && (e.result?.details?.phase === 'blocked' || e.result?.details?.phase === 'finishing' && e.result?.isError)) flags.blocked = true;
@@ -116,9 +134,40 @@ async function executePi(c, worktree, issue, attempts, state) {
   if (attempts > 1 || readdirSync(sessionDir).some(x => x.endsWith('.jsonl'))) args.push('--continue');
   args.push(`/i #${issue.number} ${EXTRA.replaceAll('issue-N',`issue-${issue.number}`)}`);
   let status;
+  log(c, `#${issue.number}: запуск /i в ${worktree} (попытка ${attempts})`);
   try {
     status = await new Promise((done,reject) => {
-      const child = spawn('pi',args,{cwd:worktree, stdio:['ignore',out,err]});
+      const child = spawn('pi',args,{cwd:worktree,stdio:['ignore','pipe','pipe']});
+      const decoder = new StringDecoder('utf8');
+      let pending = '';
+      let lastSaved = 0;
+      const handleLine = (line) => {
+        let event; try { event = JSON.parse(line); } catch { return; }
+        const message = describeEvent(event);
+        if (!message) return;
+        log(c, `#${issue.number}: ${message}`);
+        state.issues[issue.number].lastActivity = message;
+        state.issues[issue.number].lastActivityAt = new Date().toISOString();
+        if (Date.now() - lastSaved > 2000 || event.type === 'agent_settled') {
+          save(c.stateFile,state);
+          lastSaved = Date.now();
+        }
+      };
+      child.stdout.on('data', chunk => {
+        writeSync(out,chunk);
+        pending += decoder.write(chunk);
+        let at;
+        while ((at = pending.indexOf('\n')) !== -1) {
+          const line = pending.slice(0,at).replace(/\r$/,'');
+          pending = pending.slice(at+1);
+          handleLine(line);
+        }
+      });
+      child.stdout.on('end', () => {
+        pending += decoder.end();
+        if (pending.trim()) handleLine(pending);
+      });
+      child.stderr.on('data',chunk => {writeSync(err,chunk)});
       child.on('error',reject);
       child.on('close',(code,signal) => done({code,signal}));
     });
@@ -219,9 +268,31 @@ async function main() {
   const c = context(root);
   if (action==='status') {console.log(JSON.stringify(readStatus(c),null,2));return;}
   if (action==='stop') {if (!existingLock(c)) {log(c,'no runner active');return;}writeFileSync(c.stopFile,'stop\n');log(c,'stop requested; current /i will finish');return;}
-  if (action==='start') {launch(c,parseHours(arg));return;}
-  if (action==='run') {await run(c,parseHours(arg));return;}
-  throw new Error('Usage: /night start [hours] | /night status | /night stop');
+  if (action==='foreground') {
+    const hours=parseHours(arg);
+    verify(c);
+    acquire(c,hours);
+    save(c.lock,{pid:process.pid,createdAt:Date.now(),hours});
+    if (existsSync(c.stopFile)) unlinkSync(c.stopFile);
+    const requestStop=()=>{
+      if (!existsSync(c.stopFile)) {
+        writeFileSync(c.stopFile,'stop\n');
+        log(c,'остановка запрошена; новую задачу не начинаем');
+      }
+    };
+    process.on('SIGINT',requestStop);
+    process.on('SIGTERM',requestStop);
+    try { await run(c,hours); }
+    finally {
+      process.off('SIGINT',requestStop);
+      process.off('SIGTERM',requestStop);
+      if (existsSync(c.lock) && load(c.lock).pid===process.pid) unlinkSync(c.lock);
+    }
+    return;
+  }
+  if (action==='start') throw new Error('Background launch disabled. Use pi-night 8 in a terminal to see live progress.');
+  if (action==='run') {await run(c,parseHours(arg));return;} // compatibility with already-running legacy jobs
+  throw new Error('Usage: pi-night [hours] | pi-night status | pi-night stop');
 }
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main().catch(e=>{console.error(`[night] ${e.stack||e}`);process.exitCode=1;});
