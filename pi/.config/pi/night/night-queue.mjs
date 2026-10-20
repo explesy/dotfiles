@@ -106,7 +106,7 @@ async function inspectJsonLog(path) {
   }
   return flags;
 }
-async function executePi(c, worktree, issue, attempts, state) {
+async function executePi(c, worktree, issue, attempts, state, openPr = null) {
   const logdir = join(c.stateDir,'logs'); mkdirSync(logdir,{recursive:true,mode:0o700});
   const stdoutFile = join(logdir,`${Date.parse(state.startedAt)}-${issue.number}-${attempts}.jsonl`);
   const stderrFile = join(logdir,`${Date.parse(state.startedAt)}-${issue.number}-${attempts}.stderr.log`);
@@ -124,7 +124,10 @@ async function executePi(c, worktree, issue, attempts, state) {
   // Same session and worktree on retries
   if (attempts > 1 || readdirSync(sessionDir).some(x => x.endsWith('.jsonl'))) args.push('--continue');
   const extra = EXTRA.replaceAll('issue-N', `issue-${issue.number}`);
-  const prompt = `${issueTaskPrompt(issue.number)}\n\nAdditional user requirement:\n${extra}`;
+  let prompt = `${issueTaskPrompt(issue.number)}\n\nAdditional user requirement:\n${extra}`;
+  if (openPr) {
+    prompt += `\n\nExisting Pull Request: #${openPr.number} (${openPr.url}).\nReview feedback/comments were provided on this PR or issue.\nYou MUST read the latest PR comments, review feedback, and discussion using \`gh pr view ${openPr.number} --comments\` (or \`gh api repos/:owner/:repo/pulls/${openPr.number}/reviews\`).\nAddress all requested changes and review comments, preserve previous good work, run verification checks, and commit your follow-up fixes to this branch.`;
+  }
   args.push(prompt);
   let status;
   log(c, `#${issue.number}: запуск задачи в ${worktree} (попытка ${attempts})`);
@@ -172,47 +175,177 @@ async function executePi(c, worktree, issue, attempts, state) {
   return result;
 }
 const gh = (args, cwd) => cmd('gh', args, cwd);
-const prList = (repo, branch, cwd) => jsonCmd('gh',['pr','list','-R',repo,'--head',branch,'--state','all','--json','number,url','--limit','100'],cwd);
+export const prList = (repo, branch, cwd) => jsonCmd('gh',['pr','list','-R',repo,'--head',branch,'--state','all','--json','number,url,state,updatedAt,comments,reviews,commits','--limit','10'],cwd);
 function worktreeFor(c, number) {return join(dirname(c.root), `${basename(c.root)}-night-worktrees`, `issue-${number}`);}
+
+export function evaluatePrComments(prs, issueItem, localCommitTime = 0) {
+  if (!prs || !prs.length) {
+    return { hasPr: false, shouldRun: true };
+  }
+  const openPr = prs.find(p => p.state === 'OPEN');
+  if (!openPr) {
+    if (prs.every(p => p.state === 'MERGED')) {
+      return { hasPr: true, shouldRun: false, reason: 'PR already merged' };
+    }
+    return { hasPr: true, shouldRun: false, reason: `PR ${prs[0].number} closed` };
+  }
+
+  // Find latest commit timestamp on this PR or local worktree
+  const commitTimes = (openPr.commits || [])
+    .map(c => Date.parse(c.committedDate || c.authoredDate))
+    .filter(Number.isFinite);
+  if (Number.isFinite(localCommitTime) && localCommitTime > 0) {
+    commitTimes.push(localCommitTime);
+  }
+  const latestCommitTime = commitTimes.length ? Math.max(...commitTimes) : 0;
+
+  // Collect all comments and reviews from both the issue and the open PR
+  const comments = [];
+
+  for (const c of (issueItem?.comments || [])) {
+    if (c?.body && typeof c.body === 'string' && c.body.trim()) {
+      const time = Date.parse(c.updatedAt || c.createdAt);
+      if (Number.isFinite(time)) {
+        comments.push({ type: 'issue', author: c.author?.login || 'user', body: c.body, time });
+      }
+    }
+  }
+
+  for (const c of (openPr.comments || [])) {
+    if (c?.body && typeof c.body === 'string' && c.body.trim()) {
+      const time = Date.parse(c.updatedAt || c.createdAt);
+      if (Number.isFinite(time)) {
+        comments.push({ type: 'pr', author: c.author?.login || 'user', body: c.body, time });
+      }
+    }
+  }
+
+  for (const r of (openPr.reviews || [])) {
+    if (r?.state === 'CHANGES_REQUESTED' || (r?.body && typeof r.body === 'string' && r.body.trim() && r.state !== 'APPROVED')) {
+      const time = Date.parse(r.submittedAt || r.updatedAt || r.createdAt);
+      if (Number.isFinite(time)) {
+        comments.push({ type: 'review', author: r.author?.login || 'reviewer', body: r.body, time });
+      }
+    }
+  }
+
+  if (!comments.length) {
+    return { hasPr: true, shouldRun: false, pr: openPr, reason: 'PR already exists and up to date (no feedback comments)' };
+  }
+
+  comments.sort((a, b) => b.time - a.time);
+  const latestComment = comments[0];
+
+  if (latestComment.time > latestCommitTime) {
+    return {
+      hasPr: true,
+      shouldRun: true,
+      pr: openPr,
+      latestComment,
+      latestCommitTime,
+      reason: `fresh comment from ${latestComment.author} (${new Date(latestComment.time).toISOString()})`,
+    };
+  }
+
+  return {
+    hasPr: true,
+    shouldRun: false,
+    pr: openPr,
+    latestComment,
+    latestCommitTime,
+    reason: `PR already exists and up to date (work already done after comment from ${latestComment.author})`,
+  };
+}
+
 async function handleIssue(c, repo, base, issue, state) {
-  const branch = branchFor(issue.number);
-  if (prList(repo, branch, c.root).length) return {status:'pr-exists', reason:'PR already exists'};
-  const item = jsonCmd('gh',['issue','view',String(issue.number),'-R',repo,'--json','number,state,body,title,labels'],c.root);
+  const item = jsonCmd('gh',['issue','view',String(issue.number),'-R',repo,'--json','number,state,body,title,labels,comments'],c.root);
   if (item.state !== 'OPEN' || !item.labels?.some(l=>l.name===LABEL)) return {status:'skipped',reason:'Not open/labeled'};
   if (item.labels.some(l=>['agent:blocked','blocked'].includes(l.name))) return {status:'skipped',reason:'Blocked label'};
+
+  const branch = branchFor(issue.number);
+  const prs = prList(repo, branch, c.root);
   const dir = worktreeFor(c, issue.number);
+
+  let localCommitTime = 0;
+  if (existsSync(dir)) {
+    try {
+      const raw = cmd('git', ['log', '-1', '--format=%cI'], dir);
+      if (raw) localCommitTime = Date.parse(raw);
+    } catch {}
+  }
+
+  const evalResult = evaluatePrComments(prs, item, localCommitTime);
+  if (!evalResult.shouldRun) {
+    return { status: 'pr-exists', reason: evalResult.reason };
+  }
+
+  if (evalResult.hasPr) {
+    log(c, `#${issue.number}: обнаружен PR #${evalResult.pr.number} со свежими комментариями (${evalResult.reason})`);
+  }
+
   mkdirSync(dirname(dir),{recursive:true});
   if (!existsSync(dir)) {
-    // Remote branch existing without a PR is ambiguous: do not overwrite it.
-    const existing = spawnSync('git',['ls-remote','--exit-code','--heads','origin',branch],{cwd:c.root,encoding:'utf8'});
-    if (existing.status===0) return {status:'skipped',reason:'Remote branch exists without a PR'};
-    if (existing.status!==2) throw new Error('Cannot verify remote branch state');
-    cmd('git',['worktree','add','-b',branch,dir,`origin/${base}`],c.root);
+    if (evalResult.hasPr) {
+      cmd('git', ['fetch', 'origin', branch], c.root);
+      const localBranches = cmd('git', ['branch', '--list', branch], c.root);
+      if (localBranches.trim()) {
+        cmd('git', ['worktree', 'add', dir, branch], c.root);
+      } else {
+        cmd('git', ['worktree', 'add', '-b', branch, dir, `origin/${branch}`], c.root);
+      }
+    } else {
+      // Remote branch existing without a PR is ambiguous: do not overwrite it.
+      const existing = spawnSync('git',['ls-remote','--exit-code','--heads','origin',branch],{cwd:c.root,encoding:'utf8'});
+      if (existing.status===0) return {status:'skipped',reason:'Remote branch exists without a PR'};
+      if (existing.status!==2) throw new Error('Cannot verify remote branch state');
+      cmd('git',['worktree','add','-b',branch,dir,`origin/${base}`],c.root);
+    }
   } else {
     if (cmd('git',['branch','--show-current'],dir)!==branch ||
         cmd('git',['rev-parse','--path-format=absolute','--git-common-dir'],dir) !==
         cmd('git',['rev-parse','--path-format=absolute','--git-common-dir'],c.root)) {
       throw new Error(`Worktree does not belong to this repository/branch: ${dir}`);
     }
+    if (evalResult.hasPr && !cmd('git', ['status', '--porcelain'], dir)) {
+      cmd('git', ['fetch', 'origin', branch], c.root);
+      try {
+        cmd('git', ['merge', '--ff-only', `origin/${branch}`], dir);
+      } catch {}
+    }
   }
+
+  const startingHead = cmd('git', ['rev-parse', 'HEAD'], dir);
   const prev = state.issues[issue.number];
   const attempts = (prev?.attempts || 0) + 1;
   state.issues[issue.number] = {status:'running',attempts,branch,worktree:dir,startedAt:new Date().toISOString()}; save(c.stateFile,state);
-  let result = await executePi(c,dir,issue,attempts,state);
+  let result = await executePi(c,dir,issue,attempts,state,evalResult.pr || null);
   if (!result.ok && attempts < 2 && !state.issues[issue.number].flags?.blocked) {
     log(c, `#${issue.number} recoverable failure: ${result.reason}; retrying once`);
     state.issues[issue.number].attempts = attempts + 1; save(c.stateFile,state);
-    result = await executePi(c,dir,issue,attempts+1,state);
+    result = await executePi(c,dir,issue,attempts+1,state,evalResult.pr || null);
   }
   if (!result.ok) return {status:'blocked',reason:result.reason};
   // Never stage arbitrary agent output; /i must explicitly commit its intended changes.
   if (cmd('git',['status','--porcelain'],dir)) return {status:'blocked', reason:'Uncommitted changes; refused automatic staging'};
-  const count = Number(cmd('git',['rev-list','--count',`origin/${base}..HEAD`],dir));
-  if (!count) return {status:'blocked', reason:'No implementation commits to propose'};
+
+  if (evalResult.hasPr) {
+    const newCommitsCount = Number(cmd('git', ['rev-list', '--count', `${startingHead}..HEAD`], dir));
+    if (!newCommitsCount) return {status:'blocked', reason:'No new follow-up commits produced to address review comments'};
+  } else {
+    const count = Number(cmd('git',['rev-list','--count',`origin/${base}..HEAD`],dir));
+    if (!count) return {status:'blocked', reason:'No implementation commits to propose'};
+  }
+
   cmd('git',['diff','--check',`origin/${base}...HEAD`],dir);
-  // The agent is permitted to create the draft PR itself; avoid duplicates.
-  if (prList(repo,branch,dir).length) return {status:'pr-created',reason:'PR created by agent'};
   cmd('git',['push','--set-upstream','origin',branch],dir);
+
+  if (evalResult.hasPr) {
+    return {status:'pr-updated', url:evalResult.pr.url, reason:`PR #${evalResult.pr.number} updated with follow-up commits`};
+  }
+
+  // The agent is permitted to create the draft PR itself; avoid duplicates.
+  const currentPrs = prList(repo,branch,dir);
+  if (currentPrs.length) return {status:'pr-created',reason:'PR created by agent', url:currentPrs[0].url};
   const title = `Agent night: #${issue.number} ${issue.title}`.slice(0,180);
   const body = `Draft implementation of #${issue.number} via existing Pi /i workflow.\n\nAutomated checks and remaining limitations: see commits and night session logs. Human review required; no auto-merge or deploy.\n\nCloses nothing automatically.`;
   const url = gh(['pr','create','-R',repo,'--draft','--base',base,'--head',branch,'--title',title,'--body',body],dir);
