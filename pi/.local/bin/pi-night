@@ -1,0 +1,23 @@
+#!/bin/sh
+# Pi Night Queue: foreground, visible, explicitly invoked by the user.
+set -eu
+runner="${PI_CODING_AGENT_DIR:-$HOME/.config/pi}/night/night-queue.mjs"
+if [ ! -f "$runner" ]; then
+  echo "Pi night runner not found: $runner" >&2
+  echo "Update dotfiles and run: stow --restow --target=\"$HOME\" --ignore=node_modules pi" >&2
+  exit 1
+fi
+case "${1:-}" in
+  status|stop)
+    action="$1"
+    shift
+    exec node "$runner" "$action" "$@"
+    ;;
+  start|--background)
+    echo "Background mode is disabled. Run: pi-night [hours], for example pi-night 8" >&2
+    exit 2
+    ;;
+  *)
+    exec node "$runner" foreground "${1:-8}"
+    ;;
+esac
