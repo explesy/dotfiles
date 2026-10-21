@@ -8,7 +8,7 @@ if [ ! -f "$runner" ]; then
   exit 1
 fi
 case "${1:-}" in
-  status|stop)
+  status|stop|summary)
     action="$1"
     shift
     exec node "$runner" "$action" "$@"

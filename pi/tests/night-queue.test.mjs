@@ -5,7 +5,19 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
-import {parseHours,sortIssues,branchFor,evaluateRun,describeEvent,evaluatePrComments} from '../.config/pi/night/night-queue.mjs';
+import {
+  parseHours,
+  sortIssues,
+  branchFor,
+  evaluateRun,
+  describeEvent,
+  evaluatePrComments,
+  formatDuration,
+  formatSummary,
+  renderAsciiTable,
+  parseJsonArrayStream,
+  prInlineComments,
+} from '../.config/pi/night/night-queue.mjs';
 
 const runner = fileURLToPath(new URL('../.config/pi/night/night-queue.mjs', import.meta.url));
 const exec = (exe,args,cwd,env=process.env) => {
@@ -203,6 +215,7 @@ test('night queue continues work on existing PR with fresh review comment and pu
 const a = process.argv.slice(2);
 if (a[0] === 'auth' || a[0] === '--version') process.exit(0);
 if (a[0] === 'repo') console.log(JSON.stringify({ nameWithOwner: 'test/repo', defaultBranchRef: { name: 'main' } }));
+else if (a[0] === 'api') console.log('[]');
 else if (a[0] === 'issue' && a[1] === 'list') {
   console.log(JSON.stringify([{ number: 20, title: 'Rework task', labels: [{ name: 'agent:night' }] }]));
 } else if (a[0] === 'issue' && a[1] === 'view') {
@@ -252,4 +265,214 @@ console.log(JSON.stringify({ type: 'agent_settled', aborted: false }));
  // Check that remote feature branch received the new commit
  const remoteLog = exec('git', ['log', 'origin/agent/night/issue-20', '--oneline'], root);
  assert.match(remoteLog, /fix edge case per review/);
+});
+
+test('duration formatting, ascii table, and summary rendering', () => {
+  assert.equal(formatDuration(0), '0с');
+  assert.equal(formatDuration(45000), '45с');
+  assert.equal(formatDuration(125000), '2м 5с');
+  assert.equal(formatDuration(3665000), '1ч 1м 5с');
+
+  const table = renderAsciiTable(
+    ['Задача', 'Статус', 'Время'],
+    [['#1', 'PR создан', '10с'], ['#2', 'Актуален', '-']]
+  );
+  assert.match(table, /┌─+┬─+┬─+┐/);
+  assert.match(table, /│ Задача │ Статус\s+│ Время │/);
+  assert.match(table, /│ #1\s+│ PR создан │ 10с\s+│/);
+
+  const mockState = {
+    status: 'finished',
+    startedAt: '2026-10-21T10:00:00.000Z',
+    finishedAt: '2026-10-21T10:05:30.000Z',
+    repo: 'test/repo',
+    base: 'main',
+    issues: {
+      '1': {
+        title: 'First task',
+        status: 'pr-created',
+        startedAt: '2026-10-21T10:00:00.000Z',
+        finishedAt: '2026-10-21T10:03:00.000Z',
+        url: 'https://github.test/pr/1',
+      },
+      '2': {
+        title: 'Second task',
+        status: 'pr-updated',
+        startedAt: '2026-10-21T10:03:00.000Z',
+        finishedAt: '2026-10-21T10:05:00.000Z',
+        url: 'https://github.test/pr/2',
+      },
+      '3': {
+        title: 'Already up to date task',
+        status: 'pr-exists',
+        reason: 'PR already exists and up to date',
+      },
+      '4': {
+        title: 'Blocked task',
+        status: 'blocked',
+        reason: 'Pi exited 1',
+      },
+    },
+  };
+
+  const summary = formatSummary(mockState);
+  assert.match(summary, /СВОДКА РАБОТЫ PI NIGHT/);
+  assert.match(summary, /Всего отработано:\s+5м 30с/);
+  assert.match(summary, /Статус:\s+Завершено успешно/);
+  assert.match(summary, /#1\s+│ First task\s+│ PR создан\s+│ 3м 0с/);
+  assert.match(summary, /#2\s+│ Second task\s+│ PR обновлён\s+│ 2м 0с/);
+  assert.match(summary, /#3\s+│ Already up to date task\s+│ Актуален/);
+  assert.match(summary, /#4\s+│ Blocked task\s+│ Заблокирован/);
+  assert.match(summary, /• Всего задач в очереди: 4/);
+  assert.match(summary, /• PR создано:\s+1/);
+  assert.match(summary, /• PR обновлено:\s+1/);
+  assert.match(summary, /• Без изменений\/актуально:1/);
+  assert.match(summary, /• Ошибок \/ заблокировано:1/);
+});
+
+test('parseJsonArrayStream handles single arrays, slurped arrays, and concatenated pages', () => {
+  assert.deepEqual(parseJsonArrayStream(''), []);
+  assert.deepEqual(parseJsonArrayStream('   '), []);
+  assert.deepEqual(parseJsonArrayStream('[{"id": 1}]'), [{ id: 1 }]);
+  assert.deepEqual(parseJsonArrayStream('[[{"id": 1}], [{"id": 2}]]'), [{ id: 1 }, { id: 2 }]);
+  assert.deepEqual(parseJsonArrayStream('[{"id": 1}][{"id": 2}]'), [{ id: 1 }, { id: 2 }]);
+  assert.deepEqual(parseJsonArrayStream('[{"id": 1, "body": "hello [world]"}]\n[{"id": 2}]'), [
+    { id: 1, body: 'hello [world]' },
+    { id: 2 },
+  ]);
+});
+
+test('evaluatePrComments recognizes inline review comments with empty review summary', () => {
+  const openPr = [{
+    number: 100,
+    state: 'OPEN',
+    commits: [{ committedDate: '2026-10-21T05:00:00Z' }],
+    comments: [],
+    reviews: [{ state: 'COMMENTED', body: '', submittedAt: '2026-10-21T06:00:00Z' }],
+  }];
+
+  // No inline comments
+  const noInline = evaluatePrComments(openPr, { comments: [] }, 0, []);
+  assert.equal(noInline.shouldRun, false);
+  assert.match(noInline.reason, /up to date/);
+
+  // Fresh inline comment newer than latest commit
+  const freshInlineComments = [{
+    id: 10,
+    path: 'lib/app.ts',
+    line: 42,
+    body: 'Fix null check on line 42',
+    user: { login: 'reviewer-inline' },
+    created_at: '2026-10-21T07:00:00Z',
+  }];
+  const resFreshInline = evaluatePrComments(openPr, { comments: [] }, 0, freshInlineComments);
+  assert.equal(resFreshInline.shouldRun, true);
+  assert.match(resFreshInline.reason, /fresh inline comment on lib\/app\.ts from reviewer-inline/);
+
+  // Inline comment older than commit (work already done)
+  const oldInlineComments = [{
+    id: 11,
+    path: 'lib/app.ts',
+    line: 42,
+    body: 'Old inline comment',
+    author: { login: 'reviewer-inline' },
+    created_at: '2026-10-21T04:00:00Z',
+  }];
+  const resOldInline = evaluatePrComments(openPr, { comments: [] }, 0, oldInlineComments);
+  assert.equal(resOldInline.shouldRun, false);
+  assert.match(resOldInline.reason, /work already done/);
+});
+
+test('night queue handles PR rework triggered purely by inline PR review comments', () => {
+  const temp = mkdtempSync(join(tmpdir(), 'pi-night-inline-test-'));
+  const root = join(temp, 'repo'), origin = join(temp, 'remote.git'), bin = join(temp, 'bin');
+  mkdirSync(root); mkdirSync(bin);
+  exec('git', ['init', '--bare', origin], temp);
+  exec('git', ['init', '-b', 'main'], root);
+  exec('git', ['config', 'user.email', 'test@example.org'], root);
+  exec('git', ['config', 'user.name', 'CI Test'], root);
+  writeFileSync(join(root, 'README.md'), 'original\n');
+  exec('git', ['add', 'README.md'], root);
+  exec('git', ['commit', '-m', 'initial'], root);
+  exec('git', ['remote', 'add', 'origin', origin], root);
+  exec('git', ['push', '-u', 'origin', 'main'], root);
+
+  // Create remote branch for issue 30
+  exec('git', ['checkout', '-b', 'agent/night/issue-30'], root);
+  writeFileSync(join(root, 'calc.js'), 'function add(a, b) { return a - b; }\n');
+  exec('git', ['add', 'calc.js'], root);
+  exec('git', ['commit', '-m', 'initial add function with bug'], root);
+  exec('git', ['push', '-u', 'origin', 'agent/night/issue-30'], root);
+  exec('git', ['checkout', 'main'], root);
+
+  const fakeGh = `#!/usr/bin/env node
+const a = process.argv.slice(2);
+if (a[0] === 'auth' || a[0] === '--version') process.exit(0);
+if (a[0] === 'repo') console.log(JSON.stringify({ nameWithOwner: 'test/repo', defaultBranchRef: { name: 'main' } }));
+else if (a[0] === 'issue' && a[1] === 'list') {
+  console.log(JSON.stringify([{ number: 30, title: 'Inline review task', labels: [{ name: 'agent:night' }] }]));
+} else if (a[0] === 'issue' && a[1] === 'view') {
+  console.log(JSON.stringify({ number: 30, state: 'OPEN', body: 'Test', title: 'Inline review task', labels: [{ name: 'agent:night' }], comments: [] }));
+} else if (a[0] === 'pr' && a[1] === 'list') {
+  console.log(JSON.stringify([{
+    number: 77,
+    url: 'https://github.test/pr/77',
+    state: 'OPEN',
+    commits: [{ committedDate: '2026-10-21T01:00:00Z' }],
+    comments: [],
+    reviews: [{ state: 'COMMENTED', body: '', submittedAt: '2026-10-21T01:30:00Z' }]
+  }]));
+} else if (a[0] === 'api' && a[1].includes('pulls/77/comments')) {
+  console.log(JSON.stringify([{
+    id: 991,
+    path: 'calc.js',
+    line: 1,
+    body: 'Should be return a + b instead of a - b',
+    user: { login: 'inline-reviewer' },
+    created_at: '2026-10-21T02:00:00Z'
+  }]));
+} else {
+  console.error('Unexpected gh', a);
+  process.exit(1);
+}
+`;
+
+  const fakePi = `#!/usr/bin/env node
+const { writeFileSync, appendFileSync } = require('node:fs');
+const cp = require('node:child_process');
+const a = process.argv.slice(2);
+if (a[0] === '--version') { console.log('pi 1.2.0'); process.exit(0); }
+appendFileSync(process.env.MOCK_PI_RECORD, JSON.stringify(a) + '\\n');
+writeFileSync('calc.js', 'function add(a, b) { return a + b; }\\n');
+for (const xs of [['add', 'calc.js'], ['commit', '-m', 'fix addition logic per inline review']]) {
+  const r = cp.spawnSync('git', xs, { encoding: 'utf8' });
+  if (r.status !== 0) { console.error(r.stderr); process.exit(1); }
+}
+console.log(JSON.stringify({ type: 'tool_execution_start', toolName: 'bash', args: { command: 'node calc.js' } }));
+console.log(JSON.stringify({ type: 'agent_settled', aborted: false }));
+`;
+
+  writeFileSync(join(bin, 'gh'), fakeGh, { mode: 0o755 });
+  writeFileSync(join(bin, 'pi'), fakePi, { mode: 0o755 });
+  const env = { ...process.env, PATH: `${bin}:${process.env.PATH}`, MOCK_PI_RECORD: join(temp, 'pi-prompts.log') };
+
+  const out = exec(process.execPath, [runner, 'foreground', '0.01'], root, env);
+  assert.match(out, /#30: обнаружен PR #77 со свежими комментариями/);
+  assert.match(out, /fresh inline comment on calc\.js from inline-reviewer/);
+  assert.match(out, /#30: pr-updated/);
+  assert.match(out, /СВОДКА РАБОТЫ PI NIGHT/);
+  assert.match(out, /Всего отработано:/);
+  assert.match(out, /#30\s+│ Inline review task\s+│ PR обновлён/);
+
+  const prompts = readFileSync(env.MOCK_PI_RECORD, 'utf8');
+  assert.match(prompts, /pulls\/77\/comments/);
+
+  // Check that pi-night summary CLI command prints the table summary
+  const summaryOut = exec(process.execPath, [runner, 'summary'], root, env);
+  assert.match(summaryOut, /СВОДКА РАБОТЫ PI NIGHT/);
+  assert.match(summaryOut, /• PR обновлено:\s+1/);
+
+  // Check remote branch received the fix commit
+  const remoteLog = exec('git', ['log', 'origin/agent/night/issue-30', '--oneline'], root);
+  assert.match(remoteLog, /fix addition logic per inline review/);
 });

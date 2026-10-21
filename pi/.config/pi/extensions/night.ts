@@ -23,8 +23,8 @@ export default function night(pi: ExtensionAPI) {
         ctx.ui.notify(`Фоновый запуск отключён. В отдельном терминале проекта запусти: pi-night ${hours} — процесс и инструменты /i будут видны.`, 'info');
         return;
       }
-      if (!['status','stop'].includes(action) || value || rest.length) {
-        ctx.ui.notify('Use: pi-night [hours] (terminal); /night status; /night stop', 'warning');
+      if (!['status','stop','summary'].includes(action) || value || rest.length) {
+        ctx.ui.notify('Use: pi-night [hours] (terminal); /night status; /night summary; /night stop', 'warning');
         return;
       }
       try {
@@ -33,6 +33,10 @@ export default function night(pi: ExtensionAPI) {
         });
         if (action === 'stop') {
           ctx.ui.notify(stdout.trim() || 'Запрос на мягкую остановку отправлен', 'info');
+          return;
+        }
+        if (action === 'summary') {
+          ctx.ui.notify(stdout.trim(), 'info');
           return;
         }
         const data = JSON.parse(stdout);

@@ -32,6 +32,135 @@ export function evaluateRun(events, exitCode) {
   return { ok: true };
 }
 
+export function formatDuration(ms) {
+  if (!Number.isFinite(ms) || ms < 0) return '0с';
+  const totalSeconds = Math.round(ms / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  const parts = [];
+  if (hours > 0) parts.push(`${hours}ч`);
+  if (minutes > 0 || hours > 0) parts.push(`${minutes}м`);
+  parts.push(`${seconds}с`);
+  return parts.join(' ');
+}
+
+export function renderAsciiTable(headers, rows) {
+  const maxColWidths = [8, 32, 14, 10, 42];
+  const truncatedRows = rows.map(row =>
+    row.map((cell, i) => {
+      const str = String(cell ?? '');
+      const max = maxColWidths[i] || 30;
+      return str.length > max ? str.slice(0, max - 3) + '...' : str;
+    })
+  );
+
+  const colWidths = headers.map((h, i) => {
+    const maxRow = Math.max(0, ...truncatedRows.map(r => (r[i] || '').length));
+    return Math.max(h.length, maxRow);
+  });
+
+  const sepLine = (left, mid, right, fill) =>
+    left + colWidths.map(w => fill.repeat(w + 2)).join(mid) + right;
+
+  const formatRow = (cells) =>
+    '│ ' + cells.map((c, i) => String(c).padEnd(colWidths[i])).join(' │ ') + ' │';
+
+  const out = [];
+  out.push(sepLine('┌', '┬', '┐', '─'));
+  out.push(formatRow(headers));
+  out.push(sepLine('├', '┼', '┤', '─'));
+  for (const row of truncatedRows) {
+    out.push(formatRow(row));
+  }
+  out.push(sepLine('└', '┴', '┘', '─'));
+  return out.join('\n');
+}
+
+export function formatSummary(state = {}) {
+  const issues = Object.entries(state.issues || {});
+  const startedAtMs = state.startedAt ? Date.parse(state.startedAt) : 0;
+  const finishedAtMs = state.finishedAt ? Date.parse(state.finishedAt) : Date.now();
+  const totalMs = startedAtMs > 0 && finishedAtMs >= startedAtMs ? finishedAtMs - startedAtMs : 0;
+
+  const lines = [];
+  lines.push('================================================================================');
+  lines.push('                             СВОДКА РАБОТЫ PI NIGHT                             ');
+  lines.push('================================================================================');
+
+  const statusMap = {
+    'finished': 'Завершено успешно',
+    'stopped': 'Остановлено пользователем',
+    'time-window-ended': 'Завершено (истекло окно времени)',
+    'running': 'Выполняется',
+    'error': `Ошибка: ${state.error || 'неизвестная'}`,
+    'never-started': 'Не запускалось',
+  };
+
+  lines.push(`Статус:              ${statusMap[state.status] || state.status || 'Завершено'}`);
+  lines.push(`Всего отработано:    ${formatDuration(totalMs)}`);
+  if (state.startedAt) lines.push(`Время запуска:       ${state.startedAt}`);
+  if (state.finishedAt) lines.push(`Время завершения:    ${state.finishedAt}`);
+  if (state.repo) lines.push(`Репозиторий:         ${state.repo} (базовая ветка: ${state.base || 'default'})`);
+  lines.push('');
+
+  let countCreated = 0;
+  let countUpdated = 0;
+  let countUpToDate = 0;
+  let countSkipped = 0;
+  let countBlocked = 0;
+
+  for (const [, item] of issues) {
+    if (item.status === 'pr-created') countCreated++;
+    else if (item.status === 'pr-updated') countUpdated++;
+    else if (item.status === 'pr-exists') countUpToDate++;
+    else if (item.status === 'skipped') countSkipped++;
+    else if (item.status === 'blocked' || item.status === 'error') countBlocked++;
+  }
+
+  lines.push('ТАБЛИЦА ЗАДАЧ:');
+  if (issues.length === 0) {
+    lines.push('  (нет задач для отображения)');
+  } else {
+    const headers = ['Задача', 'Название', 'Статус', 'Время', 'Детали / PR'];
+    const rows = issues.map(([num, info]) => {
+      const taskNum = `#${num}`;
+      const title = (info.title || `Issue ${num}`).replace(/\r?\n/g, ' ');
+      const statusLabel =
+        info.status === 'pr-created' ? 'PR создан' :
+        info.status === 'pr-updated' ? 'PR обновлён' :
+        info.status === 'pr-exists' ? 'Актуален' :
+        info.status === 'skipped' ? 'Пропущен' :
+        info.status === 'blocked' ? 'Заблокирован' :
+        info.status === 'running' ? 'В процессе' : (info.status || '-');
+
+      let durationStr = '-';
+      if (info.startedAt && info.finishedAt) {
+        const dMs = Date.parse(info.finishedAt) - Date.parse(info.startedAt);
+        if (dMs >= 0) durationStr = formatDuration(dMs);
+      }
+
+      const details = info.url || info.reason || '-';
+      return [taskNum, title, statusLabel, durationStr, details];
+    });
+
+    lines.push(renderAsciiTable(headers, rows));
+  }
+
+  lines.push('');
+  lines.push('СТАТИСТИКА:');
+  lines.push(`  • Всего задач в очереди: ${issues.length}`);
+  lines.push(`  • PR создано:            ${countCreated}`);
+  lines.push(`  • PR обновлено:          ${countUpdated}`);
+  lines.push(`  • Без изменений/актуально:${countUpToDate}`);
+  lines.push(`  • Пропущено:             ${countSkipped}`);
+  lines.push(`  • Ошибок / заблокировано:${countBlocked}`);
+  lines.push('================================================================================');
+
+  return lines.join('\n');
+}
+
 export function describeEvent(event) {
   if (event?.type === 'agent_start') return 'Pi начал выполнение задачи';
   if (event?.type === 'agent_settled') return event.aborted ? 'Pi остановлен/прерван' : 'Pi завершил работу';
@@ -126,7 +255,7 @@ async function executePi(c, worktree, issue, attempts, state, openPr = null) {
   const extra = EXTRA.replaceAll('issue-N', `issue-${issue.number}`);
   let prompt = `${issueTaskPrompt(issue.number)}\n\nAdditional user requirement:\n${extra}`;
   if (openPr) {
-    prompt += `\n\nExisting Pull Request: #${openPr.number} (${openPr.url}).\nReview feedback/comments were provided on this PR or issue.\nYou MUST read the latest PR comments, review feedback, and discussion using \`gh pr view ${openPr.number} --comments\` (or \`gh api repos/:owner/:repo/pulls/${openPr.number}/reviews\`).\nAddress all requested changes and review comments, preserve previous good work, run verification checks, and commit your follow-up fixes to this branch.`;
+    prompt += `\n\nExisting Pull Request: #${openPr.number} (${openPr.url}).\nReview feedback/comments were provided on this PR or issue.\nYou MUST read the latest PR comments, review feedback, inline code review comments, and discussion using:\n  - \`gh pr view ${openPr.number} --comments\`\n  - \`gh api repos/${state.repo || '{owner}/{repo}'}/pulls/${openPr.number}/comments\` (for inline code review comments)\n  - \`gh api repos/${state.repo || '{owner}/{repo}'}/pulls/${openPr.number}/reviews\`\nAddress all requested changes and review comments, preserve previous good work, run verification checks, and commit your follow-up fixes to this branch.`;
   }
   args.push(prompt);
   let status;
@@ -178,7 +307,60 @@ const gh = (args, cwd) => cmd('gh', args, cwd);
 export const prList = (repo, branch, cwd) => jsonCmd('gh',['pr','list','-R',repo,'--head',branch,'--state','all','--json','number,url,state,updatedAt,comments,reviews,commits','--limit','10'],cwd);
 function worktreeFor(c, number) {return join(dirname(c.root), `${basename(c.root)}-night-worktrees`, `issue-${number}`);}
 
-export function evaluatePrComments(prs, issueItem, localCommitTime = 0) {
+export function parseJsonArrayStream(text) {
+  if (!text || !text.trim()) return [];
+  try {
+    const direct = JSON.parse(text);
+    return Array.isArray(direct) ? direct.flat() : [direct];
+  } catch {}
+  const items = [];
+  let depth = 0;
+  let start = -1;
+  let inString = false;
+  let escape = false;
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    if (escape) {
+      escape = false;
+      continue;
+    }
+    if (char === '\\') {
+      escape = true;
+      continue;
+    }
+    if (char === '"') {
+      inString = !inString;
+      continue;
+    }
+    if (inString) continue;
+    if (char === '[' || char === '{') {
+      if (depth === 0) start = i;
+      depth++;
+    } else if (char === ']' || char === '}') {
+      depth--;
+      if (depth === 0 && start !== -1) {
+        try {
+          const chunk = JSON.parse(text.slice(start, i + 1));
+          if (Array.isArray(chunk)) items.push(...chunk);
+          else items.push(chunk);
+        } catch {}
+        start = -1;
+      }
+    }
+  }
+  return items;
+}
+
+export const prInlineComments = (repo, prNumber, cwd) => {
+  try {
+    const raw = cmd('gh', ['api', `repos/${repo}/pulls/${prNumber}/comments`, '--paginate'], cwd);
+    return parseJsonArrayStream(raw);
+  } catch {
+    return [];
+  }
+};
+
+export function evaluatePrComments(prs, issueItem, localCommitTime = 0, inlineComments = []) {
   if (!prs || !prs.length) {
     return { hasPr: false, shouldRun: true };
   }
@@ -199,14 +381,14 @@ export function evaluatePrComments(prs, issueItem, localCommitTime = 0) {
   }
   const latestCommitTime = commitTimes.length ? Math.max(...commitTimes) : 0;
 
-  // Collect all comments and reviews from both the issue and the open PR
+  // Collect all comments and reviews from issue, PR discussion, reviews, and inline review comments
   const comments = [];
 
   for (const c of (issueItem?.comments || [])) {
     if (c?.body && typeof c.body === 'string' && c.body.trim()) {
       const time = Date.parse(c.updatedAt || c.createdAt);
       if (Number.isFinite(time)) {
-        comments.push({ type: 'issue', author: c.author?.login || 'user', body: c.body, time });
+        comments.push({ type: 'issue', author: c.author?.login || c.user?.login || 'user', body: c.body, time });
       }
     }
   }
@@ -215,7 +397,7 @@ export function evaluatePrComments(prs, issueItem, localCommitTime = 0) {
     if (c?.body && typeof c.body === 'string' && c.body.trim()) {
       const time = Date.parse(c.updatedAt || c.createdAt);
       if (Number.isFinite(time)) {
-        comments.push({ type: 'pr', author: c.author?.login || 'user', body: c.body, time });
+        comments.push({ type: 'pr', author: c.author?.login || c.user?.login || 'user', body: c.body, time });
       }
     }
   }
@@ -224,7 +406,27 @@ export function evaluatePrComments(prs, issueItem, localCommitTime = 0) {
     if (r?.state === 'CHANGES_REQUESTED' || (r?.body && typeof r.body === 'string' && r.body.trim() && r.state !== 'APPROVED')) {
       const time = Date.parse(r.submittedAt || r.updatedAt || r.createdAt);
       if (Number.isFinite(time)) {
-        comments.push({ type: 'review', author: r.author?.login || 'reviewer', body: r.body, time });
+        comments.push({ type: 'review', author: r.author?.login || r.user?.login || 'reviewer', body: r.body || 'CHANGES_REQUESTED', time });
+      }
+    }
+  }
+
+  const allInline = [
+    ...(Array.isArray(inlineComments) ? inlineComments : []),
+    ...(Array.isArray(openPr.reviewComments) ? openPr.reviewComments : []),
+  ];
+  for (const c of allInline) {
+    if (c?.body && typeof c.body === 'string' && c.body.trim()) {
+      const time = Date.parse(c.updated_at || c.updatedAt || c.created_at || c.createdAt);
+      if (Number.isFinite(time)) {
+        comments.push({
+          type: 'inline',
+          author: c.user?.login || c.author?.login || 'reviewer',
+          body: c.body,
+          path: c.path,
+          line: c.line ?? c.original_line,
+          time,
+        });
       }
     }
   }
@@ -237,13 +439,15 @@ export function evaluatePrComments(prs, issueItem, localCommitTime = 0) {
   const latestComment = comments[0];
 
   if (latestComment.time > latestCommitTime) {
+    const desc = latestComment.type === 'inline' ? `fresh inline comment on ${latestComment.path || 'file'}` :
+      latestComment.type === 'review' ? 'fresh review' : 'fresh comment';
     return {
       hasPr: true,
       shouldRun: true,
       pr: openPr,
       latestComment,
       latestCommitTime,
-      reason: `fresh comment from ${latestComment.author} (${new Date(latestComment.time).toISOString()})`,
+      reason: `${desc} from ${latestComment.author} (${new Date(latestComment.time).toISOString()})`,
     };
   }
 
@@ -274,7 +478,13 @@ async function handleIssue(c, repo, base, issue, state) {
     } catch {}
   }
 
-  const evalResult = evaluatePrComments(prs, item, localCommitTime);
+  const openPr = prs.find(p => p.state === 'OPEN');
+  let inlineComments = [];
+  if (openPr) {
+    inlineComments = prInlineComments(repo, openPr.number, c.root);
+  }
+
+  const evalResult = evaluatePrComments(prs, item, localCommitTime, inlineComments);
   if (!evalResult.shouldRun) {
     return { status: 'pr-exists', reason: evalResult.reason };
   }
@@ -371,12 +581,31 @@ async function run(c,hours) {
     log(c, `${queue.length} eligible labeled issues`);
     for(const issue of queue) {
       if (isStopped(c) || Date.now()>=deadline) break;
+      const issueStartTime = new Date().toISOString();
+      state.issues[issue.number] = {
+        title: issue.title || `Issue #${issue.number}`,
+        startedAt: issueStartTime,
+        status: 'running',
+        ...(state.issues[issue.number] || {}),
+      };
+      save(c.stateFile,state);
       try {
         const result = await handleIssue(c,repo,base,issue,state);
-        state.issues[issue.number] = {...state.issues[issue.number],...result,finishedAt:new Date().toISOString()};
+        state.issues[issue.number] = {
+          ...state.issues[issue.number],
+          ...result,
+          title: issue.title || state.issues[issue.number]?.title,
+          finishedAt: new Date().toISOString(),
+        };
         log(c, `#${issue.number}: ${result.status}${result.reason?` (${result.reason})`:''}`);
       } catch(e) {
-        state.issues[issue.number] = {...state.issues[issue.number],status:'blocked',reason:e.message,finishedAt:new Date().toISOString()};
+        state.issues[issue.number] = {
+          ...state.issues[issue.number],
+          status:'blocked',
+          reason:e.message,
+          title: issue.title || state.issues[issue.number]?.title,
+          finishedAt:new Date().toISOString(),
+        };
         log(c, `#${issue.number}: blocked (${e.message})`);
       }
       save(c.stateFile,state);
@@ -384,7 +613,14 @@ async function run(c,hours) {
     state.status = isStopped(c)?'stopped':Date.now()>=deadline?'time-window-ended':'finished';
   } catch(e) { state.status='error';state.error=e.message;throw e; }
   finally {
-    state.finishedAt=new Date().toISOString();save(c.stateFile,state);
+    state.finishedAt=new Date().toISOString();
+    try {
+      const summaryText = formatSummary(state);
+      console.log('\n' + summaryText);
+    } catch (e) {
+      console.error(`[night] Error formatting summary: ${e.message}`);
+    }
+    save(c.stateFile,state);
     // Remove only our lock. On macOS caffeinate PID stays alive until this process exits.
     if (existsSync(c.lock) && load(c.lock).pid===owner.pid) unlinkSync(c.lock);
   }
@@ -393,6 +629,7 @@ async function main() {
   const [action='status',arg='8',root=process.cwd()] = process.argv.slice(2);
   const c = context(root);
   if (action==='status') {console.log(JSON.stringify(readStatus(c),null,2));return;}
+  if (action==='summary') {console.log(formatSummary(readStatus(c)));return;}
   if (action==='stop') {if (!existingLock(c)) {log(c,'no runner active');return;}writeFileSync(c.stopFile,'stop\n');log(c,'stop requested; current /i will finish');return;}
   if (action==='foreground') {
     const hours=parseHours(arg);
@@ -418,7 +655,7 @@ async function main() {
   }
   if (action==='start') throw new Error('Background launch disabled. Use pi-night 8 in a terminal to see live progress.');
   if (action==='run') {await run(c,parseHours(arg));return;} // compatibility with already-running legacy jobs
-  throw new Error('Usage: pi-night [hours] | pi-night status | pi-night stop');
+  throw new Error('Usage: pi-night [hours] | pi-night status | pi-night summary | pi-night stop');
 }
 const isDirectExecution = () => {
   if (!process.argv[1]) return false;
