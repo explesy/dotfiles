@@ -1,0 +1,427 @@
+--- a/src/index.ts
++++ b/src/index.ts
+@@ -1,18 +1,22 @@
+ import { spawn } from "node:child_process";
+ import { existsSync } from "node:fs";
+-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
++import { mkdir, mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
++import { setTimeout as delay } from "node:timers/promises";
+ import { tmpdir } from "node:os";
+ import { join } from "node:path";
+ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+ import {
+   calculateCost,
+   createAssistantMessageEventStream,
+-  registerApiProvider,
++  getCurrentSystemPrompt,
++  getCurrentTools,
++  normalizeContext,
+   type Api,
+   type AssistantMessage,
+   type AssistantMessageEventStream,
+   type Context,
+   type ImageContent,
++  type JsonObject,
+   type Message,
+   type Model,
+   type ModelThinkingLevel,
+@@ -88,7 +92,7 @@
+ 
+ export type ParsedToolCall = {
+   name: string;
+-  arguments: Record<string, unknown>;
++  arguments: JsonObject;
+ };
+ 
+ export type ToolCallParseResult =
+@@ -537,11 +541,13 @@
+   args: string[],
+   input?: string,
+   timeoutMs = DISCOVERY_TIMEOUT_MS,
++  cwd?: string,
+ ): Promise<{ stdout: string; stderr: string; code: number | null }> {
+   return new Promise((resolve, reject) => {
+     const child = spawn(opencodeBin(), args, {
++      cwd,
+       stdio: [input === undefined ? "ignore" : "pipe", "pipe", "pipe"],
+-      env: { ...process.env, OPENCODE_DISABLE_UPDATE_CHECK: "1" },
++      env: { ...process.env, ...(cwd ? { PWD: cwd } : {}), OPENCODE_DISABLE_UPDATE_CHECK: "1" },
+     });
+ 
+     let stdout = "";
+@@ -745,7 +751,6 @@
+   } catch {
+     // registerProvider may reject if already registered; the models array is already updated.
+   }
+-  registerApiHandler();
+ 
+   const newModels = models.filter((model) => !previousModels.has(model.id));
+ 
+@@ -871,6 +876,9 @@
+ }
+ 
+ function serializeMessage(message: Message): string {
++  if (message.role === "system") {
++    throw new Error("System messages must be replayed before bridge serialization");
++  }
+   if (message.role === "user") {
+     return `USER:\n${contentToText(message.content)}`;
+   }
+@@ -1221,7 +1229,7 @@
+   }
+ }
+ 
+-function parseArguments(value: unknown): Record<string, unknown> | undefined {
++function parseArguments(value: unknown): JsonObject | undefined {
+   let parsed = value;
+   if (typeof parsed === "string") {
+     try {
+@@ -1233,7 +1241,7 @@
+   if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+     return undefined;
+   }
+-  return parsed as Record<string, unknown>;
++  return parsed as JsonObject;
+ }
+ 
+ function repairUnescapedJsonStringQuotes(raw: string): string | undefined {
+@@ -1483,6 +1491,16 @@
+   return messages.map(serializeMessage);
+ }
+ 
++/** Replay Pi 1.x system-message updates before using the CLI bridge format. */
++export function toBridgeContext(context: Context): Context {
++  const transcript = normalizeContext(context);
++  return {
++    systemPrompt: getCurrentSystemPrompt(transcript.messages),
++    tools: getCurrentTools(transcript.messages),
++    messages: transcript.messages.filter((message) => message.role !== "system"),
++  };
++}
++
+ /**
+  * Decide whether the next turn may continue the recorded OpenCode session
+  * (#75, #76). Continuation requires the same model, the same serialized
+@@ -1529,6 +1547,21 @@
+ 
+ async function createTempAgentDir(): Promise<string> {
+   const dir = await mkdtemp(join(tmpdir(), "opencode-pi-"));
++  if ((await cliDialect()) === "v2") {
++    // Use the v2 configuration format and preserve the client's own prompt.
++    // Free-tier access may still reject this model-provider use case.
++    await writeFile(join(dir, "opencode.jsonc"), JSON.stringify({
++      snapshots: false,
++      agents: {
++        [AGENT_ID]: {
++          description: "Pi bridge model backend",
++          mode: "primary",
++          permissions: [{ action: "*", resource: "*", effect: "deny" }],
++        },
++      },
++    }), "utf8");
++    return dir;
++  }
+   const agentsDir = join(dir, ".opencode", "agents");
+   await mkdir(agentsDir, { recursive: true });
+   await writeFile(
+@@ -1538,27 +1571,33 @@
+ mode: primary
+ permission:
+   "*": deny
+-  read: deny
+-  edit: deny
+-  glob: deny
+-  grep: deny
+-  list: deny
+-  bash: deny
+-  task: deny
+-  external_directory: deny
+-  todowrite: deny
+-  webfetch: deny
+-  websearch: deny
+-  lsp: deny
+-  skill: deny
+-  question: deny
+-  doom_loop: deny
+ ---
+ You are the OpenCode side of a Pi Coding Agent bridge. OpenCode tools are disabled. Reply in plain text, or emit <pi_tool_call>{"name":"...","arguments":{...}}</pi_tool_call> exactly when the prompt asks you to request a Pi tool.
+ `,
+     "utf8",
+   );
+   return dir;
++}
++
++/** OpenCode v2 loads location configuration after its first API response. */
++export async function waitForBridgeAgent(dir: string, signal?: AbortSignal): Promise<void> {
++  const directory = await realpath(dir);
++  const endpoint = `/api/agent?location%5Bdirectory%5D=${encodeURIComponent(directory)}`;
++  const deadline = Date.now() + DISCOVERY_TIMEOUT_MS;
++  while (Date.now() < deadline) {
++    signal?.throwIfAborted();
++    const result = await runCapture(["api", "GET", endpoint], undefined, DISCOVERY_TIMEOUT_MS, directory);
++    if (result.code !== 0) throw new Error("OpenCode agent readiness check failed");
++    const payload = JSON.parse(result.stdout);
++    const agent = payload.data?.find((item: { id: string }) => item.id === AGENT_ID);
++    if (agent && payload.location?.directory === directory) {
++      const permissions = agent.permissions as { action: string; resource: string; effect: string }[];
++      const lastWildcard = permissions?.findLastIndex((rule) => rule.action === "*" && rule.resource === "*") ?? -1;
++      if (lastWildcard >= 0 && permissions.slice(lastWildcard).every((rule) => rule.effect === "deny")) return;
++    }
++    await delay(200, undefined, { signal });
++  }
++  throw new Error("OpenCode bridge agent was not ready before the startup deadline");
+ }
+ 
+ export function streamOpenCode(
+@@ -1599,11 +1638,12 @@
+         ? options.sessionId
+         : undefined;
+     const piState = piSessionId ? getPiSessionState(piSessionId) : undefined;
+-    const transcriptParts = serializedTranscriptParts(context.messages);
+-
+     try {
+       stream.push({ type: "start", partial: output });
+       if (options?.signal?.aborted) throw new Error("Request was aborted");
++
++      context = toBridgeContext(context);
++      const transcriptParts = serializedTranscriptParts(context.messages);
+ 
+       // Continuation decision (#75, #76): reuse the recorded OpenCode
+       // session only when the model, tools, system prompt, and transcript
+@@ -1644,7 +1684,6 @@
+       const args = dialect === "v2"
+         ? [
+             "run",
+-            "--standalone",
+             "-m",
+             typeof variant === "string" && variant.trim() && !model.id.includes("#")
+               ? `${model.id}#${variant}`
+@@ -1678,10 +1717,12 @@
+       }
+       for (const path of imagePaths) args.push("--file", path);
+ 
++      if (dialect === "v2") await waitForBridgeAgent(sessionDir, options?.signal);
++
+       const child = spawn(opencodeBin(), args, {
+         stdio: ["pipe", "pipe", "pipe"],
+         ...(dialect === "v2" ? { cwd: sessionDir } : {}),
+-        env: { ...process.env, OPENCODE_DISABLE_UPDATE_CHECK: "1" },
++        env: { ...process.env, PWD: sessionDir, OPENCODE_DISABLE_UPDATE_CHECK: "1" },
+       });
+ 
+       const abort = () => child.kill("SIGTERM");
+@@ -2040,18 +2081,6 @@
+   return lines;
+ }
+ 
+-function registerApiHandler(): void {
+-  registerApiProvider(
+-    {
+-      api: API_ID,
+-      stream: (model, context, options) =>
+-        streamOpenCode(model, context, options),
+-      streamSimple: streamOpenCode,
+-    },
+-    PROVIDER_ID,
+-  );
+-}
+-
+ export default async function opencodePiExtension(pi: ExtensionAPI) {
+   const { models, time } = await discoverModels();
+   registeredModels = models;
+@@ -2065,7 +2094,6 @@
+     models: registeredModels.map(providerModel),
+     streamSimple: streamOpenCode,
+   });
+-  registerApiHandler();
+ 
+   // Tear down per-Pi-session OpenCode state — project directories and
+   // session records — when the Pi session ends for any reason (#74).
+--- a/src/index.test.ts
++++ b/src/index.test.ts
+@@ -11,10 +11,6 @@
+ import { join } from "node:path";
+ import test from "node:test";
+ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+-import {
+-  clearApiProviders,
+-  getApiProvider,
+-} from "@earendil-works/pi-ai";
+ import type {
+   Api,
+   AssistantMessageEvent,
+@@ -41,7 +37,45 @@
+   streamOpenCode,
+   showOpenCodePanelList,
+   trackedPiSessionCount,
++  toBridgeContext,
++  waitForBridgeAgent,
+ } from "./index.js";
++
++test("Pi 1.3 transcript replays system sections and tool updates", () => {
++  const read = { name: "read", description: "read", parameters: {} };
++  const write = { name: "write", description: "write", parameters: {} };
++  const grep = { name: "grep", description: "grep", parameters: {} };
++  const context = toBridgeContext({ messages: [
++    { role: "system", content: "base instruction", sections: {style: "old style", obsolete: "obsolete section"}, toolsAdded: [read, write], timestamp: 1 },
++    { role: "user", content: "first question", timestamp: 2 },
++    { role: "system", content: [{type: "text", text: "later instruction"}], sections: {style: "new style", obsolete: null}, toolsAdded: [grep], toolsRemoved: [{name: "write"}], timestamp: 3 },
++    { role: "user", content: "next question", timestamp: 4 },
++  ] });
++  assert.match(context.systemPrompt ?? "", /base instruction/);
++  assert.match(context.systemPrompt ?? "", /later instruction/);
++  assert.match(context.systemPrompt ?? "", /new style/);
++  assert.doesNotMatch(context.systemPrompt ?? "", /old style|obsolete section/);
++  assert.deepEqual(context.tools?.map(tool => tool.name), ["read", "grep"]);
++  assert.deepEqual(context.messages.map(message => message.role), ["user", "user"]);
++});
++
++test("legacy context shorthand still preserves prompt and tools", () => {
++  const context = toBridgeContext({ ...fakeContext(["read"]), systemPrompt: "legacy instruction" });
++  assert.equal(context.systemPrompt, "legacy instruction");
++  assert.deepEqual(context.tools?.map(tool => tool.name), ["read"]);
++});
++
++test("normalized transcript tool declarations reach the Pi tool allowlist", async () => {
++  const context: Context = { messages: [
++    { role: "system", content: "Use read", toolsAdded: [{ name: "read", description: "read", parameters: {} }], timestamp: 1 },
++    { role: "user", content: "Read the fixture", timestamp: 2 },
++  ] };
++  const message = await withFakeOpenCode(fakeEventScript([
++    {type: "text", part: {text: '<pi_tool_call>{"name":"read","arguments":{"path":"fixture.txt"}}</pi_tool_call>'}},
++  ]), () => streamOpenCode(fakeModel(), context).result());
++  assert.equal(message.stopReason, "toolUse");
++  assert.equal(message.content[0]?.type, "toolCall");
++});
+ 
+ function fakeModel(): Model<Api> {
+   return {
+@@ -126,6 +160,15 @@
+   else process.env[key] = value;
+ }
+ 
++const FAKE_AGENT_READINESS = `
++if (process.argv[2] === "api" && process.argv[4]?.startsWith("/api/agent?")) {
++  process.stdout.write(JSON.stringify({
++    location: {directory: require("node:fs").realpathSync(process.cwd())},
++    data: [{id: "pi-model", permissions: [{action: "*", resource: "*", effect: "deny"}]}]
++  }));
++  process.exit(0);
++}`;
++
+ async function withFakeOpenCode<T>(
+   script: string,
+   run: () => Promise<T>,
+@@ -133,7 +176,7 @@
+ ): Promise<T> {
+   const dir = mkdtempSync(join(tmpdir(), "opencode-pi-fake-bin-"));
+   const binPath = join(dir, "opencode-fake.js");
+-  writeFileSync(binPath, `#!/usr/bin/env node\nif (process.argv[2] === "--version") { process.stdout.write(${JSON.stringify(version)}); process.exit(0); }\n${script}`, "utf8");
++  writeFileSync(binPath, `#!/usr/bin/env node\nif (process.argv[2] === "--version") { process.stdout.write(${JSON.stringify(version)}); process.exit(0); }\n${FAKE_AGENT_READINESS}\n${script}`, "utf8");
+   chmodSync(binPath, 0o755);
+ 
+   const previousBin = process.env.OPENCODE_PI_BIN;
+@@ -928,7 +971,7 @@
+ fs.writeFileSync(${JSON.stringify(capturePath)}, JSON.stringify({
+   args: process.argv.slice(2),
+   cwd: process.cwd(),
+-  agent: fs.readFileSync(".opencode/agents/pi-model.md", "utf8"),
++  agent: fs.readFileSync("opencode.jsonc", "utf8"),
+ }));
+ process.stdout.write(JSON.stringify({ type: "text", part: { text: "ok" } }) + "\\n");`,
+       async () => {
+@@ -943,10 +986,12 @@
+       agent: string;
+     };
+     assert.deepEqual(invocation.args, [
+-      "run", "--standalone", "-m", "opencode/fake-free#low",
++      "run", "-m", "opencode/fake-free#low",
+       "--agent", "pi-model", "--format", "json", "--thinking",
+     ]);
+-    assert.match(invocation.agent, /mode: primary/);
++    const agent = JSON.parse(invocation.agent).agents["pi-model"];
++    assert.equal(agent.mode, "primary");
++    assert.deepEqual(agent.permissions, [{action: "*", resource: "*", effect: "deny"}]);
+     assert.match(invocation.cwd, /opencode-pi-/);
+   } finally {
+     rmSync(captureDir, { recursive: true, force: true });
+@@ -1127,25 +1172,23 @@
+ test("extension registration resolves the API handler for inference", async () => {
+   const previousModels = process.env.OPENCODE_PI_MODELS;
+   delete process.env.OPENCODE_PI_MODELS;
++  let providerConfig: Parameters<ExtensionAPI["registerProvider"]>[1] | undefined;
+ 
+   try {
+     await withFakeOpenCode(
+       `process.stdout.write("opencode/one-free\\n");`,
+       () =>
+         opencodePiExtension({
+-          registerProvider() {},
++          registerProvider(_id: string, config: Parameters<ExtensionAPI["registerProvider"]>[1]) { providerConfig = config; },
+           on() {},
+           registerCommand() {},
+         } as unknown as ExtensionAPI),
+     );
+ 
+-    const apiProvider = getApiProvider("opencode-cli-runner");
+-    assert.notEqual(apiProvider, undefined);
+-    assert.equal(typeof apiProvider?.streamSimple, "function");
+-    assert.equal(typeof apiProvider?.stream, "function");
++    assert.equal(providerConfig?.api, "opencode-cli-runner");
++    assert.equal(providerConfig?.streamSimple, streamOpenCode);
+   } finally {
+     restoreEnv("OPENCODE_PI_MODELS", previousModels);
+-    clearApiProviders();
+   }
+ });
+ 
+@@ -1612,6 +1655,7 @@
+     binPath,
+     `#!/usr/bin/env node
+ const args = process.argv.slice(2);
++${FAKE_AGENT_READINESS}
+ if (args[0] === "api" && args[1] === "GET" && args[2] === "/api/model") {
+   process.stdout.write(JSON.stringify({
+     data: [
+@@ -1663,7 +1707,7 @@
+     ).result();
+     assert.equal(message.stopReason, "stop");
+     const args = JSON.parse((message.content[0] as { text: string }).text) as string[];
+-    assert.deepEqual(args.slice(0, 4), ["run", "--standalone", "-m", "opencode/space-bunny-free#low"]);
++    assert.deepEqual(args.slice(0, 3), ["run", "-m", "opencode/space-bunny-free#low"]);
+     assert.equal(args.includes("--pure"), false);
+   } finally {
+     restoreEnv("OPENCODE_PI_BIN", previousBin);
+@@ -1771,7 +1815,7 @@
+   delete process.env.OPENCODE_PI_MODELS;
+   try {
+     for (const [version, expected] of [
+-      ["opencode v2.0.16", ["run", "--standalone", "-m", "opencode/space-bunny-free#low", "--agent", "pi-model", "--format", "json", "--thinking"]],
++      ["opencode v2.0.16", ["run", "-m", "opencode/space-bunny-free#low", "--agent", "pi-model", "--format", "json", "--thinking"]],
+       ["opencode v1.2.0", ["run", "--pure", "-m", "opencode/space-bunny-free", "--agent", "pi-model", "--format", "json", "--dir"]],
+     ] as const) {
+       await withFakeOpenCode(
+@@ -2274,7 +2318,6 @@
+     assert.match(configPanelText, /OPENCODE_PI_MODELS: set/);
+     for (const secret of secretValues) assert.equal(configPanelText.includes(secret), false);
+   } finally {
+-    clearApiProviders();
+     restoreEnv("OPENCODE_PI_BIN", previousBin);
+     restoreEnv("OPENCODE_PI_MODELS", previousModels);
+     rmSync(dir, { recursive: true, force: true });
+@@ -2376,7 +2419,6 @@
+     assert.equal(calls, 0);
+     assert.ok(notifications.length > 0);
+   } finally {
+-    clearApiProviders();
+     restoreEnv("OPENCODE_PI_BIN", previousBin);
+     restoreEnv("OPENCODE_PI_MODELS", previousModels);
+   }
+@@ -2441,7 +2483,6 @@
+     assert.ok(escapedSelections[1]!.options.includes("Back"));
+     assert.ok(escapedSelections[1]!.options.includes("Close"));
+   } finally {
+-    clearApiProviders();
+     restoreEnv("OPENCODE_PI_MODELS", previousModels);
+   }
+ });

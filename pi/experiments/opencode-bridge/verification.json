@@ -1,0 +1,39 @@
+{
+  "date": "2026-10-20",
+  "versions": {
+    "pi": "1.3.0",
+    "piAiSdk": "1.3.0",
+    "opencode": "2.0.32",
+    "upstreamBridge": "1.4.0"
+  },
+  "model": "opencode/deepseek-v4.1-flash-free",
+  "live": {
+    "nativeCliText": "passed: OPENCODE_CONTROL_OK",
+    "piProviderWithDedicatedAgent": "blocked: HTTP 403 FreeTierError",
+    "piProviderWithBuiltinAgentAndDeniedTools": "blocked: HTTP 403 FreeTierError",
+    "nativeCliPlainPromptWithDeniedTools": "blocked: HTTP 403 FreeTierError",
+    "nativeCliFileTask": {
+      "status": "passed",
+      "observedTools": ["read", "write"],
+      "finalText": "NATIVE_TASK_OK",
+      "expectedOutputHex": "33380a",
+      "independentFileCheck": "passed"
+    }
+  },
+  "localChecks": {
+    "strictTypecheckAgainstSdk130": "passed",
+    "adaptedUpstreamTests": {"passed": 80, "failed": 0},
+    "newTranscriptRegressionTests": {"passed": 3, "failed": 0},
+    "patchAppliesToOriginalArchive": "passed"
+  },
+  "notVerified": [
+    "live Pi tool roundtrip",
+    "live bridge continuation",
+    "image input",
+    "context limit",
+    "model quality",
+    "rate limit stability",
+    "account billing"
+  ],
+  "activePiExtensionInstalled": false
+}
