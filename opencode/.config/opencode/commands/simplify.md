@@ -1,7 +1,7 @@
 ---
 description: "Free review pass: find and propose simplifications in recent changes"
 agent: reviewer
-subtask: true
+subagent: true
 ---
 
 Look at the current working tree diff and the recently changed files. Identify opportunities to simplify. Do not edit files.

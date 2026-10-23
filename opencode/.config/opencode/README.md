@@ -1,253 +1,134 @@
-# OpenCode config — optimized Go routing (Sep 2026)
+# OpenCode config — free-only V2 (Oct 2026)
 
-Canonical global OpenCode config for this dotfiles repository. From the repo root, `stow opencode` links `opencode/.config/opencode/` into `~/.config/opencode/`. `package.json` and `package-lock.json` are tracked (source of truth for the plugin dependency); `node_modules` and `bun.lock` are generated locally and never committed or stowed.
+Canonical global OpenCode V2 config for this dotfiles repository. From the repo root, `stow opencode` links `opencode/.config/opencode/` into `~/.config/opencode/` and `opencode/.local/bin/` into `~/.local/bin/`.
 
-The package keeps the existing safety/context controls and simplifies primary routing around current OpenCode Go economics: cheap high-throughput default work, strong planning/reasoning only where it pays off, and dedicated multimodal/design routes.
+The package is intentionally minimal: one free multimodal build worker, one free read-only reviewer, and the normal safety/context controls. OpenCode Go access is authenticated, but no paid route is configured for now: the free build worker covers everyday work.
 
 ## Install
 
-`~/.config/opencode` must be a real directory (not a single stow-folder symlink) because `node_modules` is installed there at runtime. Create it **before** stowing so stow links the entries individually:
+`~/.config/opencode` must be a real directory (not a single stow-folder symlink) because generated files such as `cli.json`, `node_modules` and `bun.lock` can live there at runtime. Create it **before** stowing so stow links the entries individually:
 
 ```sh
 mkdir -p ~/.config/opencode
 stow opencode
-cd ~/.config/opencode && npm install   # installs @opencode-ai/plugin locally
 ```
+
+No `npm install` is needed: the config ships without plugin packages.
 
 ## Structure
 
 ```text
 opencode.jsonc
-tui.json
+cli.json
+tui.json          # legacy V1 file, kept only for one-time CLI migration
 herdr-tui-session.js
 
 agents/
-  cheap-explore.md
-  coder.md
   reviewer.md
-  hard-review.md
-  plan-reviewer.md
-  translator.md
 
 commands/
   c.md
   do.md
-  pr.md
   review.md
-  hard.md
   simplify.md
   commit.md
-  v.md
-  lp.md
-  ldo.md
-  luna.md
-  design.md
-
-plugins/
-  herdr-agent-state.js
-  mode-model-router.js
 
 tui-plugins/
   workflow-ui.tsx
 ```
 
-## Primary routing
+`opencode/.local/bin/opencode-reset` is a separate stow entry: it lands in `~/.local/bin` and wipes the runtime database, state and caches (see [Fresh start](#fresh-start)).
 
-The primary-agent list is intentionally small:
+## Fresh start
 
-- `build` — **default**, `opencode-go/deepseek-v4.1-flash`. Everyday implementation, debugging and refactoring, with image input. This is the only DeepSeek build route.
-- `plan` — `opencode-go/gpt-5.6-luna`, **high** reasoning, read-only. Use for implementation-ready planning, architecture, migrations, state/concurrency, compatibility and screenshot/PDF-aware planning.
-- `quality` — `opencode-go/gpt-5.6-luna`, **high** reasoning. Explicit escalation for hard implementation/debugging, cross-cutting changes, difficult failures, or multimodal work where the default route is not enough.
-- `free-build` — `opencode/nemotron-3.5-lightning-free`. Zero-Go fallback for low-risk routine work or after Go quota exhaustion.
-  DeepSeek V4 Flash Free was removed from this route after current OpenCode builds began rejecting it as an invalid configured model.
-- `design` — `opencode-go/glm-5.3-flash`, **high** reasoning. Screenshot/reference-driven frontend design, responsive layout, visual hierarchy and UI polish.
-- `vision` — `opencode-go/qwen3.8-flash`. Economical general multimodal diagnosis and small screenshot/image-driven coding tasks.
+`opencode-reset` stops the background service, deletes `~/.local/share/opencode` (database, sessions, logs, snapshots), `~/.local/state/opencode` and `~/.cache/opencode`, then starts a fresh service. Your configuration and `auth.json` are preserved.
 
-Removed from the primary picker because they duplicated clearer routes or had poor current value:
+Run it from a plain shell, not from inside an OpenCode session — it stops the service that hosts that session:
 
-- `go-build` — redundant now that DeepSeek V4.1 Flash is the default `build`.
-- `go-quality` / DeepSeek V4 Pro route — no longer worth a permanent mode versus Luna quality escalation; select manually only for an occasional independent model-family check.
-- `luna-build` — replaced by the clearer `quality` route.
-- `luna-plan` — merged into the built-in `plan` route.
-- Kimi K3 as default `design` — removed from routine design routing because its Go allowance is too small for iterative frontend work. It can still be selected manually if a specific task justifies it.
-
-## Recommended daily workflow
-
-Routine task:
-
-```text
-build -> automatic focused reviewer after non-trivial edits -> /commit
+```sh
+opencode-reset            # confirm, wipe, start fresh
+opencode-reset --dry-run  # show what would be deleted
+opencode-reset --no-auth  # also drop saved credentials
 ```
 
-Substantial feature/change:
+Use it after a major upgrade (the client and the background service must run the same version) or whenever the local database has grown large or holds broken state. Per-session history can also be removed with the supported command instead of a full reset: `opencode session delete <session-id>`.
 
-```text
-/lp <task> -> /pr -> revise plan if needed -> /do -> implementation -> reviewer -> optional /hard -> /commit
-```
+## Routing
 
-If implementation is unusually difficult or the default worker gets stuck:
+Only two agents are enabled:
 
-```text
-/luna <task>
-```
+- `build` — **default**, `opencode/deepseek-v4.1-flash-free#high`.
+  - Free, no provider credentials required.
+  - Text and image input, tool calls, and reasoning variants (`low`, `high`, `max`).
+  - 200k context window and 32k output, which is enough for normal coding sessions.
+  - Handles frontend/design feedback, screenshots, diagrams, and visual debugging directly. There is no separate `design` or `vision` route any more.
+- `reviewer` — subagent, `opencode/mimo-v2.6-flash-free`.
+  - Free independent first-pass review after non-trivial changes.
+  - Read-only: no edits, web access, external directories, or nested subagents.
+  - Allowed `shell` commands are limited to `git status`, `git log`, `git diff`, and `git show`.
 
-or, after a reviewed plan:
+The built-in `plan`, `general`, and `explore` agents are disabled. The only subagent the build agent may launch is `reviewer`; this is enforced by the global `permissions` list.
 
-```text
-/ldo
-```
+Removed from the config because they duplicated this route, required paid credentials, or added routing clutter:
 
-Both use `quality` = GPT-5.6 Luna High.
+- `design` and `vision` — the free DeepSeek build model accepts images itself.
+- `free-build` — merged into the default `build` route.
+- custom `plan` and `quality` — they used paid GPT-5.6 Luna Go and were removed to keep routing minimal for now.
+- `cheap-explore`, `coder`, `translator`, `plan-reviewer`, and `hard-review` subagents — they used paid or now-unnecessary models.
+- commands `/lp`, `/pr`, `/ldo`, `/luna`, `/hard`, `/design`, and `/v` — they depended on the removed agents.
 
-For UI/reference work:
-
-```text
-/design <task>
-```
-
-For a cheap visual diagnosis/small screenshot-driven fix:
-
-```text
-/v <task>
-```
-
-## Why this routing
-
-OpenCode Go limits are dollar-based, so long agentic sessions should spend expensive reasoning only when it materially reduces retries. DeepSeek V4.1 Flash is the default for everyday implementation because it has performed well in real tasks and has a favorable OpenCode Go allowance. The separate A/B route has been retired. Luna High is reserved for planning and explicit quality escalation. GLM-5.3 Flash replaces Kimi K3 for normal design work because it is multimodal and much more practical for iterative sessions. Qwen3.8 Flash provides a cheaper general vision route without relying on the experimental DeepSeek V4 Flash Vision model.
-
-The config intentionally does **not** add every cheap/new model as a permanent mode. MiMo-V2.5, Hy3/Hy4, LongCat, Muse/Omen and newer previews can be A/B tested later, but adding them all to the primary picker would make everyday routing harder. A model earns a permanent route only when it clearly wins a real recurring role.
-
-## Step-limit policy
-
-Primary agents intentionally have **no `steps` cap**. OpenCode forces a text-only handoff when a configured step limit is reached, which previously caused partially completed implementations.
-
-Bounded subagents keep their existing limits:
-
-- `cheap-explore`: 9
-- `coder`: 22
-- `reviewer`: 12
-- `hard-review`: 10
-- `plan-reviewer`: 10
-- `translator`: 6
-
-Primary prompts treat bounded-subagent exhaustion as a handoff rather than task completion. If requested work remains and there is no genuine blocker or approval boundary, the primary agent continues.
-
-## Subagents and quota control
-
-The existing cheap/free child-context strategy is preserved:
-
-- `cheap-explore` — Nemotron 3.5 Lightning Free, read-only, narrow codebase discovery.
-- `coder` — Laguna S 2.1 Free, focused mechanical implementation only after scope/files are known.
-- `reviewer` — MiMo-V2.5 Free, one independent first-pass post-implementation review.
-- `translator` — GPT-5.6 Luna for production localization; preserves placeholders, keys, markup and technical identifiers.
-- `plan-reviewer` — GPT-5.6 Terra High, manual-only independent pre-implementation review.
-- `hard-review` — GPT-5.6 Terra High, manual-only escalation review.
-
-`subagent_depth` remains `1` to avoid nested agent trees and uncontrolled context multiplication.
-
-## Plan review
-
-`/pr` remains a manual GPT-5.6 Terra review. It does not launch Terra with an empty context. The current primary first serializes the current task, proposed plan, decisions/constraints and concise relevant code context into a self-contained brief, then delegates exactly once to `plan-reviewer`.
-
-`plan-reviewer` treats the supplied `PROPOSED PLAN` as the only plan being reviewed. Repository TODOs, ADRs, historical plans and comments are evidence only. If the current plan context is missing, it returns `PLAN_VERDICT: insufficient-context` instead of guessing.
-
-The normal path is now deliberately simple:
-
-```text
-/lp -> /pr -> /do
-```
-
-`/lp` explicitly enters the real `plan` agent (Luna High). `/do` explicitly switches to the default `build` agent (DeepSeek V4.1 Flash), so implementation cannot accidentally remain inside the read-only plan agent.
-
-If the reviewed plan is unusually risky/complex, use `/ldo` instead of `/do`; it switches to `quality` (Luna High).
-
-## Hard review
-
-`/hard` keeps the existing context-safe Terra pattern. The current primary serializes the current problem, attempted solution/hypothesis, constraints, relevant code context and unresolved question before invoking `hard-review`.
-
-Terra reviewers remain manual-only. Primary prompts forbid automatic invocation unless the matching `RUN_PLAN_REVIEW` / `RUN_HARD_REVIEW` marker is explicitly supplied by the command.
-
-## Design / visual frontend
-
-`design` now uses GLM-5.3 Flash High rather than Kimi K3.
-
-Use it when the task is materially about:
-
-- screenshot/reference matching;
-- hierarchy, spacing and typography;
-- responsive layout;
-- frontend component composition;
-- interaction states and accessibility;
-- visual polish while preserving the product's existing design language.
-
-The visual evidence stays in the primary multimodal context. `cheap-explore` may be used only for repository discovery that does not require seeing the image. A normal post-change `reviewer` pass is still available.
-
-Kimi K3 is intentionally not a permanent mode now. If a specific difficult visual task clearly deserves it, select it manually for that task rather than paying its low Go allowance on every design iteration.
-
-## Vision
-
-`vision` now uses `opencode-go/qwen3.8-flash`.
-
-Use `/v` for screenshot/image-based diagnosis, UI state investigation, diagrams and small image-driven fixes. If the problem turns into a hard architecture/debugging task, switch to `quality`; if visual evidence stops mattering, return to `build`.
-
-The experimental DeepSeek V4 Flash Vision model is deliberately not the default vision route yet. It is attractive on cost, but keeping an experimental model out of the core workflow avoids unnecessary routing/tool-compatibility risk until it proves itself in our real tasks.
+If a stronger route is needed later, `opencode-go/gpt-5.6-luna` (Go) is authenticated and can be reintroduced deliberately. Note that `openai/*` models currently have no route; the reachable strong reviewer model is `opencode/gpt-5.6-terra`.
 
 ## Commands
 
 - `/c` — continue from the exact current state without redoing finished analysis.
-- `/lp` — plan read-only with `plan` = Luna High, including screenshots/PDFs.
-- `/pr` — independently review the current plan with Terra High.
-- `/do` — approve the reviewed plan and implement it with default `build` = DeepSeek V4.1 Flash.
-- `/ldo` — approve the reviewed plan and implement with `quality` = Luna High.
-- `/luna` — run an ad-hoc hard task through `quality` = Luna High.
-- `/review` — free MiMo independent post-implementation review.
-- `/hard` — context-safe manual Terra escalation review.
-- `/v` — Qwen3.8 Flash multimodal diagnosis/small visual fix.
-- `/design` — GLM-5.3 Flash High visual frontend/design route.
+- `/do` — implement the approved plan with the free `build` route.
+- `/review` — free MiMo-V2.6 independent post-implementation review.
 - `/simplify` — inspect recent changes for unnecessary complexity.
 - `/commit` — stage relevant files and create a local conventional commit; never push.
 
+## Native V2 configuration
+
+`opencode.jsonc` uses the native V2 shape:
+
+- `agents` (plural) with model variants joined as `provider/model#variant`;
+- `permissions` as one ordered array, where the last matching rule wins;
+- `update: "disable"` instead of the V1 `autoupdate`;
+- `compaction.buffer` instead of the V1 `compaction.reserved`;
+- `shell`, `watcher`, `formatter`, `share`, and `default_agent` unchanged where V2 keeps the same shape.
+
+`lsp` was removed because V2 accepts it but does not run language servers or expose LSP diagnostics. Use the project's lint, typecheck, or compiler commands instead.
+
+`cli.json` is the V2 terminal client configuration and loads both TUI plugins. `tui.json` is the legacy V1 file; V2 only reads it when `cli.json` is absent, so it is kept solely as a migration fallback.
+
 ## TUI workflow UI
 
-`workflow-ui.tsx` is a TUI-only presentation layer. It does not duplicate command routing or change agent/model configuration. `tui.json` loads it explicitly from `./tui-plugins/workflow-ui.tsx`.
+`workflow-ui.tsx` is a TUI-only presentation layer. It does not duplicate command routing or change agent/model configuration. `cli.json` loads it explicitly from `./tui-plugins/workflow-ui.tsx`.
 
 It adds:
 
-- a compact `Focus` block at the top of the session sidebar with the current task and current activity; it derives both from local session state and does not call another model;
-- the Focus block intentionally does **not** render task progress or Todo items because OpenCode already has a built-in `Todo` sidebar block;
-- a compact status beside the session prompt, e.g. `BUILD · DeepSeek V4.1 Flash · /wf`;
-- the status is derived from the current session agent/model state, so it helps expose stale or unexpected routing;
+- a compact `Focus` block at the top of the session sidebar with the current task and current activity;
+- a compact status beside the session prompt, e.g. `BUILD · DeepSeek V4.1 Flash Free High · /wf`;
 - `/workflow` (alias `/wf`) in the TUI command palette;
-- a searchable command cheat sheet for `/lp`, `/pr`, `/do`, `/ldo`, `/luna`, `/review`, `/hard`, `/design`, `/v`, `/c`, `/simplify`, and `/commit`;
+- a short command cheat sheet for `/do`, `/review`, `/c`, `/simplify`, and `/commit`;
 - a small `/workflow commands` hint on the home prompt.
 
-The UI plugin is intentionally separate from `plugins/mode-model-router.js`: TUI modules are target-exclusive and are loaded from `tui.json`, while the existing router is a server/runtime plugin. This UI is for the current TUI plugin system and does not add controls to OpenCode Desktop/Web.
+The UI only touches the TUI: terminal plugins are declared in `cli.json`, so they add no controls to OpenCode Desktop/Web.
 
-## Desktop agent/model picker workaround
-
-Some OpenCode Desktop builds can display or retain a stale manually selected model when switching agents. `plugins/mode-model-router.js` therefore enforces the intended model on every user turn.
-
-Current enforced mapping:
-
-- `build` -> DeepSeek V4.1 Flash (OpenCode Go)
-- `plan` -> GPT-5.6 Luna High (OpenCode Go)
-- `quality` -> GPT-5.6 Luna High (OpenCode Go)
-- `free-build` -> Nemotron 3.5 Lightning Free
-- `design` -> GLM-5.3 Flash High (OpenCode Go)
-- `vision` -> Qwen3.8 Flash (OpenCode Go)
-
-The plugin intentionally does not remap subagents; each subagent keeps its own pinned model.
-
-The specialized workflow commands also pin agent/model (and reasoning variant where applicable), so `/lp`, `/do`, `/ldo`, `/luna`, `/design`, and `/v` are the safest entry points when the Desktop picker appears stale. The `build` route is protected by the runtime router.
-
-## Safety / context controls preserved
+## Safety / context controls
 
 - secrets and private keys remain protected;
-- destructive shell commands (rm, sudo, git reset --hard) and process kills still require approval;
-- routine git operations, dependency installation, web research and external directory access are autonomous;
-- sharing remains disabled;
-- compaction/pruning and watcher ignores remain enabled;
-- normal coding remains autonomous;
-- primary agents remain uncapped by small hard step limits;
-- reviewer agents remain read-only;
-- no nested subagent trees.
+- destructive shell commands (`rm`, `sudo`, `git reset --hard`) and process kills still require approval;
+- routine git operations, dependency installation, web research, and external directory access are autonomous;
+- sharing remains disabled and update checks are turned off;
+- automatic compaction keeps a reserved summary budget;
+- watcher ignores keep generated directories out of the index;
+- the reviewer remains read-only and cannot start nested subagents.
+
+## Verify
+
+```sh
+opencode debug agents   # expect build + reviewer
+opencode models         # expect the free DeepSeek and MiMo models
+opencode service status
+```

@@ -1,7 +1,7 @@
 ---
-description: Run the free independent first-pass review with MiMo-V2.5
+description: Run the free independent first-pass review with MiMo-V2.6 Flash
 agent: reviewer
-subtask: true
+subagent: true
 ---
 
 Review the current implementation and working-tree diff. Focus on concrete bugs, regressions, realistic edge cases, security, compatibility, and unnecessary complexity. Do not edit files. Return only actionable findings ordered by severity; if there are no meaningful findings, say so explicitly.

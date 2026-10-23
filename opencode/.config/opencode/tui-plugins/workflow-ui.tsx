@@ -4,49 +4,14 @@ import { createMemo, Show } from "solid-js"
 
 const WORKFLOW = [
   {
-    title: "/lp — Plan",
-    value: "lp",
-    description: "Luna High · read-only implementation plan",
-  },
-  {
-    title: "/pr — Plan review",
-    value: "pr",
-    description: "Terra High · independent pre-implementation review",
-  },
-  {
     title: "/do — Build",
     value: "do",
-    description: "DeepSeek V4.1 Flash · normal implementation after plan review",
-  },
-  {
-    title: "/ldo — Hard build",
-    value: "ldo",
-    description: "Luna High · risky or unusually complex implementation",
-  },
-  {
-    title: "/luna — Quality escalation",
-    value: "luna",
-    description: "Luna High · hard debugging, architecture, cross-cutting work",
+    description: "DeepSeek V4.1 Flash Free · implement the approved plan",
   },
   {
     title: "/review — Code review",
     value: "review",
-    description: "MiMo-V2.5 Free · independent post-implementation review",
-  },
-  {
-    title: "/hard — Hard review",
-    value: "hard",
-    description: "Terra High · manual escalation review",
-  },
-  {
-    title: "/design — UI / design",
-    value: "design",
-    description: "GLM-5.3 Flash High · screenshot/reference-driven frontend work",
-  },
-  {
-    title: "/v — Vision",
-    value: "v",
-    description: "Qwen3.8 Flash · economical screenshot/image diagnosis",
+    description: "MiMo-V2.6 Flash Free · independent post-implementation review",
   },
   {
     title: "/c — Continue",
@@ -67,21 +32,12 @@ const WORKFLOW = [
 
 const AGENTS: Record<string, string> = {
   build: "BUILD",
-  plan: "PLAN",
-  quality: "QUALITY",
-  "free-build": "FREE",
-  design: "DESIGN",
-  vision: "VISION",
+  reviewer: "REVIEW",
 }
 
 const MODELS: Record<string, string> = {
-  "deepseek-v4.1-flash": "DeepSeek V4.1 Flash",
-  "nemotron-3.5-lightning-free": "Nemotron 3.5 Lightning Free",
-  "gpt-5.6-luna": "Luna",
-  "gpt-5.6-terra": "Terra",
-  "glm-5.3-flash": "GLM-5.3 Flash",
-  "qwen3.8-flash": "Qwen3.8 Flash",
-  "mimo-v2.5": "MiMo-V2.5",
+  "deepseek-v4.1-flash-free": "DeepSeek V4.1 Flash Free",
+  "mimo-v2.6-flash-free": "MiMo-V2.6 Flash Free",
 }
 
 const titleCase = (value: string) => value.charAt(0).toUpperCase() + value.slice(1)
@@ -107,10 +63,10 @@ const taskFromText = (value: string) => {
   const text = compact(value)
   if (!text) return undefined
 
-  const commandTask = text.match(/^\/(?:lp|luna|design|v)\s+(.+)$/i)
+  const commandTask = text.match(/^\/do\s+(.+)$/i)
   if (commandTask?.[1]) return clip(commandTask[1], 180)
 
-  if (/^\/(?:c|do|pr|review|hard|commit|simplify|ldo|workflow|wf)\s*$/i.test(text)) return undefined
+  if (/^\/(?:c|do|review|simplify|commit|workflow|wf)\s*$/i.test(text)) return undefined
   if (/^(?:да|ага|ок(?:ей)?|продолжай|continue|go on|yes|yep|sure)[.!…\s]*$/i.test(text)) return undefined
 
   return clip(text, 180)
@@ -242,7 +198,7 @@ const openWorkflow = (api: TuiPluginApi) => {
         api.ui.toast({
           variant: "info",
           title: item.title,
-          message: `Type /${item.value}${["lp", "luna", "design", "v"].includes(item.value) ? " <task>" : ""}`,
+          message: `Type /${item.value}`,
           duration: 3000,
         })
       }}
@@ -257,7 +213,7 @@ const tui: TuiPlugin = async (api) => {
       {
         name: "ac.workflow.help",
         title: "AC workflow commands",
-        desc: "Show the plan → review → build command cheat sheet",
+        desc: "Show the build and review command cheat sheet",
         category: "Workflow",
         namespace: "palette",
         slashName: "workflow",

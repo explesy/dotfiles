@@ -1,0 +1,154 @@
+#!/bin/sh
+# opencode-reset — wipe OpenCode runtime state and start from a clean database.
+#
+# Removes:
+#   ~/.local/share/opencode   database, sessions, logs, snapshots, helper binaries
+#   ~/.local/state/opencode   service registration, model/plugin state, prompt history
+#   ~/.cache/opencode         model catalog and installed plugin packages
+#
+# Keeps:
+#   ~/.config/opencode        your configuration (stow-managed), including cli.json
+#   auth.json                 credentials, unless --no-auth is passed
+#
+# Run this from a plain shell, NOT from inside an OpenCode session: it stops the
+# background service, which also ends the session that launched it.
+#
+# Usage:
+#   opencode-reset                 # confirm, wipe, start a fresh service
+#   opencode-reset --dry-run       # show what would be deleted
+#   opencode-reset --yes           # no confirmation prompt
+#   opencode-reset --no-auth       # also drop saved credentials
+#   opencode-reset --reinstall     # additionally reinstall the brew bottle
+#
+# The running service must be stopped anyway, so the new client and the new
+# server end up on the same version.
+set -eu
+
+CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/opencode"
+DATA_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/opencode"
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/opencode"
+CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/opencode"
+
+dry_run=0
+assume_yes=0
+keep_auth=1
+reinstall=0
+forced=0
+
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run) dry_run=1 ;;
+    --yes|-y) assume_yes=1 ;;
+    --no-auth) keep_auth=0 ;;
+    --reinstall) reinstall=1 ;;
+    --force) forced=1 ;;
+    -h|--help)
+      sed -n '2,28p' "$0" | sed 's/^# \{0,1\}//'
+      exit 0
+      ;;
+    *)
+      echo "unknown argument: $arg" >&2
+      exit 2
+      ;;
+  esac
+done
+
+if [ "${OPENCODE:-}" = "1" ] && [ "$forced" -eq 0 ]; then
+  cat >&2 <<'EOF'
+refusing to run inside an OpenCode session.
+
+This script stops the background service, so the session that launched it would
+die halfway through the wipe. Run it from a plain terminal instead (for example
+a new herdr shell pane). Use --force only if you accept that.
+EOF
+  exit 1
+fi
+
+size_of() {
+  if [ -e "$1" ]; then
+    du -sh "$1" 2>/dev/null | awk '{print $1}'
+  else
+    echo "absent"
+  fi
+}
+
+service_running() {
+  opencode service status >/dev/null 2>&1
+}
+
+echo "OpenCode reset"
+echo "  config   keep   $CONFIG_DIR"
+echo "  data     wipe   $DATA_DIR ($(size_of "$DATA_DIR"))"
+echo "  state    wipe   $STATE_DIR ($(size_of "$STATE_DIR"))"
+echo "  cache    wipe   $CACHE_DIR ($(size_of "$CACHE_DIR"))"
+if [ "$keep_auth" -eq 1 ] && [ -f "$DATA_DIR/auth.json" ]; then
+  echo "  auth     keep   $DATA_DIR/auth.json"
+fi
+if service_running; then
+  echo "  service  running, will be stopped and started again"
+else
+  echo "  service  not running"
+fi
+echo
+
+if [ "$dry_run" -eq 1 ]; then
+  echo "dry run: nothing changed"
+  exit 0
+fi
+
+if [ "$assume_yes" -eq 0 ]; then
+  printf 'Delete the data/state/cache directories above? [y/N] '
+  read -r answer || answer=""
+  case "$answer" in
+    y|Y|yes|YES) ;;
+    *) echo "aborted"; exit 1 ;;
+  esac
+fi
+
+auth_copy=""
+if [ "$keep_auth" -eq 1 ] && [ -f "$DATA_DIR/auth.json" ]; then
+  auth_copy="$(mktemp "${TMPDIR:-/tmp}/opencode-auth.XXXXXX")"
+  cp "$DATA_DIR/auth.json" "$auth_copy"
+  chmod 600 "$auth_copy"
+fi
+
+if service_running; then
+  echo "stopping service"
+  opencode service stop >/dev/null 2>&1 || true
+fi
+
+echo "removing runtime state"
+rm -rf "$DATA_DIR" "$STATE_DIR" "$CACHE_DIR"
+
+if [ -n "$auth_copy" ]; then
+  mkdir -p "$DATA_DIR"
+  cp "$auth_copy" "$DATA_DIR/auth.json"
+  chmod 600 "$DATA_DIR/auth.json"
+  rm -f "$auth_copy"
+  echo "restored credentials"
+fi
+
+if [ "$reinstall" -eq 1 ]; then
+  if command -v brew >/dev/null 2>&1 && brew list --versions opencode >/dev/null 2>&1; then
+    echo "reinstalling opencode via brew"
+    brew reinstall --force opencode
+  else
+    echo "warning: opencode is not installed through brew, skipping reinstall" >&2
+  fi
+fi
+
+echo "starting fresh service"
+opencode service start >/dev/null 2>&1 || true
+
+sleep 1
+echo
+echo "client: $(opencode --version 2>/dev/null || echo unknown)"
+if info=$(opencode api get /api/info 2>/dev/null); then
+  printf '%s' "$info" | python3 -c 'import json,sys; d=json.load(sys.stdin); print("server:", d["version"], "pid", d["pid"], "url", d["urls"][0])' 2>/dev/null \
+    || echo "server: healthy"
+else
+  echo "server: not responding yet; it will start with the next TUI launch" >&2
+fi
+echo "data:   $DATA_DIR ($(size_of "$DATA_DIR"))"
+echo
+echo "done. Relaunch the TUI to start with the new database."
