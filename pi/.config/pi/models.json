@@ -1,0 +1,49 @@
+{
+  "$schema": "https://pi.dev/schemas/models.schema.json",
+  "providers": {
+    "google-vertex": {
+      "models": [
+        {
+          // Experimental route: Gemini 4 Argon through the built-in google-vertex
+          // provider. No project/billing IDs or credentials belong in this file;
+          // authentication uses ADC plus GOOGLE_CLOUD_PROJECT/GOOGLE_CLOUD_LOCATION
+          // from the external local environment. See pi/README.md.
+          "id": "gemini-4-argon",
+          "name": "Gemini 4 Argon",
+          "input": ["text", "image"],
+          // Pi 1.2.0 still sends the legacy `thinkingBudget` for model IDs that
+          // do not match its gemini-3 level detection, and Argon rejects that
+          // field with HTTP 400 (upstream #10890). `reasoning: false` makes Pi
+          // omit thinkingConfig entirely; Argon then applies its own default
+          // thinking level MEDIUM. Flip this to `true` once a released Pi
+          // contains upstream commit 1692bba, so Pi can send LOW/MEDIUM/HIGH.
+          "reasoning": false,
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": null,
+            "low": "low",
+            "medium": "medium",
+            "high": "high",
+            "xhigh": null,
+            "max": null
+          },
+          // Vertex AI promotional rate through 2026-11-30 ($2 / $10 / $0.10 per
+          // 1M input / output / cache-read tokens); standard rate after that is
+          // $4 / $20 / $0.20. Pi's shared google-vertex catalog mirrors these
+          // values for gemini-4-argon. Thinking tokens bill as output.
+          "cost": {
+            "input": 2,
+            "output": 10,
+            "cacheRead": 0.1,
+            "cacheWrite": 0
+          },
+          // Unified 1,048,576-token window shared by input, thinking and output;
+          // 65,536 is the documented single-request streaming output cap and
+          // matches the other google-vertex catalog entries.
+          "contextWindow": 1048576,
+          "maxTokens": 65536
+        }
+      ]
+    }
+  }
+}

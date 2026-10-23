@@ -1,0 +1,10 @@
+# Documentation and development helpers belong in the repository, not $HOME.
+^README\.md$
+^WORKFLOW_METRICS\.md$
+^tests$
+^scripts$
+^experiments$
+# Runtime dependency state is installed separately, never linked by Stow.
+node_modules
+\.DS_Store
+.*\.log$

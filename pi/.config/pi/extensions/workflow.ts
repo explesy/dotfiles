@@ -4,6 +4,9 @@ import type {
   ExtensionContext,
 } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { WorkflowMetrics } from "../lib/workflow-metrics.ts";
 import {
   BUILD_PROVIDER,
   BUILD_MODEL,
@@ -46,6 +49,40 @@ const STATUS_PHASES = new Set([
 ]);
 
 export default function workflowCommands(pi: ExtensionAPI) {
+  let revision = "unknown";
+  try {
+    revision = createHash("sha256")
+      .update(readFileSync(new URL("./workflow.ts", import.meta.url)))
+      .update(readFileSync(new URL("../lib/workflow-metrics.ts", import.meta.url)))
+      .digest("hex").slice(0, 16);
+  } catch { /* A missing revision must not disable the workflow. */ }
+  let metricsContext: ExtensionContext | undefined;
+  const metrics = new WorkflowMetrics({
+    revision,
+    onError: () => metricsContext?.ui.notify(
+      "Workflow statistics could not be saved; task execution is unaffected.", "warning",
+    ),
+  });
+  // Observers do not inspect message text/output or affect model/tool delivery.
+  const observe = (callback: () => void) => { try { callback(); } catch { /* fail open */ } };
+  const startMetrics = (ctx: ExtensionCommandContext, route: ModelRoute, kind: "task" | "context" | "issue" | "queue") => {
+    metricsContext = ctx;
+    if (!ctx.cwd || !ctx.sessionManager) return;
+    observe(() => metrics.start({ cwd: ctx.cwd, sessionId: ctx.sessionManager.getSessionId(), kind, ...route }));
+  };
+  pi.on("tool_execution_start", event => observe(() => metrics.toolStart(event)));
+  pi.on("tool_execution_end", event => observe(() => metrics.toolEnd(event)));
+  pi.on("message_end", event => observe(() => metrics.messageEnd(event.message)));
+  pi.on("ui_prompt_start", () => observe(() => metrics.pause()));
+  pi.on("ui_prompt_end", () => observe(() => metrics.resume()));
+  pi.on("model_select", () => observe(() => metrics.routingChanged()));
+  pi.on("thinking_level_select", () => observe(() => metrics.routingChanged()));
+  pi.on("session_switch", () => observe(() => metrics.finish("interrupted")));
+  pi.on("session_shutdown", async () => {
+    observe(() => metrics.finish("interrupted"));
+    // A slow/unavailable custom state directory must not hold Pi open.
+    await Promise.race([metrics.flush(), new Promise(resolve => setTimeout(resolve, 200))]);
+  });
   let workflowStatusActive = false;
   let workflowKind: WorkflowKind | undefined;
   let workflowThinking: ThinkingLevel = "low";
@@ -174,6 +211,7 @@ export default function workflowCommands(pi: ExtensionAPI) {
       }
 
       const status = buildWorkflowStatus(phase);
+      observe(() => metrics.recordPhase(phase));
 
       // Terminal phases end the run, so do not leave the footer pinned as if
       // the workflow were still active. Read the resolved issue/title before the
@@ -244,6 +282,7 @@ export default function workflowCommands(pi: ExtensionAPI) {
   // later turn than the one that started the workflow. Clear only once the whole
   // agent run has settled, in addition to the explicit terminal phases above.
   pi.on("agent_settled", async (_event, ctx) => {
+    observe(() => metrics.finish());
     if (activeWorkflowResolve) {
       const resolve = activeWorkflowResolve;
       activeWorkflowResolve = undefined;
@@ -353,6 +392,7 @@ export default function workflowCommands(pi: ExtensionAPI) {
       : NEXT_TASK_PROMPT;
 
     startWorkflowStatus(ctx, "N", route.thinking, { phase: "selecting" });
+    startMetrics(ctx, route, "queue");
     const settled = waitForWorkflowToSettle(ctx);
     pi.sendUserMessage(prompt);
     await settled;
@@ -399,6 +439,7 @@ export default function workflowCommands(pi: ExtensionAPI) {
       title: issueNumber === undefined && taskInput ? taskInput : undefined,
       phase: issueNumber === undefined ? "investigating" : "selecting",
     });
+    startMetrics(ctx, route, issueNumber !== undefined ? "issue" : taskInput ? "task" : "context");
     const settled = waitForWorkflowToSettle(ctx);
     pi.sendUserMessage(prompt);
     await settled;

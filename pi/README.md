@@ -11,7 +11,7 @@ Source of truth для конфигурации Pi — этот GitHub-репо�
 
 ## Установка
 
-Текущий compatibility target этой конфигурации — **Pi 1.0.4**. Pi установлен
+Текущий compatibility target этой конфигурации — **Pi 1.4.0**. Pi установлен
 глобально через npm, поэтому на уже настроенной машине сначала обновите сам Pi,
 затем зависимости конфигурации:
 
@@ -62,7 +62,7 @@ cd "$HOME/.config/pi/npm" && npm install
 
 Pi использует точную версию опубликованного
 [`@estebanforge/pi-antigravity-bridge`](https://github.com/EstebanForge/pi-antigravity-bridge),
-а не патчит `node_modules` после установки. Версия **1.7.9** сохраняет
+а не патчит `node_modules` после установки. Версия **1.8.7** сохраняет
 полный approval-ответ `{ decision, reason }` и изолирует hooks в приватном
 каталоге конкретной Pi-сессии, поэтому standalone Antigravity в том же
 workspace больше не получает чужой approval gate. В ней также обновлён
@@ -155,6 +155,40 @@ merge/deploy. Модельная маршрутизация и логика пл
 
 После обновления выполните `/reload` или перезапустите Pi.
 
+### Статистика обычных запусков `/i`
+
+После `/i` (включая `/i --next` и совместимый `/n`) автоматически сохраняются
+локальная запись запуска и сводки `summary.md` / `summary.json` в
+`~/.local/state/pi/workflow-metrics/`. При `XDG_STATE_HOME` используется он.
+Обычная работа не требует дополнительной команды. Статистика не меняет модели,
+правила или доступные инструменты; ошибка записи не прерывает задачу.
+
+Записываются версия workflow, начальная модель/effort, время и ожидание UI,
+наблюдаемые токены/стоимость, число инструментов/помощников и категории проверок.
+Тексты задач, shell-команды, вывод, исходники, названия issues и пути не сохраняются;
+проект и сессия обозначаются хешами. Качество по умолчанию — `unverified`, даже
+если запуск завершён и инструменты отработали успешно. Exit code остаётся
+неизвестным, если runtime не передал его структурированно.
+
+Сводка рассматривает последние 200 записей. История не удаляется автоматически.
+Для чтения свежего отчёта, включая параллельные сессии:
+
+```sh
+node pi/scripts/workflow-report.mjs
+```
+
+После независимой приёмки можно явно отметить результат по ID из сводки:
+
+```sh
+node pi/scripts/workflow-report.mjs --feedback <run-id> accepted
+node pi/scripts/workflow-report.mjs --feedback <run-id> needs-fixes contract
+```
+
+Это дополнительная оценка уже выполненной работы, не новый режим выполнения.
+Для отключения сбора: `PI_WORKFLOW_METRICS=0 pi`; каталог можно переопределить
+через `PI_WORKFLOW_METRICS_DIR`. Подробные границы данных, признаки для анализа
+и проверки: [WORKFLOW_METRICS.md](WORKFLOW_METRICS.md).
+
 ### Workflow status в footer
 
 Execution-команды показывают короткий live status в footer, пока идёт
@@ -200,7 +234,7 @@ N · DeepSeek V4.1 Flash · high · #42 · fixing · Detect player languages
 
 ### Approval gate
 
-Bridge `1.7.9` оставляет `approvals.gateMode` в `auto`: при наличии Pi
+Bridge `1.8.7` оставляет `approvals.gateMode` в `auto`: при наличии Pi
 permission extension нативные mutating-действия `agy` проходят через Pi-side
 approval, а hooks лежат в приватном каталоге конкретной сессии. Поэтому
 standalone Antigravity в том же workspace не видит чужой gate; модели
@@ -232,6 +266,96 @@ OAuth-токен внутри Pi. После перезапуска доступ
 `agy`; его изменения файлов не проходят через обычный inline diff Pi. Команды
 `agy` выполняются без отдельного подтверждения, поэтому не выбирайте
 `accept-edits` для непроверенных репозиториев.
+
+## Gemini 4 Argon через Vertex AI (экспериментально)
+
+`google-vertex/gemini-4-argon` добавлен как **экспериментальный** route для
+plan/code review. Он не является default, не входит в `/i`, `/n`, `/p` и не
+заменяет `reviewer`, `reviewer-sol`, `scout` или другие рабочие маршруты.
+Default Pi остаётся `opencode-go/deepseek-v4.1-flash`.
+
+Модель описана в `models.json` и использует встроенный провайдер
+`google-vertex` с Application Default Credentials. Project ID и billing ID
+в Git не попадают: авторизация и выбор проекта задаются только в локальном
+окружении.
+
+У Pi нет собственного загрузчика `.env`, а `google-vertex` читает project и
+location только из process environment (`GOOGLE_CLOUD_PROJECT`/`GCLOUD_PROJECT`
+и `GOOGLE_CLOUD_LOCATION`); `gcloud config` он не использует. Поэтому значения
+выносятся в локальный env-файл вне репозитория, который подхватывает shell.
+Для fish (shell по умолчанию) это автозагружаемый `conf.d`, файл в Git не
+попадает и не stow-ится:
+
+`~/.config/fish/conf.d/pi-vertex.fish`
+
+```fish
+set -gx GOOGLE_CLOUD_PROJECT "<project-id>"
+set -gx GOOGLE_CLOUD_LOCATION global
+```
+
+Затем один раз авторизуйтесь и откройте новый терминал:
+
+```sh
+gcloud auth application-default login
+```
+
+Для zsh/POSIX-шеллов аналог — локальный `~/.config/pi/vertex.env` с
+`export GOOGLE_CLOUD_PROJECT=...`, который source'ится из `~/.zshrc`: в
+трекаемом файле остаётся только строка `source`, без самого ID.
+
+`GOOGLE_CLOUD_PROJECT` (или `GCLOUD_PROJECT`) и `GOOGLE_CLOUD_LOCATION`
+обязательны; `global` — поддерживаемая локация. JSON service-account keys и
+копирование ADC-файлов не используются. Проверить доступность без запросов к
+API можно через `pi --list-models argon`: строка `google-vertex gemini-4-argon`
+появляется, когда credentials и project/location видны Pi.
+
+Выбор модели:
+
+```text
+/model google-vertex/gemini-4-argon
+```
+
+Опционально для read-only review плана или diff есть отдельная роль
+`argon-reviewer` (`agents/argon-reviewer.md`) без write/bash и без доступа к
+credentials. Она не подключена к `/i` или `/p` как обязательный этап; обычный
+review по-прежнему выполняет `reviewer`, при существенном риске — `reviewer-sol`.
+
+### Совместимость Pi и уровни thinking (проверка на 1.2.0)
+
+Gemini 4 Argon принимает только уровни `LOW`/`MEDIUM`/`HIGH` и не поддерживает
+`thinkingBudget`/`MINIMAL`. Pi 1.2.0 определяет по ID модели, отправлять
+`thinkingLevel` или устаревший `thinkingBudget`; для `gemini-4-argon` он
+выбирает `thinkingBudget`, поэтому запрос падает с HTTP 400 (upstream
+[#10890](https://github.com/earendil-works/pi/issues/10890)). Выпущенного Pi с
+исправлением
+[1692bba](https://github.com/earendil-works/pi/commit/1692bba6347a287ab0f3cb554a4430fafffc474b)
+на момент проверки не было (`latest` тогда был `1.2.0`).
+
+Поэтому в `models.json` для этой модели стоит `"reasoning": false`: Pi вообще
+не отправляет `thinkingConfig`, а Argon применяет свой default `MEDIUM`. Это
+не выключение внутреннего thinking и не даёт переключать уровни из Pi. После
+`pi-update` до 1.4.0 маршрут на новом SDK отдельно не перепроверялся, поэтому
+workaround сохранён. Перед включением сначала проверьте, что текущий Pi
+действительно отправляет `thinkingLevel` для `gemini-4-argon` и не получает
+HTTP 400; затем замените `"reasoning": false` на `true` — `thinkingLevelMap`
+уже описывает доступные `low`/`medium`/`high`. Не добавляйте
+`thinkingBudget`/`MINIMAL` или explicit caching.
+
+### Стоимость, проверка и откат
+
+Стоимость в `models.json` соответствует опубликованному Vertex AI
+промо-тарифу Gemini 4 Argon до 2026-11-30 ($2 вход / $10 выход / $0.10
+cache-read за 1M токенов; далее $4/$20/$0.20), thinking-токены считаются как
+output. Это metadata каталога, а не подтверждение покрытия расходов:
+применимость промокредитов к Vertex AI SKU и проекту **не подтверждена**, а
+budget alerts не являются spend cap. До отдельного согласия пользователя
+платные live-тесты не выполняются; после согласия допустим один минимальный
+smoke-запрос. Если покрытие не подтвердится, маршрут остаётся
+experimental-only и не используется автоматически.
+
+Откат: удалить запись `google-vertex/gemini-4-argon` из `models.json` (или
+`git revert` этого изменения), при необходимости убрать роль `argon-reviewer` и
+выполнить `/reload`. Default-модель и остальные маршруты не затрагиваются.
 
 ## Выполнение задач
 
@@ -328,17 +452,22 @@ bundled-роли `pi-subagents`:
 - `plan-reviewer-haiku` — доступная роль для явной независимой проверки плана;
   `/i` не запускает её обязательным этапом;
 - `plan-reviewer` — независимая углублённая проверка сложного плана и reviewer
-  для `/p`.
+  для `/p`;
+- `argon-reviewer` — экспериментальная read-only роль на
+  `google-vertex/gemini-4-argon`; не входит в обязательные маршруты.
 
 ## Что хранится в Git
 
 - `settings.json` — тема, модель по умолчанию, startup
   `defaultThinkingLevel: low`, список пакетов, добавленные `codemode` /
   `tool_search` и уведомления о значимых cache misses;
-- `npm/package.json` / `package-lock.json` — фиксируют bridge `1.7.9`,
-  `pi-subagents 0.76.1`,
-  `@gotgenes/pi-permission-system 40.0.1` и
-  Context7 `0.1.2`, а также Pi SDK peer-пакеты `1.0.4` для
+- `models.json` — экспериментальная модель `google-vertex/gemini-4-argon`
+  (провайдер `google-vertex`, ADC, `reasoning: false` как workaround, проверенный на Pi
+  1.2.0 и пока не перепроверенный на 1.4.0); без project/billing IDs и секретов;
+- `npm/package.json` / `package-lock.json` — фиксируют bridge `1.8.7`,
+  `pi-subagents 0.81.0`,
+  `@gotgenes/pi-permission-system 41.0.0` и
+  Context7 `0.1.3`, а также Pi SDK peer-пакеты `1.4.0` для
   воспроизводимой совместимости расширений;
 - `extensions/pi-permission-system/config.json` — глобальная политика доступа Pi;
 - `extensions/workflow.ts` — локальные workflow-команды, требующие поведения
@@ -513,7 +642,7 @@ MCP готов к подключению серверов через глоба�
 stdio-сервер: `tool_search` нашёл deferred echo tool и вызов вернул marker.
 Постоянные внешние серверы этим изменением не добавляются.
 
-Официальный `@upstash/context7-pi@0.1.2` предоставляет `resolve-library-id`,
+Официальный `@upstash/context7-pi@0.1.3` предоставляет `resolve-library-id`,
 `query-docs`, skill `context7-docs` и команду:
 
 ```text
