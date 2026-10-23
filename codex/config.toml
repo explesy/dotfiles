@@ -1,5 +1,5 @@
-model = "gpt-6.1-sol"
-model_reasoning_effort = "medium"
+model = "gpt-6-luna"
+model_reasoning_effort = "xhigh"
 model_verbosity = "medium"
 personality = 'pragmatic'
 web_search = 'live'
@@ -78,6 +78,7 @@ enabled = false
 [mcp_servers.node_repl]
 args = []
 command = "/Applications/ChatGPT.app/Contents/Resources/cua_node/bin/node_repl"
+env_vars = ["BROWSER_USE_ACCESS_EXECUTOR_ID", "BROWSER_USE_ACCESS_PIPE_PATH", "BROWSER_USE_ACCESS_VERIFYING_IDENTITY"]
 startup_timeout_sec = 120
 
 [mcp_servers.node_repl.env]
@@ -92,8 +93,8 @@ NODE_REPL_INSTRUCTIONS_USE_CASE_BROWSER = ""
 NODE_REPL_INSTRUCTIONS_USE_CASE_CHROME = ""
 NODE_REPL_INSTRUCTIONS_USE_CASE_COMPUTER_USE = ""
 BROWSER_USE_CODEX_APP_BUILD_FLAVOR = "prod"
-BROWSER_USE_CODEX_APP_VERSION = "26.1007.30912"
-NODE_REPL_TRUSTED_SERVICES = '{"browser":"/Users/doc/.codex/plugins/cache/openai-bundled/browser/26.1007.30912/scripts/browser-service.mjs","sky":"@oai/sky/service"}'
+BROWSER_USE_CODEX_APP_VERSION = "26.1016.62342"
+NODE_REPL_TRUSTED_SERVICES = '{"browser":"/Users/doc/.codex/plugins/cache/openai-bundled/browser/26.1016.62342/scripts/browser-service.mjs","sky":"@oai/sky/service"}'
 SKY_CUA_SERVICE_PATH = "/Users/doc/.codex/computer-use/Codex Computer Use.app"
 CODEX_CLI_PATH = "/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex"
 
