@@ -26,7 +26,7 @@
   - [🐟 Fish Shell](#-fish-shell)
   - [📟 Herdr, Tmux & Zellij (Мультиплексоры)](#-herdr-tmux--zellij-мультиплексоры)
   - [📁 Yazi (Терминальный файловый менеджер)](#-yazi-терминальный-файловый-менеджер)
-  - [🤖 AI Стек (Codex, OpenCode & Antigravity)](#-ai-стек-codex-opencode--antigravity)
+  - [🤖 AI Стек (Codex, Pi, OpenCode & Antigravity)](#-ai-стек-codex-pi-opencode--antigravity)
   - [🎬 Медиаплееры (IINA & mpv)](#-медиаплееры-iina--mpv)
 - [📦 Homebrew & Обслуживание](#-homebrew--обслуживание)
 
@@ -38,7 +38,7 @@
 - **Модульность через GNU Stow:** каждый пакет изолирован и линкуется в систему отдельной командой без ручного копирования.
 - **Современный CLI-стек:** Fish shell со Starship промптом, авто-`zoxide`, `eza`, `yazi`, `lazygit`, `lazydocker`.
 - **Тайловый рабочий стол:** AeroSpace с автоматической раскладкой приложений по воркспейсам и accordion-режимом.
-- **AI Tooling & MCP:** расширенная конфигурация Codex (MCP серверы, кастомные агенты, скиллы, питомцы) и OpenCode.
+- **AI Tooling & MCP:** расширенная конфигурация Codex (MCP серверы, кастомные агенты, скиллы, питомцы), Pi с workflow-командами `/i`, `/p`, `/night` и OpenCode.
 
 ---
 
@@ -63,14 +63,16 @@
 | **Файловые менеджеры** | [yazi](./yazi) | Быстрый файловый менеджер (Gruvbox, превью PDF/картинок) | `~/.config/yazi/` |
 | | [ranger](./ranger) | Классический терминальный менеджер на Python | `~/.config/ranger/` |
 | **AI & Агенты** | [codex](./codex) | Codex стек: MCP серверы, агенты, скиллы, runbooks | `~/.codex/` |
-| | [opencode](./opencode) | Глобальные настройки OpenCode (модели, TUI, права); зависимости устанавливаются локально через `npm install` | `~/.config/opencode/` |
-| | [pi](./pi) | Глобальные настройки Pi, Pi Recap и npm-зависимости расширений | `~/.config/pi/` |
+| | [pi](./pi) | Pi: workflow-команды `/i`, `/p`, `/night`, subagents, permission policy и метрики запусков | `~/.config/pi/` |
+| | [opencode](./opencode) | Free-only OpenCode V2: один build-worker, review-субагент, права и TUI | `~/.config/opencode/` |
 | | [antigravity](./antigravity) | Antigravity & agy CLI (автоподтверждение, MCP, глобальные правила) | `~/.gemini/` |
 | **Медиа & Разное** | [iina](./iina) | Конфигурация ввода IINA для macOS | `~/Library/Application Support/...` |
 | | [tuios](./tuios) | Настройки TUIOS и навигация Colemak | `~/Library/Application Support/tuios/` |
 | | [mpv](./mpv) | Минималистичный видеоплеер | `~/.config/mpv/` |
 | | [docker](./docker) | Памятка по первоначальной настройке Docker | *Справочник* |
 | | [userscripts](./userscripts) | Пользовательские скрипты (MeTube интеграция для YouTube) | *Браузерные расширения* |
+| **Диагностика & Бенчмарки** | [watchdog](./watchdog) | LaunchAgent, который убивает брошенные Playwright-браузеры | `~/.local/bin/`, `~/Library/LaunchAgents/` |
+| | [benchmarks](./benchmarks/scrapling-mcp) | A/B-бенчмарк Scrapling MCP против browser-workflow Pi | *Исследование* |
 
 ---
 
@@ -112,14 +114,13 @@ stow -D alacritty
 > [!NOTE]
 > `README.md` пакетов не линкуются через stow (правило `^README\.md$` в `.stow-local-ignore`).
 >
-> Пакет `opencode` требует **реальную** директорию `~/.config/opencode` (туда устанавливаются `node_modules`), поэтому перед stow создайте её и после — установите зависимости:
+> Пакет `opencode` требует **реальную** директорию `~/.config/opencode`, потому что OpenCode пишет туда `cli.json`, базу и runtime-состояние. Перед stow создайте её; зависимости не нужны — конфиг не содержит плагинов:
 > ```sh
 > mkdir -p ~/.config/opencode
 > stow opencode
-> cd ~/.config/opencode && npm install
 > ```
 
-> Пакет `pi` работает по той же схеме: `~/.config/pi` остаётся реальной директорией, а управляемые настройки подключаются через `stow pi`. См. [`pi/README.md`](./pi).
+> Пакет `pi` работает по той же схеме: `~/.config/pi` остаётся реальной директорией, а управляемые настройки подключаются через `stow pi`. Runtime-каталог `npm/node_modules` исключён package-local `.stow-local-ignore`: после stow выполните `cd ~/.config/pi/npm && npm install`. См. [`pi/README.md`](./pi).
 
 ---
 
@@ -235,20 +236,28 @@ stow -D alacritty
 
 ---
 
-### 🤖 AI Стек (Codex, OpenCode & Antigravity)
+### 🤖 AI Стек (Codex, Pi, OpenCode & Antigravity)
 
 - **[codex/](./codex):** локальная экосистема инструментов для Codex CLI.
+  - Основная модель — GPT-6 Luna с `model_reasoning_effort = "xhigh"`.
   - Управление MCP-серверами (см. [`codex/mcp.md`](./codex/mcp.md)).
-  - Кастомные агенты (`scout`, `hard-review`, `plan-reviewer`).
+  - Кастомные агенты (`scout`, `hard-review`, `plan-reviewer`, `plan-reviewer-high`).
   - Набор готовых скиллов (`commit`, `pr`, `simplify`, `ui`, `preflight` и др.).
   - Кастомные TUI-питомцы в `codex/pets/`.
   - Управление горячими клавишами через `keybindings.json` (отключён глобальный вызов оверлея питомца `Alt+Space`, удержание диктовки на `LeftControl`).
   - Интеграция со статусами Herdr через хук `~/.codex/herdr-agent-state.sh`.
-- **[opencode/](./opencode):** глобальная конфигурация [OpenCode](https://opencode.ai):
-  - Оптимизированный роутинг моделей под экономику OpenCode Go (DeepSeek V4 Flash, GPT-5.6 Luna High, GLM-5.3 Flash).
-  - Сбалансированный режим автономности: рутинный Git (`commit`, `push`, `checkout`), установка зависимостей, чтение внешних папок и веб-поиск выполняются без подтверждений; деструктивные операции (`rm`, `sudo`, `reset --hard`) и секреты (`*.env`) защищены.
-  - Быстрое переключение автоподтверждения в TUI по горячей клавише `Cmd + Shift + A` (`mod+shift+a`).
-  - Интеграция с мультиплексором Herdr (`plugins/herdr-agent-state.js`, `herdr-tui-session.js`).
+- **[pi/](./pi):** конфигурация [Pi](https://pi.dev) — основной агентский CLI.
+  - `/i` — универсальная команда выполнения задачи, issue или продолжения согласованной работы; `/p` — отдельный read-only planning/review pipeline; ночной режим `pi-night` (плюс `/night status|stop`) — очередь GitHub Issues с меткой `agent:night`.
+  - Роутинг: DeepSeek V4.1 Flash по умолчанию, GPT-6.1 Sol и GPT-6 Luna через `openai-codex`, Gemini через Antigravity bridge; пользовательские роли в `agents/` (`scout`, `reviewer`, `reviewer-sol`, `planner`, `plan-reviewer*`).
+  - Права: permission system с доверенным режимом и явными `deny` для `.env`, ключей и credentials.
+  - Сбор метрик запусков `/i` в `~/.local/state/pi/workflow-metrics/` без влияния на prompt и routing.
+  - Подробности: [`pi/README.md`](./pi), [`pi/NIGHT.md`](./pi/NIGHT.md), [`pi/WORKFLOW_METRICS.md`](./pi/WORKFLOW_METRICS.md).
+- **[opencode/](./opencode):** минималистичная free-only конфигурация [OpenCode](https://opencode.ai) V2:
+  - `build` — `opencode/deepseek-v4.1-flash-free#high`: бесплатная модель с текстом, изображениями, tool calls и reasoning; покрывает повседневную разработку и визуальный debugging.
+  - `reviewer` — `opencode/mimo-v2.6-flash-free`: бесплатный read-only first-pass review; другие субагенты запрещены.
+  - Команды `/do`, `/commit`, `/review`, `/simplify`, `/c`; встроенные `plan`, `general` и `explore` отключены.
+  - Сбалансированный режим автономности: рутинный Git, установка зависимостей, чтение внешних папок и веб-поиск без подтверждений; `rm`, `sudo`, `reset --hard`, управление процессами и секреты (`*.env`) защищены.
+  - Пакет не содержит плагинов и `npm`-зависимостей; `cli.json` мигрируется из legacy `tui.json`, а `opencode-reset` полностью очищает runtime-состояние.
 - **[antigravity/](./antigravity):** конфигурация Google Antigravity и терминального агента `agy`:
   - Включен режим **автоподтверждения по умолчанию** (`toolPermission: always-proceed`, `agentMode: accept-edits`).
   - Разрешён доступ к файлам вне текущего воркспейса (`allowNonWorkspaceAccess: true`).
